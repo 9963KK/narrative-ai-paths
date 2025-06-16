@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +15,7 @@ interface StoryConfig {
   special_requirements: string;
 }
 
-interface ModelConfig {
+interface ModelConfigType {
   provider: string;
   model: string;
   apiKey: string;
@@ -27,7 +26,7 @@ interface ModelConfig {
 }
 
 interface StoryInitializerProps {
-  onInitializeStory: (config: StoryConfig, modelConfig: ModelConfig) => void;
+  onInitializeStory: (config: StoryConfig, modelConfig: ModelConfigType) => void;
 }
 
 const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }) => {
@@ -38,7 +37,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
     special_requirements: ''
   });
 
-  const [modelConfig, setModelConfig] = useState<ModelConfig>({
+  const [modelConfig, setModelConfig] = useState<ModelConfigType>({
     provider: 'openai',
     model: 'gpt-4',
     apiKey: '',

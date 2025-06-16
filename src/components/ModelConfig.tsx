@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -37,6 +36,13 @@ const ModelConfig: React.FC<ModelConfigProps> = ({ config, onConfigChange, onClo
     { value: 'zhipu', label: '智谱AI (GLM)' },
     { value: 'custom', label: '自定义API' }
   ];
+
+  const defaultBaseUrls = {
+    openrouter: 'https://openrouter.ai/api/v1',
+    deepseek: 'https://api.deepseek.com/v1',
+    moonshot: 'https://api.moonshot.cn/v1',
+    zhipu: 'https://open.bigmodel.cn/api/paas/v4'
+  };
 
   const models = {
     openai: [
@@ -78,6 +84,18 @@ const ModelConfig: React.FC<ModelConfigProps> = ({ config, onConfigChange, onClo
     ]
   };
 
+  const handleProviderChange = (value: string) => {
+    const newModel = models[value as keyof typeof models]?.[0]?.value || '';
+    const defaultBaseUrl = defaultBaseUrls[value as keyof typeof defaultBaseUrls] || '';
+    
+    setLocalConfig(prev => ({ 
+      ...prev, 
+      provider: value,
+      model: newModel,
+      baseUrl: defaultBaseUrl
+    }));
+  };
+
   const handleSave = () => {
     onConfigChange(localConfig);
     onClose();
@@ -99,11 +117,7 @@ const ModelConfig: React.FC<ModelConfigProps> = ({ config, onConfigChange, onClo
             <Label htmlFor="provider" className="text-slate-700 font-medium">服务提供商</Label>
             <Select 
               value={localConfig.provider} 
-              onValueChange={(value) => setLocalConfig(prev => ({ 
-                ...prev, 
-                provider: value,
-                model: models[value as keyof typeof models]?.[0]?.value || ''
-              }))}
+              onValueChange={handleProviderChange}
             >
               <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
                 <SelectValue placeholder="选择服务提供商" />
