@@ -7,22 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings } from 'lucide-react';
 import ModelConfig from './ModelConfig';
+import { ModelConfig as ModelConfigType } from './model-config/constants';
 
 interface StoryConfig {
   genre: string;
   protagonist: string;
   setting: string;
   special_requirements: string;
-}
-
-interface ModelConfigType {
-  provider: string;
-  model: string;
-  apiKey: string;
-  baseUrl?: string;
-  temperature: number;
-  maxTokens: number;
-  customPrompt?: string;
 }
 
 interface StoryInitializerProps {

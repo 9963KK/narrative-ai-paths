@@ -1,23 +1,13 @@
-
 import React, { useState } from 'react';
 import StoryInitializer from './StoryInitializer';
 import StoryReader from './StoryReader';
+import { ModelConfig } from './model-config/constants';
 
 interface StoryConfig {
   genre: string;
   protagonist: string;
   setting: string;
   special_requirements: string;
-}
-
-interface ModelConfig {
-  provider: string;
-  model: string;
-  apiKey: string;
-  baseUrl?: string;
-  temperature: number;
-  maxTokens: number;
-  customPrompt?: string;
 }
 
 interface StoryState {
