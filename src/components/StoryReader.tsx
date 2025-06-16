@@ -83,17 +83,17 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* 头部信息 */}
-        <Card className="bg-slate-800/90 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-white shadow-lg border-slate-200">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xl text-purple-200">
+              <CardTitle className="text-xl text-slate-800">
                 第 {story.chapter} 章
               </CardTitle>
               <div className="flex items-center space-x-4">
-                <Badge variant="outline" className="border-purple-500/50 text-purple-200">
+                <Badge variant="outline" className="border-slate-300 text-slate-600">
                   ID: {story.story_id}
                 </Badge>
                 <Progress value={(story.chapter / 10) * 100} className="w-32" />
@@ -103,17 +103,17 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
         </Card>
 
         {/* 角色信息 */}
-        <Card className="bg-slate-800/90 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-white shadow-lg border-slate-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-purple-200">角色信息</CardTitle>
+            <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {story.characters.map((character, index) => (
-                <div key={index} className="bg-slate-700/50 p-3 rounded-lg border border-purple-500/20">
-                  <h4 className="font-semibold text-purple-300">{character.name}</h4>
-                  <p className="text-sm text-slate-400 mb-1">{character.role}</p>
-                  <p className="text-xs text-slate-300">{character.traits}</p>
+                <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <h4 className="font-semibold text-slate-800">{character.name}</h4>
+                  <p className="text-sm text-slate-600 mb-1">{character.role}</p>
+                  <p className="text-xs text-slate-500">{character.traits}</p>
                 </div>
               ))}
             </div>
@@ -121,12 +121,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
         </Card>
 
         {/* 主要故事内容 */}
-        <Card className="bg-slate-800/90 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-white shadow-lg border-slate-200">
           <CardContent className="pt-6">
-            <div className="prose prose-invert max-w-none">
-              <div className="text-slate-200 text-lg leading-relaxed whitespace-pre-wrap">
+            <div className="prose prose-slate max-w-none">
+              <div className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap">
                 {currentText}
-                {isTyping && <span className="animate-pulse text-purple-400">|</span>}
+                {isTyping && <span className="animate-pulse text-blue-600">|</span>}
               </div>
             </div>
           </CardContent>
@@ -134,9 +134,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
 
         {/* 选择项 */}
         {showChoices && (
-          <Card className="bg-slate-800/90 border-purple-500/30 backdrop-blur-sm animate-in slide-in-from-bottom-4">
+          <Card className="bg-white shadow-lg border-slate-200 animate-in slide-in-from-bottom-4">
             <CardHeader>
-              <CardTitle className="text-lg text-purple-200">选择你的行动</CardTitle>
+              <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -145,11 +145,11 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
                     key={choice.id}
                     variant="outline"
                     onClick={() => handleChoice(choice.id)}
-                    className="w-full text-left h-auto p-4 bg-slate-700/50 border-purple-500/30 hover:bg-purple-600/20 hover:border-purple-400/50 transition-all duration-300"
+                    className="w-full text-left h-auto p-4 bg-slate-50 border-slate-300 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
                   >
                     <div>
-                      <div className="font-semibold text-purple-200">{choice.text}</div>
-                      <div className="text-sm text-slate-400 mt-1">{choice.description}</div>
+                      <div className="font-semibold text-slate-800">{choice.text}</div>
+                      <div className="text-sm text-slate-600 mt-1">{choice.description}</div>
                     </div>
                   </Button>
                 ))}
@@ -160,14 +160,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
 
         {/* 成就系统 */}
         {story.achievements.length > 0 && (
-          <Card className="bg-slate-800/90 border-purple-500/30 backdrop-blur-sm">
+          <Card className="bg-white shadow-lg border-slate-200">
             <CardHeader>
-              <CardTitle className="text-lg text-purple-200">已解锁成就</CardTitle>
+              <CardTitle className="text-lg text-slate-800">已解锁成就</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {story.achievements.map((achievement, index) => (
-                  <Badge key={index} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                  <Badge key={index} className="bg-blue-600 text-white">
                     {achievement}
                   </Badge>
                 ))}
@@ -181,7 +181,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({ initialStory, onMakeChoice, o
           <Button
             onClick={onRestart}
             variant="outline"
-            className="border-purple-500/50 text-purple-200 hover:bg-purple-600/20"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50"
           >
             重新开始
           </Button>

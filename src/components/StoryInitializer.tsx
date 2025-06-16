@@ -43,25 +43,25 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-slate-800/90 border-purple-500/30 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <CardTitle className="text-3xl font-bold text-slate-800">
             AI小说创作平台
           </CardTitle>
-          <p className="text-slate-300 mt-2">定制您的专属互动故事</p>
+          <p className="text-slate-600 mt-2">定制您的专属互动故事</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="genre" className="text-purple-200 font-medium">故事类型</Label>
+              <Label htmlFor="genre" className="text-slate-700 font-medium">故事类型</Label>
               <Select value={config.genre} onValueChange={(value) => setConfig(prev => ({ ...prev, genre: value }))}>
-                <SelectTrigger className="mt-2 bg-slate-700 border-purple-500/30 text-white">
+                <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
                   <SelectValue placeholder="选择故事类型" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-purple-500/30">
+                <SelectContent className="bg-white border-slate-200">
                   {genres.map((genre) => (
-                    <SelectItem key={genre.value} value={genre.value} className="text-white hover:bg-purple-600/30">
+                    <SelectItem key={genre.value} value={genre.value} className="text-slate-800 hover:bg-blue-50">
                       {genre.label}
                     </SelectItem>
                   ))}
@@ -70,42 +70,42 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
             </div>
 
             <div>
-              <Label htmlFor="protagonist" className="text-purple-200 font-medium">主角设定</Label>
+              <Label htmlFor="protagonist" className="text-slate-700 font-medium">主角设定</Label>
               <Input
                 id="protagonist"
                 value={config.protagonist}
                 onChange={(e) => setConfig(prev => ({ ...prev, protagonist: e.target.value }))}
                 placeholder="例如：失去记忆的AI工程师"
-                className="mt-2 bg-slate-700 border-purple-500/30 text-white placeholder:text-slate-400"
+                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <Label htmlFor="setting" className="text-purple-200 font-medium">故事背景</Label>
+              <Label htmlFor="setting" className="text-slate-700 font-medium">故事背景</Label>
               <Input
                 id="setting"
                 value={config.setting}
                 onChange={(e) => setConfig(prev => ({ ...prev, setting: e.target.value }))}
                 placeholder="例如：22世纪太空殖民地"
-                className="mt-2 bg-slate-700 border-purple-500/30 text-white placeholder:text-slate-400"
+                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <Label htmlFor="requirements" className="text-purple-200 font-medium">特殊要求（可选）</Label>
+              <Label htmlFor="requirements" className="text-slate-700 font-medium">特殊要求（可选）</Label>
               <Textarea
                 id="requirements"
                 value={config.special_requirements}
                 onChange={(e) => setConfig(prev => ({ ...prev, special_requirements: e.target.value }))}
                 placeholder="例如：包含赛博朋克元素、多重结局、浪漫情节等"
-                className="mt-2 bg-slate-700 border-purple-500/30 text-white placeholder:text-slate-400 resize-none"
+                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
                 rows={3}
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
               disabled={!config.genre || !config.protagonist || !config.setting}
             >
               开始创作我的故事
