@@ -35,16 +35,11 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
     onClose();
   };
 
-  const needsBaseUrl = ['openrouter', 'deepseek', 'moonshot', 'zhipu', 'custom'].includes(localConfig.provider);
+  // 只有这些提供商需要用户填写baseUrl
+  const needsBaseUrl = ['custom'].includes(localConfig.provider);
 
   const getBaseUrlPlaceholder = () => {
-    switch (localConfig.provider) {
-      case 'openrouter': return 'https://openrouter.ai/api/v1';
-      case 'deepseek': return 'https://api.deepseek.com/v1';
-      case 'moonshot': return 'https://api.moonshot.cn/v1';
-      case 'zhipu': return 'https://open.bigmodel.cn/api/paas/v4';
-      default: return 'https://api.example.com/v1';
-    }
+    return 'https://api.example.com/v1';
   };
 
   return (
