@@ -21,6 +21,14 @@ interface StoryState {
   completion_type?: 'success' | 'failure' | 'neutral' | 'cliffhanger'; // 结束类型
   story_progress?: number; // 故事进度 0-100
   main_goal_status?: 'pending' | 'in_progress' | 'completed' | 'failed'; // 主要目标状态
+  story_goals?: Array<{
+    id: string;
+    description: string;
+    type: 'main' | 'sub' | 'personal' | 'relationship';
+    priority: 'high' | 'medium' | 'low';
+    status: 'pending' | 'in_progress' | 'completed' | 'failed';
+    completion_chapter?: number;
+  }>; // 故事目标列表
 }
 
 interface Choice {
@@ -35,6 +43,7 @@ interface StoryReaderProps {
   initialStory: StoryState;
   onMakeChoice: (choiceId: number, choiceText: string) => void;
   onRestart: () => void;
+  onContinue?: () => void; // 继续故事的回调
   modelConfig?: any; // AI模型配置
   aiError?: string | null; // AI错误信息
 }
@@ -43,6 +52,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   initialStory, 
   onMakeChoice, 
   onRestart,
+  onContinue,
   modelConfig,
   aiError 
 }) => {
@@ -55,16 +65,50 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [isProcessingChoice, setIsProcessingChoice] = useState(false);
   const [selectedChoiceText, setSelectedChoiceText] = useState<string>('');
   const [choiceStartTime, setChoiceStartTime] = useState<number>(0);
+  const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
+  const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   
   // 调试：监控isProcessingChoice状态变化
   useEffect(() => {
     console.log('🎯 isProcessingChoice状态变化:', isProcessingChoice);
   }, [isProcessingChoice]);
 
+  // 监控选择生成超时
+  useEffect(() => {
+    if (choiceGenerationStartTime > 0) {
+      const timeoutId = setTimeout(() => {
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - choiceGenerationStartTime;
+        
+        if (elapsedTime >= 30000) { // 30秒超时
+          console.error('⏰ 选择生成超时，故事可能卡住了');
+          setIsStoryStuck(true);
+          setIsGeneratingChoices(false);
+          setChoiceGenerationStartTime(0);
+        }
+      }, 30000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [choiceGenerationStartTime]);
+
   // 当外部story更新时，同步本地state
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory]);
+
+  // 监控AI错误状态
+  useEffect(() => {
+    if (aiError) {
+      console.error('❌ AI错误detected:', aiError);
+      setIsStoryStuck(true);
+    } else {
+      // AI错误清除时，重置卡住状态（除非其他原因导致卡住）
+      if (isStoryStuck && !choiceGenerationStartTime) {
+        setIsStoryStuck(false);
+      }
+    }
+  }, [aiError]);
 
   // 根据故事类型生成动态选择项
   const generateDynamicChoices = (scene: string, characters: any[], storyData: any): Choice[] => {
@@ -396,6 +440,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   // 模拟AI生成选择（可以后续替换为真实AI调用）
   const generateAIChoices = async (scene: string, characters: any[]): Promise<Choice[]> => {
     setIsGeneratingChoices(true);
+    setChoiceGenerationStartTime(Date.now());
+    setIsStoryStuck(false); // 重置卡住状态
     
     // 模拟AI思考时间
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -410,19 +456,39 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           const aiChoices = await storyAI.generateChoices(scene, characters, story);
           if (aiChoices && aiChoices.length > 0) {
+            console.log('✅ AI选择生成成功');
             return aiChoices;
+          } else {
+            console.warn('⚠️ AI选择生成返回空数组');
           }
         } catch (aiError) {
-          console.warn('AI选择生成失败，使用智能回退:', aiError);
+          console.warn('❌ AI选择生成失败，使用智能回退:', aiError);
+          // AI调用失败，但还有回退方案，不算真正卡住
         }
       }
       
       // 回退到基于场景内容的智能生成
       const contextualChoices = generateContextualChoices(scene, characters, story);
-      return contextualChoices;
+      if (contextualChoices && contextualChoices.length > 0) {
+        console.log('✅ 智能回退选择生成成功');
+        return contextualChoices;
+      } else {
+        // 连回退都失败了，故事真的卡住了，但还是提供最基本的选择
+        console.error('❌ 所有选择生成方案都失败了，使用紧急回退选择');
+        setIsStoryStuck(true);
+        
+        // 紧急回退选择
+        return [
+          { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
+          { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
+          { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
+        ];
+      }
     } catch (error) {
-      console.error('生成选择失败:', error);
-      // 错误回退
+      console.error('❌ 生成选择发生严重错误:', error);
+      setIsStoryStuck(true);
+      
+      // 错误回退 - 最后的保险
       return [
         { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
         { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
@@ -430,6 +496,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       ];
     } finally {
       setIsGeneratingChoices(false);
+      setChoiceGenerationStartTime(0);
     }
   };
 
@@ -450,12 +517,34 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           setIsTyping(false);
           // 打字完成后根据需要显示选择项
           setTimeout(async () => {
-            // 检查是否需要显示选择项
-            if (story.needs_choice !== false) {
-              const newChoices = await generateAIChoices(story.current_scene, story.characters);
-              setChoices(newChoices);
-              setShowChoices(true);
-            }
+            // 检查是否需要显示选择项 - 修复逻辑，默认显示选择
+            const shouldShowChoices = story.needs_choice !== false && !story.is_completed;
+            
+            console.log('🎯 检查是否需要显示选择项:', {
+              needs_choice: story.needs_choice,
+              is_completed: story.is_completed,
+              shouldShowChoices,
+              scene_length: story.current_scene?.length,
+              chapter: story.chapter
+            });
+            
+                         if (shouldShowChoices) {
+               console.log('✅ 开始生成选择项...');
+               const newChoices = await generateAIChoices(story.current_scene, story.characters);
+               console.log('🎯 生成的选择项:', newChoices);
+               
+               if (newChoices && newChoices.length > 0) {
+                 setChoices(newChoices);
+                 setShowChoices(true);
+                 console.log('✅ 选择项已设置并显示');
+               } else {
+                 console.warn('⚠️ 选择项生成完全失败');
+                 // 如果连默认选择都没有返回，说明真的卡住了
+                 // generateAIChoices内部已经设置了isStoryStuck状态
+               }
+             } else {
+               console.log('❌ 不需要显示选择项，或故事已完成');
+             }
           }, 800);
           clearInterval(interval);
         }
@@ -631,6 +720,81 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </CardContent>
         </Card>
 
+        {/* 故事目标状态 - 在故事进行中显示 */}
+        {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (
+          <Card className="bg-white shadow-lg border-slate-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
+                🎯 故事目标
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {story.story_goals.map((goal, index) => (
+                  <div key={goal.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`font-medium ${
+                            goal.status === 'completed' ? 'text-green-700' :
+                            goal.status === 'failed' ? 'text-red-700' :
+                            goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
+                          }`}>
+                            {goal.description}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              goal.type === 'main' ? 'border-purple-300 text-purple-600' :
+                              goal.type === 'sub' ? 'border-blue-300 text-blue-600' :
+                              goal.type === 'personal' ? 'border-green-300 text-green-600' :
+                              'border-pink-300 text-pink-600'
+                            }`}
+                          >
+                            {goal.type === 'main' ? '主要目标' :
+                             goal.type === 'sub' ? '次要目标' :
+                             goal.type === 'personal' ? '个人目标' : '关系目标'}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              goal.priority === 'high' ? 'border-red-300 text-red-600' :
+                              goal.priority === 'medium' ? 'border-yellow-300 text-yellow-600' :
+                              'border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            {goal.priority === 'high' ? '高优先级' :
+                             goal.priority === 'medium' ? '中优先级' : '低优先级'}
+                          </Badge>
+                          {goal.completion_chapter && (
+                            <span className="text-xs text-slate-500">
+                              第{goal.completion_chapter}章完成
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge 
+                        className={`ml-3 ${
+                          goal.status === 'completed' ? 'bg-green-600' :
+                          goal.status === 'failed' ? 'bg-red-600' :
+                          goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
+                        } text-white`}
+                      >
+                        {goal.status === 'completed' && '✅ 已完成'}
+                        {goal.status === 'failed' && '❌ 已失败'}
+                        {goal.status === 'in_progress' && '🔄 进行中'}
+                        {goal.status === 'pending' && '⏳ 待开始'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 主要故事内容 */}
         <Card className="bg-white shadow-lg border-slate-200">
           <CardContent className="pt-6">
@@ -727,23 +891,49 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 </p>
               </div>
               
-              {story.main_goal_status && (
+              {/* 故事目标状态 */}
+              {story.story_goals && story.story_goals.length > 0 && (
                 <div className="bg-white bg-opacity-50 rounded-lg p-3 border border-purple-200">
-                  <h4 className="font-semibold text-purple-800 mb-1">任务状态</h4>
-                  <Badge 
-                    className={`
-                      ${story.main_goal_status === 'completed' ? 'bg-green-600' : ''}
-                      ${story.main_goal_status === 'failed' ? 'bg-red-600' : ''}
-                      ${story.main_goal_status === 'in_progress' ? 'bg-yellow-600' : ''}
-                      ${story.main_goal_status === 'pending' ? 'bg-gray-600' : ''}
-                      text-white
-                    `}
-                  >
-                    {story.main_goal_status === 'completed' && '✅ 任务完成'}
-                    {story.main_goal_status === 'failed' && '❌ 任务失败'}
-                    {story.main_goal_status === 'in_progress' && '🔄 进行中'}
-                    {story.main_goal_status === 'pending' && '⏳ 待开始'}
-                  </Badge>
+                  <h4 className="font-semibold text-purple-800 mb-2">故事目标</h4>
+                  <div className="space-y-2">
+                    {story.story_goals.map((goal, index) => (
+                      <div key={goal.id} className="flex items-center justify-between text-sm">
+                        <div className="flex-1">
+                          <span className={`font-medium ${
+                            goal.status === 'completed' ? 'text-green-700' :
+                            goal.status === 'failed' ? 'text-red-700' :
+                            goal.status === 'in_progress' ? 'text-yellow-700' : 'text-gray-700'
+                          }`}>
+                            {goal.description}
+                          </span>
+                          {goal.completion_chapter && (
+                            <span className="text-xs text-purple-600 ml-2">
+                              (第{goal.completion_chapter}章)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1 ml-2">
+                          {goal.type === 'main' && (
+                            <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">
+                              主要
+                            </Badge>
+                          )}
+                          <Badge 
+                            className={`text-xs ${
+                              goal.status === 'completed' ? 'bg-green-600' :
+                              goal.status === 'failed' ? 'bg-red-600' :
+                              goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
+                            } text-white`}
+                          >
+                            {goal.status === 'completed' && '✅'}
+                            {goal.status === 'failed' && '❌'}
+                            {goal.status === 'in_progress' && '🔄'}
+                            {goal.status === 'pending' && '⏳'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -760,6 +950,36 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   获得成就: {story.achievements.length}
                 </Badge>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 故事卡住时的继续按钮 - 只在真正出现问题时显示 */}
+        {!story.is_completed && isStoryStuck && onContinue && (
+          <Card className="bg-red-50 shadow-lg border-red-200 animate-in slide-in-from-bottom-4">
+            <CardHeader>
+              <CardTitle className="text-lg text-red-800 flex items-center gap-2">
+                ⚠️ 故事卡住了
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-red-700 mb-4">
+                AI生成选择时遇到了问题，或者网络连接超时。您可以手动推进故事继续。
+              </p>
+              {aiError && (
+                <p className="text-sm text-red-600 mb-4 bg-red-100 p-2 rounded">
+                  错误详情: {aiError}
+                </p>
+              )}
+              <Button
+                onClick={() => {
+                  setIsStoryStuck(false); // 重置卡住状态
+                  if (onContinue) onContinue();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                手动继续故事
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -844,6 +1064,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         <div className="flex justify-center space-x-4">
           {story.is_completed ? (
             <>
+              {onContinue && (
+                <Button
+                  onClick={onContinue}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  继续冒险
+                </Button>
+              )}
               <Button
                 onClick={onRestart}
                 className="bg-purple-600 hover:bg-purple-700 text-white"

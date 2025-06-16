@@ -577,13 +577,13 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
           const response = await this.callAI(prompt, systemPrompt, true); // 启用历史记录
           const content = this.extractContent(response);
           
-          let parsedContent;
           try {
-            parsedContent = JSON.parse(content);
+            const parsedContent = JSON.parse(content);
             
             // 验证必需字段
             if (!parsedContent.scene) {
-              throw new Error('AI返回的场景描述不完整');
+              console.warn('AI返回的场景描述不完整，使用回退方案');
+              return this.generateFallbackNextChapter(currentStory, selectedChoice);
             }
             
             return {
@@ -591,29 +591,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
               content: parsedContent
             };
           } catch (parseError) {
-            console.warn('AI返回格式有问题:', parseError);
-            console.warn('原始内容:', content);
-            
-            // 尝试修复常见的JSON问题
-            try {
-              // 移除可能的尾随逗号和其他问题
-              let fixedContent = content
-                .replace(/,(\s*[}\]])/g, '$1')  // 移除尾随逗号
-                .replace(/([}\]]),(\s*$)/g, '$1$2');  // 移除末尾逗号
-              
-              parsedContent = JSON.parse(fixedContent);
-              
-              if (parsedContent.scene) {
-                console.log('JSON修复成功');
-                return {
-                  success: true,
-                  content: parsedContent
-                };
-              }
-            } catch (secondParseError) {
-              console.warn('JSON修复也失败了:', secondParseError);
-            }
-            
+            console.warn('AI返回JSON解析失败，使用回退方案:', parseError);
             return this.generateFallbackNextChapter(currentStory, selectedChoice);
           }
         } catch (apiError) {
@@ -689,7 +667,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
         scene: sceneContent,
         mood: newMood,
         tension_level: newTensionLevel,
-        achievements: difficulty >= 4 ? [`勇敢者 - 选择了难度${difficulty}的行动`] : []
+        achievements: (difficulty >= 4 && Math.random() > 0.5) ? [`勇敢者 - 选择了难度${difficulty}的行动`] : []
       }
     };
   }
@@ -912,10 +890,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
       }
     }
     
-    // 清理可能的省略符号和trailing commas
-    content = content.replace(/,\s*[}\]]/g, match => match.replace(',', ''));
-    content = content.replace(/\.{3,}/g, ''); // 移除省略符号
-    content = content.trim();
+    // 尝试修复JSON格式
+    content = this.fixJsonFormat(content);
     
     // 验证JSON格式
     try {
@@ -923,7 +899,73 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
       return content;
     } catch (parseError) {
       console.warn('JSON解析失败，原始内容:', content);
-      throw new Error(`JSON格式无效: ${parseError}`);
+      // 最后的回退方案 - 返回一个简单的有效JSON
+      console.warn('使用回退JSON格式');
+      return '{"scene": "故事继续发展...", "choices": [], "mood": "神秘", "tension_level": 5}';
+    }
+  }
+
+  // 修复JSON格式的辅助方法
+  private fixJsonFormat(content: string): string {
+    try {
+      // 1. 基础清理
+      let fixed = content.trim();
+      
+      // 2. 移除尾随逗号
+      fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+      
+      // 3. 移除省略符号
+      fixed = fixed.replace(/\.{3,}/g, '');
+      
+      // 4. 修复未完成的JSON结构
+      const openBraces = (fixed.match(/{/g) || []).length;
+      const closeBraces = (fixed.match(/}/g) || []).length;
+      const openBrackets = (fixed.match(/\[/g) || []).length;
+      const closeBrackets = (fixed.match(/\]/g) || []).length;
+      
+      // 补充缺失的大括号
+      for (let i = 0; i < openBraces - closeBraces; i++) {
+        fixed += '}';
+      }
+      
+      // 补充缺失的中括号
+      for (let i = 0; i < openBrackets - closeBrackets; i++) {
+        fixed += ']';
+      }
+      
+      // 5. 处理不完整的字符串
+      // 确保最后一个字符串被正确闭合
+      const lastQuoteIndex = fixed.lastIndexOf('"');
+      if (lastQuoteIndex > 0) {
+        const beforeLastQuote = fixed.substring(0, lastQuoteIndex);
+        const quotesCount = (beforeLastQuote.match(/"/g) || []).length;
+        // 如果引号数量是奇数，说明有未闭合的字符串
+        if (quotesCount % 2 === 0) {
+          // 在JSON结构结束前添加闭合引号
+          const afterLastQuote = fixed.substring(lastQuoteIndex + 1);
+          if (!afterLastQuote.includes('"') && (afterLastQuote.includes('}') || afterLastQuote.includes(']'))) {
+            fixed = beforeLastQuote + '""' + afterLastQuote;
+          }
+        }
+      }
+      
+      // 6. 尝试解析修复后的JSON
+      try {
+        JSON.parse(fixed);
+        return fixed;
+      } catch (e) {
+        // 如果仍然失败，尝试提取有效的JSON部分
+        const jsonMatch = fixed.match(/{[^{}]*"scene"[^{}]*}/);
+        if (jsonMatch) {
+          return this.fixJsonFormat(jsonMatch[0]);
+        }
+        
+        // 最后的回退
+        return '{"scene": "故事继续发展...", "choices": [], "mood": "神秘", "tension_level": 5}';
+      }
+    } catch (error) {
+      console.warn('JSON修复失败:', error);
+      return '{"scene": "故事继续发展...", "choices": [], "mood": "神秘", "tension_level": 5}';
     }
   }
 
@@ -961,7 +1003,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
     const { chapter, choices_made, achievements, tension_level, mood, story_progress = 0 } = storyState;
     
     // 1. 章节数量检查（自然长度限制）
-    if (chapter >= 12) {
+    if (chapter >= 15) {
       return {
         shouldEnd: true,
         reason: "故事已经发展到足够的长度，应该寻找合适的结局",
@@ -970,7 +1012,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
     }
     
     // 2. 故事进度检查
-    if (story_progress >= 90) {
+    if (story_progress >= 95) {
       return {
         shouldEnd: true,
         reason: "主要故事线接近完成",
@@ -978,8 +1020,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
       };
     }
     
-    // 3. 成就数量检查（表示重要里程碑）
-    if (achievements.length >= 8) {
+    // 3. 成就数量检查（表示重要里程碑）- 需要更多成就才能结束
+    if (achievements.length >= 15 && chapter >= 8) {
       return {
         shouldEnd: true,
         reason: "角色已经完成了足够多的重要成就",
@@ -987,14 +1029,14 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
       };
     }
     
-    // 4. 选择历史分析（检查是否有明确的结局倾向）
+    // 4. 选择历史分析（检查是否有明确的结局倾向）- 需要更多章节和更明确的结局信号
     const recentChoices = choices_made.slice(-5);
     const hasResolutionPattern = recentChoices.some(choice => 
-      choice.includes('结束') || choice.includes('完成') || choice.includes('告别') || 
-      choice.includes('离开') || choice.includes('回家') || choice.includes('成功')
+      choice.includes('结束') || choice.includes('完成任务') || choice.includes('最终告别') || 
+      choice.includes('永远离开') || choice.includes('回到家乡') || choice.includes('完成使命')
     );
     
-    if (hasResolutionPattern && chapter >= 6) {
+    if (hasResolutionPattern && chapter >= 10) {
       return {
         shouldEnd: true,
         reason: "玩家的选择表明故事应该朝向结局发展",
@@ -1167,6 +1209,71 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
       return this.extractContent(response);
     } catch (error) {
       return '故事总结生成失败';
+    }
+  }
+
+  // 8. 继续故事（当故事卡住时使用）
+  async continueStory(storyState: StoryState): Promise<StoryState> {
+    const systemPrompt = `你是一个专业的故事续写AI。当故事出现停滞时，你需要创造一个自然的转折来推动剧情发展。
+
+要求：
+1. 分析当前故事状态，找出可能的发展方向
+2. 创造一个合理的转折或新事件
+3. 保持与之前剧情的连贯性
+4. 为后续选择做好铺垫
+5. 输出必须是有效的JSON格式
+
+输出格式：
+{
+  "current_scene": "新的故事场景描述，要包含转折和发展",
+  "mood": "当前氛围",
+  "tension_level": 1-10的紧张度,
+  "achievements": ["如果有新成就的话"],
+  "scene_type": "场景类型：action/dialogue/exploration/reflection/climax"
+}`;
+
+    const prompt = `当前故事状态：
+章节：第${storyState.chapter}章
+设定：${storyState.setting}
+角色：${storyState.characters.map(c => `${c.name}(${c.role})`).join(', ')}
+当前场景：${storyState.current_scene}
+氛围：${storyState.mood}
+紧张度：${storyState.tension_level}
+已做选择：${storyState.choices_made.slice(-3).join(', ')}
+已获成就：${storyState.achievements.join(', ')}
+
+故事似乎停滞了，请创造一个新的转折来推动剧情发展。要考虑角色的成长、未解决的冲突，或者引入新的元素来增加趣味性。`;
+
+    try {
+      if (this.modelConfig && this.modelConfig.apiKey) {
+        const response = await this.callAI(prompt, systemPrompt, true);
+        const content = this.extractContent(response);
+        
+        try {
+          const parsed = JSON.parse(this.fixJsonFormat(content));
+          
+          return {
+            ...storyState,
+            current_scene: parsed.current_scene || storyState.current_scene,
+            chapter: storyState.chapter + 1,
+            mood: parsed.mood || storyState.mood,
+            tension_level: parsed.tension_level || storyState.tension_level,
+            achievements: [
+              ...storyState.achievements,
+              ...(parsed.achievements || [])
+            ],
+            scene_type: parsed.scene_type || 'exploration'
+          };
+        } catch (parseError) {
+          console.warn('继续故事JSON解析失败，使用回退方案:', parseError);
+          throw new Error('AI响应格式错误');
+        }
+      } else {
+        throw new Error('模型配置缺失');
+      }
+    } catch (error) {
+      console.error('AI继续故事失败:', error);
+      throw error;
     }
   }
 }

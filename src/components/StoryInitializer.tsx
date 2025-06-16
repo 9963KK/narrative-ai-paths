@@ -14,6 +14,7 @@ import { ModelConfig as ModelConfigType } from './model-config/constants';
 interface BaseStoryConfig {
   genre: string;
   story_idea: string; // 简单模式：用户的故事想法
+  main_goal?: string; // 简单模式：主要目标
 }
 
 // 高级故事配置
@@ -31,6 +32,12 @@ interface AdvancedStoryConfig extends BaseStoryConfig {
   preferred_ending: 'open' | 'success' | 'failure' | 'surprise' | 'romantic' | 'tragic';
   story_length: 'short' | 'medium' | 'long';
   tone: 'light' | 'serious' | 'humorous' | 'dark' | 'romantic';
+  story_goals: Array<{
+    id: string;
+    description: string;
+    type: 'main' | 'sub' | 'personal' | 'relationship';
+    priority: 'high' | 'medium' | 'low';
+  }>;
 }
 
 // 统一的故事配置类型
@@ -46,7 +53,8 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
     genre: '',
-    story_idea: ''
+    story_idea: '',
+    main_goal: ''
   });
 
   // 高级配置状态
@@ -65,7 +73,10 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
     environment_details: '',
     preferred_ending: 'open',
     story_length: 'medium',
-    tone: 'serious'
+    tone: 'serious',
+    story_goals: [
+      { id: '1', description: '', type: 'main', priority: 'high' }
+    ]
   });
 
   const [modelConfig, setModelConfig] = useState<ModelConfigType>({
@@ -151,7 +162,8 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   // 处理高级配置提交
   const handleAdvancedSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (advancedConfig.genre && advancedConfig.story_idea && modelConfig.apiKey) {
+    const hasValidGoal = advancedConfig.story_goals.some(goal => goal.description.trim() !== '');
+    if (advancedConfig.genre && advancedConfig.story_idea && hasValidGoal && modelConfig.apiKey) {
       onInitializeStory(advancedConfig, modelConfig, true);
     }
   };
@@ -345,10 +357,24 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
 
 AI将根据您的描述自动创建角色、背景和情节..."
                   className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                  rows={8}
+                  rows={6}
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   💡 提示：越详细的描述，AI生成的故事越符合您的期望
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="main-goal" className="text-slate-700 font-medium">主要目标 <span className="text-red-500">*</span></Label>
+                <Input
+                  id="main-goal"
+                  value={simpleConfig.main_goal}
+                  onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
+                  placeholder="例如：找回失去的记忆、拯救世界、找到真爱、解决谋杀案..."
+                  className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  🎯 这个目标将决定故事何时结束 - 当目标达成或失败时，故事将自然收尾
                 </p>
               </div>
 
@@ -377,7 +403,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                disabled={!simpleConfig.genre || !simpleConfig.story_idea || !modelConfig.apiKey}
+                disabled={!simpleConfig.genre || !simpleConfig.story_idea || !simpleConfig.main_goal || !modelConfig.apiKey}
               >
                 🎭 开始创作我的故事
               </Button>
@@ -601,6 +627,125 @@ AI将根据您的描述自动创建角色、背景和情节..."
                 </div>
               </div>
 
+              {/* 故事目标设定 */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  故事目标设定
+                </h3>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <p className="text-purple-800 text-sm">
+                    🎯 设定明确的故事目标，AI将根据这些目标的完成情况决定故事何时自然结束
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {advancedConfig.story_goals.map((goal, index) => (
+                    <Card key={goal.id} className="p-4 border border-slate-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-slate-800">目标 {index + 1}</h4>
+                        {advancedConfig.story_goals.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newGoals = advancedConfig.story_goals.filter(g => g.id !== goal.id);
+                              setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
+                            }}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            删除
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <Label className="text-sm text-slate-600">目标描述</Label>
+                          <Input
+                            value={goal.description}
+                            onChange={(e) => {
+                              const newGoals = [...advancedConfig.story_goals];
+                              const goalIndex = newGoals.findIndex(g => g.id === goal.id);
+                              newGoals[goalIndex].description = e.target.value;
+                              setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
+                            }}
+                            placeholder="如：找到失踪的朋友、击败邪恶势力、学会控制魔法..."
+                            className="mt-1 bg-white border-slate-300 text-slate-800"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-sm text-slate-600">类型</Label>
+                            <Select 
+                              value={goal.type} 
+                              onValueChange={(value: 'main' | 'sub' | 'personal' | 'relationship') => {
+                                const newGoals = [...advancedConfig.story_goals];
+                                const goalIndex = newGoals.findIndex(g => g.id === goal.id);
+                                newGoals[goalIndex].type = value;
+                                setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
+                              }}
+                            >
+                              <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200">
+                                <SelectItem value="main" className="text-slate-800">主要</SelectItem>
+                                <SelectItem value="sub" className="text-slate-800">次要</SelectItem>
+                                <SelectItem value="personal" className="text-slate-800">个人</SelectItem>
+                                <SelectItem value="relationship" className="text-slate-800">关系</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-sm text-slate-600">优先级</Label>
+                            <Select 
+                              value={goal.priority} 
+                              onValueChange={(value: 'high' | 'medium' | 'low') => {
+                                const newGoals = [...advancedConfig.story_goals];
+                                const goalIndex = newGoals.findIndex(g => g.id === goal.id);
+                                newGoals[goalIndex].priority = value;
+                                setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
+                              }}
+                            >
+                              <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-800">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-slate-200">
+                                <SelectItem value="high" className="text-slate-800">高</SelectItem>
+                                <SelectItem value="medium" className="text-slate-800">中</SelectItem>
+                                <SelectItem value="low" className="text-slate-800">低</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newGoal = {
+                      id: Date.now().toString(),
+                      description: '',
+                      type: 'sub' as const,
+                      priority: 'medium' as const
+                    };
+                    setAdvancedConfig(prev => ({ 
+                      ...prev, 
+                      story_goals: [...prev.story_goals, newGoal] 
+                    }));
+                  }}
+                  className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  + 添加目标
+                </Button>
+              </div>
+
               {/* 环境设定 */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
@@ -644,7 +789,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
               <Button
                 type="submit"
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                disabled={!advancedConfig.genre || !advancedConfig.story_idea || !modelConfig.apiKey}
+                disabled={!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.story_goals.some(goal => goal.description.trim() !== '') || !modelConfig.apiKey}
               >
                 🎭 创建精心定制的故事
               </Button>
