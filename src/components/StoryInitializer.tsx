@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Settings } from 'lucide-react';
+import ModelConfig from './ModelConfig';
 
 interface StoryConfig {
   genre: string;
@@ -14,8 +16,18 @@ interface StoryConfig {
   special_requirements: string;
 }
 
+interface ModelConfig {
+  provider: string;
+  model: string;
+  apiKey: string;
+  baseUrl?: string;
+  temperature: number;
+  maxTokens: number;
+  customPrompt?: string;
+}
+
 interface StoryInitializerProps {
-  onInitializeStory: (config: StoryConfig) => void;
+  onInitializeStory: (config: StoryConfig, modelConfig: ModelConfig) => void;
 }
 
 const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }) => {
@@ -25,6 +37,16 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
     setting: '',
     special_requirements: ''
   });
+
+  const [modelConfig, setModelConfig] = useState<ModelConfig>({
+    provider: 'openai',
+    model: 'gpt-4',
+    apiKey: '',
+    temperature: 0.8,
+    maxTokens: 2000
+  });
+
+  const [showModelConfig, setShowModelConfig] = useState(false);
 
   const genres = [
     { value: 'sci-fi', label: '科幻小说' },
@@ -37,13 +59,25 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (config.genre && config.protagonist && config.setting) {
-      onInitializeStory(config);
+    if (config.genre && config.protagonist && config.setting && modelConfig.apiKey) {
+      onInitializeStory(config, modelConfig);
     }
   };
 
+  if (showModelConfig) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <ModelConfig
+          config={modelConfig}
+          onConfigChange={setModelConfig}
+          onClose={() => setShowModelConfig(false)}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-slate-800">
@@ -53,6 +87,26 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex justify-end mb-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModelConfig(true)}
+                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
+            </div>
+
+            {!modelConfig.apiKey && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <p className="text-amber-800 text-sm">
+                  ⚠️ 请先配置AI模型才能开始创作故事
+                </p>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="genre" className="text-slate-700 font-medium">故事类型</Label>
               <Select value={config.genre} onValueChange={(value) => setConfig(prev => ({ ...prev, genre: value }))}>
@@ -106,7 +160,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
             <Button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-              disabled={!config.genre || !config.protagonist || !config.setting}
+              disabled={!config.genre || !config.protagonist || !config.setting || !modelConfig.apiKey}
             >
               开始创作我的故事
             </Button>

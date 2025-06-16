@@ -10,6 +10,16 @@ interface StoryConfig {
   special_requirements: string;
 }
 
+interface ModelConfig {
+  provider: string;
+  model: string;
+  apiKey: string;
+  baseUrl?: string;
+  temperature: number;
+  maxTokens: number;
+  customPrompt?: string;
+}
+
 interface StoryState {
   story_id: string;
   current_scene: string;
@@ -22,10 +32,12 @@ interface StoryState {
 
 const StoryManager: React.FC = () => {
   const [currentStory, setCurrentStory] = useState<StoryState | null>(null);
+  const [currentModelConfig, setCurrentModelConfig] = useState<ModelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const initializeStory = async (config: StoryConfig) => {
+  const initializeStory = async (config: StoryConfig, modelConfig: ModelConfig) => {
     setIsLoading(true);
+    setCurrentModelConfig(modelConfig);
     
     // 模拟AI生成初始故事
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -129,11 +141,16 @@ const StoryManager: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-400 mx-auto mb-4"></div>
-          <p className="text-xl text-purple-200">AI正在为您创作专属故事...</p>
-          <p className="text-sm text-purple-300 mt-2">请稍候片刻</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-xl text-slate-700">AI正在为您创作专属故事...</p>
+          <p className="text-sm text-slate-500 mt-2">请稍候片刻</p>
+          {currentModelConfig && (
+            <p className="text-xs text-slate-400 mt-1">
+              使用模型: {currentModelConfig.provider} - {currentModelConfig.model}
+            </p>
+          )}
         </div>
       </div>
     );
