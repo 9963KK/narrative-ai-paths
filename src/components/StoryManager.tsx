@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StoryInitializer from './StoryInitializer';
 import StoryReader from './StoryReader';
 import { ModelConfig } from './model-config/constants';
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
+import { loadModelConfig } from '../services/configStorage';
 
 // 导入新的配置类型
 import { StoryConfig } from './StoryInitializer';
@@ -39,6 +40,15 @@ const StoryManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isProcessingChoice, setIsProcessingChoice] = useState(false);
+
+  // 组件加载时尝试加载保存的模型配置
+  useEffect(() => {
+    const savedConfig = loadModelConfig();
+    if (savedConfig) {
+      setCurrentModelConfig(savedConfig);
+      console.log('📂 已加载保存的模型配置');
+    }
+  }, []);
 
   const initializeStory = async (config: StoryConfig, modelConfig: ModelConfig, isAdvanced: boolean) => {
     setIsLoading(true);

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Loader2, Save, Trash2 } from 'lucide-react';
 import { ModelConfig, defaultBaseUrls, models } from './model-config/constants';
 import ProviderSelector from './model-config/ProviderSelector';
 import ModelSelector from './model-config/ModelSelector';
 import ApiConfiguration from './model-config/ApiConfiguration';
 import AdvancedSettings from './model-config/AdvancedSettings';
+import { saveModelConfig, loadModelConfig, hasSavedConfig, clearSavedConfig, getConfigSaveTime } from '@/services/configStorage';
 
 interface ModelConfigProps {
   config: ModelConfig;
@@ -24,6 +25,21 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
   const [localConfig, setLocalConfig] = useState<ModelConfig>(config);
   const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
   const [isTestingApi, setIsTestingApi] = useState(false);
+  const [hasStoredConfig, setHasStoredConfig] = useState(false);
+  const [configSaveTime, setConfigSaveTime] = useState<Date | null>(null);
+
+  // 组件加载时尝试从本地存储加载配置
+  useEffect(() => {
+    const savedConfig = loadModelConfig();
+    if (savedConfig) {
+      setLocalConfig(savedConfig);
+      setHasStoredConfig(true);
+      setConfigSaveTime(getConfigSaveTime());
+      console.log('📂 已从本地存储加载配置');
+    } else {
+      setHasStoredConfig(hasSavedConfig());
+    }
+  }, []);
 
   const handleProviderChange = (value: string) => {
     const newModel = models[value as keyof typeof models]?.[0]?.value || '';
@@ -42,7 +58,26 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
 
   const handleSave = () => {
     onConfigChange(localConfig);
+    // 自动保存配置到本地存储
+    saveModelConfig(localConfig);
+    setHasStoredConfig(true);
+    setConfigSaveTime(new Date());
     onClose();
+  };
+
+  const handleClearSavedConfig = () => {
+    // 清除本地存储的配置
+    clearSavedConfig();
+    setHasStoredConfig(false);
+    setConfigSaveTime(null);
+    
+    // 清空当前表单中的API密钥（这会导致保存按钮被禁用）
+    setLocalConfig(prev => ({ ...prev, apiKey: '' }));
+    
+    // 清除API测试结果
+    setTestResult(null);
+    
+    console.log('🗑️ 已清除保存的配置和当前API密钥');
   };
 
   const testApiConnection = async () => {
@@ -198,6 +233,32 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
           onApiKeyChange={(value) => setLocalConfig(prev => ({ ...prev, apiKey: value }))}
           onBaseUrlChange={(value) => setLocalConfig(prev => ({ ...prev, baseUrl: value }))}
         />
+
+        {/* 配置存储状态显示 */}
+        {hasStoredConfig && (
+          <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Save className="h-4 w-4 text-blue-600" />
+              <div>
+                <span className="text-sm font-medium text-blue-800">配置已保存</span>
+                {configSaveTime && (
+                  <p className="text-xs text-blue-600">
+                    保存时间: {configSaveTime.toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button
+              onClick={handleClearSavedConfig}
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+              title="清除保存的配置"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {/* API测试区域 */}
         <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">

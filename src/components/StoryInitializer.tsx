@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Settings, Wand2, Wrench, ArrowLeft, Users, Target, MapPin, Sparkles } from 'lucide-react';
 import ModelConfig from './ModelConfig';
 import { ModelConfig as ModelConfigType } from './model-config/constants';
+import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 
 // 基础故事配置
 interface BaseStoryConfig {
@@ -88,6 +89,19 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   });
 
   const [showModelConfig, setShowModelConfig] = useState(false);
+  const [hasValidConfig, setHasValidConfig] = useState(false);
+
+  // 组件加载时检查本地配置
+  useEffect(() => {
+    const savedConfig = loadModelConfig();
+    if (savedConfig && savedConfig.apiKey) {
+      setModelConfig(savedConfig);
+      setHasValidConfig(true);
+      console.log('📂 已从本地存储加载配置');
+    } else {
+      setHasValidConfig(hasSavedConfig());
+    }
+  }, []);
 
   const genres = [
     { value: 'sci-fi', label: '🚀 科幻小说', desc: '探索未来科技与太空' },
@@ -154,8 +168,19 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   // 处理简单配置提交
   const handleSimpleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (simpleConfig.genre && simpleConfig.story_idea && modelConfig.apiKey) {
-      onInitializeStory(simpleConfig, modelConfig, false);
+    // 检查当前配置或本地保存的配置
+    const hasApiKey = modelConfig.apiKey || hasValidConfig;
+    if (simpleConfig.genre && simpleConfig.story_idea && hasApiKey) {
+      // 如果当前没有配置但有保存的配置，先加载它
+      let configToUse = modelConfig;
+      if (!modelConfig.apiKey && hasValidConfig) {
+        const savedConfig = loadModelConfig();
+        if (savedConfig) {
+          configToUse = savedConfig;
+          setModelConfig(savedConfig);
+        }
+      }
+      onInitializeStory(simpleConfig, configToUse, false);
     }
   };
 
@@ -163,8 +188,19 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
   const handleAdvancedSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const hasValidGoal = advancedConfig.story_goals.some(goal => goal.description.trim() !== '');
-    if (advancedConfig.genre && advancedConfig.story_idea && hasValidGoal && modelConfig.apiKey) {
-      onInitializeStory(advancedConfig, modelConfig, true);
+    // 检查当前配置或本地保存的配置
+    const hasApiKey = modelConfig.apiKey || hasValidConfig;
+    if (advancedConfig.genre && advancedConfig.story_idea && hasValidGoal && hasApiKey) {
+      // 如果当前没有配置但有保存的配置，先加载它
+      let configToUse = modelConfig;
+      if (!modelConfig.apiKey && hasValidConfig) {
+        const savedConfig = loadModelConfig();
+        if (savedConfig) {
+          configToUse = savedConfig;
+          setModelConfig(savedConfig);
+        }
+      }
+      onInitializeStory(advancedConfig, configToUse, true);
     }
   };
 
@@ -174,7 +210,10 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <ModelConfig
           config={modelConfig}
-          onConfigChange={setModelConfig}
+          onConfigChange={(config) => {
+            setModelConfig(config);
+            setHasValidConfig(!!config.apiKey);
+          }}
           onClose={() => setShowModelConfig(false)}
         />
       </div>
@@ -205,7 +244,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
               </Button>
             </div>
 
-            {!modelConfig.apiKey && (
+            {!modelConfig.apiKey && !hasValidConfig && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-amber-800 text-sm text-center">
                   ⚠️ 请先配置AI模型才能开始创作故事
@@ -316,7 +355,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSimpleSubmit} className="space-y-6">
-              {!modelConfig.apiKey && (
+              {!modelConfig.apiKey && !hasValidConfig && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-amber-800 text-sm">
                   ⚠️ 请先配置AI模型才能开始创作故事
@@ -449,7 +488,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAdvancedSubmit} className="space-y-8">
-              {!modelConfig.apiKey && (
+              {!modelConfig.apiKey && !hasValidConfig && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-amber-800 text-sm">
                     ⚠️ 请先配置AI模型才能开始创作故事
