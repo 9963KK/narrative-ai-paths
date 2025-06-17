@@ -46,15 +46,17 @@ interface StoryReaderProps {
   onContinue?: () => void; // 继续故事的回调
   modelConfig?: any; // AI模型配置
   aiError?: string | null; // AI错误信息
+  isProcessingChoice?: boolean; // 是否正在处理选择
 }
 
 const StoryReader: React.FC<StoryReaderProps> = ({ 
   initialStory, 
   onMakeChoice, 
-  onRestart,
-  onContinue,
+  onRestart, 
+  onContinue, 
   modelConfig,
-  aiError 
+  aiError,
+  isProcessingChoice = false
 }) => {
   const [story, setStory] = useState<StoryState>(initialStory);
   const [currentText, setCurrentText] = useState('');
@@ -62,7 +64,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [choices, setChoices] = useState<Choice[]>([]);
   const [showChoices, setShowChoices] = useState(false);
   const [isGeneratingChoices, setIsGeneratingChoices] = useState(false);
-  const [isProcessingChoice, setIsProcessingChoice] = useState(false);
   const [selectedChoiceText, setSelectedChoiceText] = useState<string>('');
   const [choiceStartTime, setChoiceStartTime] = useState<number>(0);
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
@@ -579,14 +580,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         
         setTimeout(() => {
           console.log('✅ AI完成 + 最小显示时间达到，重置加载状态');
-          setIsProcessingChoice(false);
           setSelectedChoiceText('');
           setChoiceStartTime(0);
         }, remainingTime);
       } else {
         // AI完成且已经显示足够时间，立即重置
         console.log('✅ AI完成且已达到最小显示时间，立即重置加载状态');
-        setIsProcessingChoice(false);
         setSelectedChoiceText('');
         setChoiceStartTime(0);
       }
@@ -602,7 +601,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     
     // 立即显示选择处理状态
     setSelectedChoiceText(selectedChoice?.text || '');
-    setIsProcessingChoice(true);
     setShowChoices(false);
     setChoices([]);
     
@@ -653,6 +651,42 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     const Icon = icons[Math.min(level - 1, 4)] || Dice3;
     const colors = ['text-green-600', 'text-yellow-600', 'text-orange-600', 'text-red-600', 'text-purple-600'];
     return <Icon className={`w-4 h-4 ${colors[Math.min(level - 1, 4)]}`} />;
+  };
+
+  // 获取故事阶段描述
+  const getStoryStageDescription = (chapter: number) => {
+    if (chapter <= 2) return '故事开篇阶段';
+    if (chapter <= 5) return '故事发展阶段';
+    if (chapter <= 8) return '故事深入阶段';
+    if (chapter <= 12) return '故事高潮阶段';
+    return '故事结局阶段';
+  };
+
+  // 获取进度标签
+  const getProgressLabel = (chapter: number) => {
+    if (chapter <= 3) return '开始';
+    if (chapter <= 8) return '发展';
+    if (chapter <= 12) return '高潮';
+    return '尾声';
+  };
+
+  // 获取结局提示
+  const getEndingHint = (chapter: number, achievements: number, progress: number) => {
+    if (chapter >= 10) {
+      return '故事已经充分发展，可能很快就会迎来结局';
+    } else if (chapter >= 8) {
+      if (achievements >= 6) {
+        return '成就丰富，故事正朝着成功结局发展';
+      } else if (achievements >= 3) {
+        return '取得一些进展，故事可能会有不错的结局';
+      } else {
+        return '还需要更多努力来达成理想的结局';
+      }
+    } else if (chapter >= 6) {
+      return '故事进入中期，重要的转折点可能即将到来';
+    } else {
+      return '故事还在初期阶段，有很多可能性等待探索';
+    }
   };
 
   return (
@@ -790,6 +824,55 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 故事进度和阶段提示 */}
+        {!story.is_completed && (
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm border-blue-200 mb-6">
+            <CardContent className="pt-4">
+              <div className="space-y-3">
+                {/* 章节和进度信息 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
+                      第 {story.chapter} 章
+                    </Badge>
+                    <span className="text-sm text-slate-600">
+                      {getStoryStageDescription(story.chapter)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {story.story_progress && `完成度: ${Math.round(story.story_progress)}%`}
+                  </div>
+                </div>
+                
+                {/* 故事阶段进度条 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600">
+                    <span>故事发展阶段</span>
+                    <span>{getProgressLabel(story.chapter)}</span>
+                  </div>
+                  <Progress 
+                    value={Math.min((story.chapter / 15) * 100, 100)} 
+                    className="h-2"
+                  />
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>开始</span>
+                    <span>发展</span>
+                    <span>高潮</span>
+                    <span>结局</span>
+                  </div>
+                </div>
+                
+                {/* 预计结局提示 */}
+                {story.chapter >= 5 && (
+                  <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-3 py-2 border border-slate-200">
+                    💡 {getEndingHint(story.chapter, story.achievements?.length || 0, story.story_progress || 0)}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -949,6 +1032,34 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 <Badge variant="outline" className="border-purple-300 text-purple-600">
                   获得成就: {story.achievements.length}
                 </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 用户主动结束故事选项 */}
+        {!story.is_completed && story.chapter >= 6 && !isProcessingChoice && (
+          <Card className="bg-amber-50 shadow-sm border-amber-200 mb-4">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-amber-700">
+                    🎬 觉得故事可以在这里结束了？
+                  </span>
+                </div>
+                <Button
+                  onClick={() => {
+                    if (onMakeChoice) {
+                      // 触发一个特殊的结局选择
+                      onMakeChoice(-1, '主动选择结束故事，寻找合适的结局');
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                >
+                  寻找结局
+                </Button>
               </div>
             </CardContent>
           </Card>

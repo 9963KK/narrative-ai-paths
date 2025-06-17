@@ -1002,78 +1002,124 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
   shouldStoryEnd(storyState: StoryState): { shouldEnd: boolean; reason: string; suggestedType: 'success' | 'failure' | 'neutral' | 'cliffhanger' } {
     const { chapter, choices_made, achievements, tension_level, mood, story_progress = 0 } = storyState;
     
-    // 1. 章节数量检查（自然长度限制）
-    if (chapter >= 15) {
+    // 1. 强制结局限制（防止故事过长）
+    if (chapter >= 20) {
       return {
         shouldEnd: true,
-        reason: "故事已经发展到足够的长度，应该寻找合适的结局",
-        suggestedType: 'success'
-      };
-    }
-    
-    // 2. 故事进度检查
-    if (story_progress >= 95) {
-      return {
-        shouldEnd: true,
-        reason: "主要故事线接近完成",
-        suggestedType: 'success'
-      };
-    }
-    
-    // 3. 成就数量检查（表示重要里程碑）- 需要更多成就才能结束
-    if (achievements.length >= 15 && chapter >= 8) {
-      return {
-        shouldEnd: true,
-        reason: "角色已经完成了足够多的重要成就",
-        suggestedType: 'success'
-      };
-    }
-    
-    // 4. 选择历史分析（检查是否有明确的结局倾向）- 需要更多章节和更明确的结局信号
-    const recentChoices = choices_made.slice(-5);
-    const hasResolutionPattern = recentChoices.some(choice => 
-      choice.includes('结束') || choice.includes('完成任务') || choice.includes('最终告别') || 
-      choice.includes('永远离开') || choice.includes('回到家乡') || choice.includes('完成使命')
-    );
-    
-    if (hasResolutionPattern && chapter >= 10) {
-      return {
-        shouldEnd: true,
-        reason: "玩家的选择表明故事应该朝向结局发展",
-        suggestedType: 'success'
-      };
-    }
-    
-    // 5. 失败结局检查
-    const hasFailurePattern = recentChoices.some(choice =>
-      choice.includes('放弃') || choice.includes('逃跑') || choice.includes('失败') ||
-      choice.includes('死亡') || choice.includes('绝望')
-    );
-    
-    if (hasFailurePattern && tension_level >= 8) {
-      return {
-        shouldEnd: true,
-        reason: "故事发展暗示了悲剧性结局",
-        suggestedType: 'failure'
-      };
-    }
-    
-    // 6. 紧张度分析
-    if (tension_level <= 2 && chapter >= 8 && mood === '平静') {
-      return {
-        shouldEnd: true,
-        reason: "故事达到了和谐的解决状态",
+        reason: "故事已经发展过长，需要寻找结局",
         suggestedType: 'neutral'
       };
     }
     
-    // 7. 建议悬崖结局（为续集留空间）
-    if (chapter >= 10 && tension_level >= 7) {
-      return {
-        shouldEnd: Math.random() > 0.7, // 30% 概率建议悬崖结局
-        reason: "在高潮时刻结束，为后续故事留下悬念",
-        suggestedType: 'cliffhanger'
-      };
+    // 2. 适中长度检查（8-12章是比较好的长度）
+    if (chapter >= 8) {
+      // 2.1 故事进度检查 - 降低触发条件
+      if (story_progress >= 80) {
+        return {
+          shouldEnd: true,
+          reason: "主要故事线接近完成",
+          suggestedType: 'success'
+        };
+      }
+      
+      // 2.2 成就数量检查 - 降低要求
+      if (achievements.length >= 8) {
+        return {
+          shouldEnd: true,
+          reason: "已经完成了足够多的重要成就",
+          suggestedType: 'success'
+        };
+      }
+      
+      // 2.3 检查最近的选择是否暗示结局
+      const recentChoices = choices_made.slice(-3);
+      const hasResolutionPattern = recentChoices.some(choice => 
+        choice.includes('结束') || choice.includes('完成') || choice.includes('告别') || 
+        choice.includes('离开') || choice.includes('回家') || choice.includes('使命') ||
+        choice.includes('胜利') || choice.includes('成功') || choice.includes('达成')
+      );
+      
+      if (hasResolutionPattern && chapter >= 6) {
+        return {
+          shouldEnd: true,
+          reason: "玩家的选择表明希望故事走向结局",
+          suggestedType: 'success'
+        };
+      }
+    }
+    
+    // 3. 中等长度的触发条件（6-8章）
+    if (chapter >= 6) {
+      // 3.1 失败结局检查 - 更早触发
+      const recentChoices = choices_made.slice(-3);
+      const hasFailurePattern = recentChoices.some(choice =>
+        choice.includes('放弃') || choice.includes('逃跑') || choice.includes('失败') ||
+        choice.includes('死亡') || choice.includes('绝望') || choice.includes('投降')
+      );
+      
+      if (hasFailurePattern && tension_level >= 6) {
+        return {
+          shouldEnd: true,
+          reason: "故事发展暗示了悲剧性结局",
+          suggestedType: 'failure'
+        };
+      }
+      
+      // 3.2 和谐结局检查
+      if (tension_level <= 3 && mood === '平静' && achievements.length >= 4) {
+        return {
+          shouldEnd: true,
+          reason: "故事达到了和谐的解决状态",
+          suggestedType: 'neutral'
+        };
+      }
+      
+      // 3.3 高潮悬崖结局
+      if (tension_level >= 8 && achievements.length >= 5) {
+        return {
+          shouldEnd: Math.random() > 0.6, // 40% 概率触发
+          reason: "在激烈的高潮时刻结束，留下悬念",
+          suggestedType: 'cliffhanger'
+        };
+      }
+    }
+    
+    // 4. 早期结局触发（故事紧凑化）
+    if (chapter >= 5) {
+      // 4.1 快速成功结局
+      if (achievements.length >= 6 && story_progress >= 70) {
+        return {
+          shouldEnd: true,
+          reason: "短时间内取得显著成就，可以创造一个紧凑的成功结局",
+          suggestedType: 'success'
+        };
+      }
+      
+      // 4.2 关键选择触发结局
+      const finalChoiceKeywords = ['最终', '决定性', '关键', '终极', '最后', '决战'];
+      const hasKeyChoice = choices_made.slice(-2).some(choice =>
+        finalChoiceKeywords.some(keyword => choice.includes(keyword))
+      );
+      
+      if (hasKeyChoice && achievements.length >= 3) {
+        return {
+          shouldEnd: true,
+          reason: "做出了关键性选择，故事应该朝向结局发展",
+          suggestedType: 'success'
+        };
+      }
+    }
+    
+    // 5. 自然发展检查（避免故事过短）
+    if (chapter >= 12) {
+      // 12章后开始更积极地寻找结局
+      if (achievements.length >= 4 || story_progress >= 60) {
+        return {
+          shouldEnd: Math.random() > 0.5, // 50% 概率触发
+          reason: "故事已有足够的发展，可以寻找合适的结局时机",
+          suggestedType: story_progress >= 70 ? 'success' : 'neutral'
+        };
+      }
     }
     
     return {

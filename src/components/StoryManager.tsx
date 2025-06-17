@@ -38,6 +38,7 @@ const StoryManager: React.FC = () => {
   const [currentModelConfig, setCurrentModelConfig] = useState<ModelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isProcessingChoice, setIsProcessingChoice] = useState(false);
 
   const initializeStory = async (config: StoryConfig, modelConfig: ModelConfig, isAdvanced: boolean) => {
     setIsLoading(true);
@@ -166,37 +167,70 @@ const StoryManager: React.FC = () => {
   };
 
   const handleMakeChoice = async (choiceId: number, choiceText: string) => {
-    if (!currentStory || !currentModelConfig) return;
-    
-    console.log(`用户选择了选项 ${choiceId}: ${choiceText}`);
-    
-    // 添加一个最小延迟，确保用户能看到加载反馈
+    if (!currentStory) return;
+
+    // 记录选择处理开始时间
     const startTime = Date.now();
+
+    // 开始处理状态
+    setIsProcessingChoice(true);
     
+    console.log(`👆 玩家选择: [${choiceId}] ${choiceText}`);
+
     try {
-      // 配置AI服务
-      storyAI.setModelConfig(currentModelConfig);
-      
-      // 构造选择对象
-      const selectedChoice = {
-        id: choiceId,
-        text: choiceText,
-        description: '',
-        difficulty: 3
-      };
-      
-      // 调用AI生成下一章节
-      const response = await storyAI.generateNextChapter(
-        {
+      // 检查是否是主动结束故事的选择
+      if (choiceId === -1 && choiceText.includes('主动选择结束故事')) {
+        console.log('🎬 用户主动选择结束故事');
+        
+        // 更新故事目标
+        const updatedGoals = currentStory.story_goals ? updateStoryGoals(
+          currentStory.story_goals, 
+          choiceText, 
+          currentStory.chapter
+        ) : [];
+        
+        // 直接设置故事完成状态
+        const finalStory = {
           ...currentStory,
-          mood: currentStory.mood || '神秘',
-          tension_level: currentStory.tension_level || 5
-        },
-        selectedChoice,
-        currentStory.choices_made
-      );
-      
-              if (response.success && response.content) {
+          choices_made: [...(currentStory.choices_made || []), choiceText],
+          story_goals: updatedGoals,
+          is_completed: true,
+          completion_type: 'success' as const, // 主动结束通常是满意的结局
+          needs_choice: false,
+          current_scene: currentStory.current_scene + `\n\n---\n\n🎭 **故事完结**\n**结束原因**: 玩家主动选择在合适的时机结束故事\n\n感谢您的参与，希望您享受这段故事之旅！`,
+          scene_type: 'climax' as const
+        };
+        
+        setCurrentStory(finalStory);
+        setIsProcessingChoice(false);
+        return;
+      }
+
+      // 正常的选择处理逻辑
+      if (currentModelConfig && currentModelConfig.apiKey) {
+        // 配置AI服务
+        storyAI.setModelConfig(currentModelConfig);
+        
+        // 构造选择对象
+        const selectedChoice = {
+          id: choiceId,
+          text: choiceText,
+          description: '',
+          difficulty: 3
+        };
+        
+        // 调用AI生成下一章节
+        const response = await storyAI.generateNextChapter(
+          {
+            ...currentStory,
+            mood: currentStory.mood || '神秘',
+            tension_level: currentStory.tension_level || 5
+          },
+          selectedChoice,
+          currentStory.choices_made
+        );
+        
+        if (response.success && response.content) {
           // 确保最小显示时间（用户体验）- 与StoryReader的加载动画时间匹配
           const elapsedTime = Date.now() - startTime;
           const minDisplayTime = 1800; // 至少显示1.8秒加载，留出余量
@@ -269,10 +303,13 @@ const StoryManager: React.FC = () => {
           // AI失败时的简单处理
           await generateSimpleNextScene(choiceText, startTime);
         }
-          } catch (error) {
-        console.error('生成下一章节失败:', error);
-        await generateSimpleNextScene(choiceText, startTime);
       }
+    } catch (error) {
+      console.error('生成下一章节失败:', error);
+      await generateSimpleNextScene(choiceText, startTime);
+    } finally {
+      setIsProcessingChoice(false);
+    }
   };
 
   // 辅助函数：设置正常故事流程
@@ -346,18 +383,20 @@ const StoryManager: React.FC = () => {
   // 基于目标的故事结束检查
   const checkStoryEndingByGoals = (storyGoals: StoryState['story_goals'], chapter: number): { shouldEnd: boolean; reason: string; type: 'success' | 'failure' | 'neutral' } => {
     if (!storyGoals || storyGoals.length === 0) {
-      // 没有目标的情况下，使用章节限制
-      if (chapter >= 15) {
-        return { shouldEnd: true, reason: '故事已进行足够长度', type: 'neutral' };
+      // 没有目标的情况下，使用更合理的章节限制
+      if (chapter >= 12) {
+        return { shouldEnd: true, reason: '故事已进行足够长度，可以寻找结局', type: 'neutral' };
       }
       return { shouldEnd: false, reason: '', type: 'neutral' };
     }
     
     const mainGoals = storyGoals.filter(goal => goal.type === 'main');
+    const subGoals = storyGoals.filter(goal => goal.type === 'sub');
     const completedMainGoals = mainGoals.filter(goal => goal.status === 'completed');
     const failedMainGoals = mainGoals.filter(goal => goal.status === 'failed');
+    const completedSubGoals = subGoals.filter(goal => goal.status === 'completed');
     
-    // 主要目标都完成了
+    // 主要目标都完成了 - 完美结局
     if (mainGoals.length > 0 && completedMainGoals.length === mainGoals.length) {
       return { 
         shouldEnd: true, 
@@ -366,7 +405,7 @@ const StoryManager: React.FC = () => {
       };
     }
     
-    // 主要目标都失败了
+    // 主要目标都失败了 - 悲剧结局
     if (mainGoals.length > 0 && failedMainGoals.length === mainGoals.length) {
       return { 
         shouldEnd: true, 
@@ -375,28 +414,74 @@ const StoryManager: React.FC = () => {
       };
     }
     
-    // 检查次要目标
-    const subGoals = storyGoals.filter(goal => goal.type === 'sub');
-    const completedSubGoals = subGoals.filter(goal => goal.status === 'completed');
-    const highPriorityGoals = storyGoals.filter(goal => goal.priority === 'high');
-    const completedHighPriorityGoals = highPriorityGoals.filter(goal => goal.status === 'completed');
-    
-    // 大部分高优先级目标完成，且章节数足够
-    if (highPriorityGoals.length > 0 && 
-        completedHighPriorityGoals.length >= Math.ceil(highPriorityGoals.length * 0.8) && 
-        chapter >= 8) {
-      return { 
-        shouldEnd: true, 
-        reason: `大部分重要目标已完成，故事可以收尾`, 
-        type: 'success' 
-      };
+    // 早期成功检查（6章后）
+    if (chapter >= 6) {
+      // 大部分主要目标完成
+      if (mainGoals.length > 0 && completedMainGoals.length >= Math.ceil(mainGoals.length * 0.7)) {
+        return { 
+          shouldEnd: true, 
+          reason: `大部分主要目标已完成，可以创造成功结局`, 
+          type: 'success' 
+        };
+      }
+      
+      // 至少一个主要目标完成 + 多个次要目标
+      if (completedMainGoals.length >= 1 && completedSubGoals.length >= 3) {
+        return { 
+          shouldEnd: true, 
+          reason: `核心目标已达成，次要任务也颇有建树`, 
+          type: 'success' 
+        };
+      }
     }
     
-    // 章节数过长，强制结束
-    if (chapter >= 20) {
+    // 中期检查（8章后）
+    if (chapter >= 8) {
+      // 高优先级目标检查
+      const highPriorityGoals = storyGoals.filter(goal => goal.priority === 'high');
+      const completedHighPriorityGoals = highPriorityGoals.filter(goal => goal.status === 'completed');
+      
+      if (highPriorityGoals.length > 0 && 
+          completedHighPriorityGoals.length >= Math.ceil(highPriorityGoals.length * 0.6)) {
+        return { 
+          shouldEnd: true, 
+          reason: `重要目标基本完成，故事可以收尾`, 
+          type: 'success' 
+        };
+      }
+      
+      // 平衡结局检查
+      const totalGoals = storyGoals.length;
+      const completedGoals = storyGoals.filter(goal => goal.status === 'completed').length;
+      const failedGoals = storyGoals.filter(goal => goal.status === 'failed').length;
+      
+      if (completedGoals >= Math.ceil(totalGoals * 0.5) && failedGoals <= Math.ceil(totalGoals * 0.3)) {
+        return { 
+          shouldEnd: true, 
+          reason: `取得了不错的成果，是时候结束这段冒险了`, 
+          type: 'success' 
+        };
+      }
+    }
+    
+    // 延长的故事检查（12章后）
+    if (chapter >= 12) {
+      // 任何进展都可以结束
+      const anyProgress = storyGoals.some(goal => goal.status === 'completed' || goal.status === 'in_progress');
+      if (anyProgress) {
+        return { 
+          shouldEnd: true, 
+          reason: `故事已经充分发展，可以寻找自然的结局`, 
+          type: 'neutral' 
+        };
+      }
+    }
+    
+    // 强制结束检查（15章后）
+    if (chapter >= 15) {
       return { 
         shouldEnd: true, 
-        reason: '故事已进行过长，需要寻找结局', 
+        reason: '故事进行过长，需要寻找结局', 
         type: 'neutral' 
       };
     }
@@ -512,6 +597,8 @@ const StoryManager: React.FC = () => {
         scene_type: 'exploration'
       };
     });
+    
+    setIsProcessingChoice(false);
   };
 
   const handleRestart = () => {
@@ -637,6 +724,7 @@ const StoryManager: React.FC = () => {
       onContinue={handleContinueStory}
       modelConfig={currentModelConfig}
       aiError={aiError}
+      isProcessingChoice={isProcessingChoice}
     />
   );
 };
