@@ -183,16 +183,16 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
 
   // 选择配置模式界面
   if (configMode === 'select') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-4xl bg-white shadow-xl border-slate-200">
           <CardHeader className="text-center pb-8">
             <CardTitle className="text-4xl font-bold text-slate-800 mb-4">
               🎭 AI故事创作平台
-            </CardTitle>
+          </CardTitle>
             <p className="text-slate-600 text-lg">选择您的创作方式，开始一段独特的故事之旅</p>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="flex justify-end mb-6">
               <Button
                 type="button"
@@ -319,31 +319,31 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
               {!modelConfig.apiKey && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-amber-800 text-sm">
-                    ⚠️ 请先配置AI模型才能开始创作故事
-                  </p>
-                </div>
-              )}
+                  ⚠️ 请先配置AI模型才能开始创作故事
+                </p>
+              </div>
+            )}
 
-              <div>
-                <Label htmlFor="genre" className="text-slate-700 font-medium">故事类型</Label>
+            <div>
+              <Label htmlFor="genre" className="text-slate-700 font-medium">故事类型</Label>
                 <Select value={simpleConfig.genre} onValueChange={(value) => setSimpleConfig(prev => ({ ...prev, genre: value }))}>
-                  <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
+                <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
                     <SelectValue placeholder="选择您喜欢的故事类型" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-200">
-                    {genres.map((genre) => (
-                      <SelectItem key={genre.value} value={genre.value} className="text-slate-800 hover:bg-blue-50">
+                </SelectTrigger>
+                <SelectContent className="bg-white border-slate-200">
+                  {genres.map((genre) => (
+                    <SelectItem key={genre.value} value={genre.value} className="text-slate-800 hover:bg-blue-50">
                         <div>
                           <div className="font-medium">{genre.label}</div>
                           <div className="text-xs text-slate-500">{genre.desc}</div>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div>
+            <div>
                 <Label htmlFor="story-idea" className="text-slate-700 font-medium">故事想法</Label>
                 <Textarea
                   id="story-idea"
@@ -366,13 +366,13 @@ AI将根据您的描述自动创建角色、背景和情节..."
 
               <div>
                 <Label htmlFor="main-goal" className="text-slate-700 font-medium">主要目标 <span className="text-red-500">*</span></Label>
-                <Input
+              <Input
                   id="main-goal"
                   value={simpleConfig.main_goal}
                   onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
                   placeholder="例如：找回失去的记忆、拯救世界、找到真爱、解决谋杀案..."
-                  className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
-                />
+                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
+              />
                 <p className="text-xs text-slate-500 mt-1">
                   🎯 这个目标将决定故事何时结束 - 当目标达成或失败时，故事将自然收尾
                 </p>
@@ -560,8 +560,8 @@ AI将根据您的描述自动创建角色、背景和情节..."
                   <Users className="h-5 w-5 text-purple-600" />
                   角色设定
                 </h3>
-                
-                <div>
+
+            <div>
                   <Label className="text-slate-700 font-medium">角色数量</Label>
                   <Select value={advancedConfig.character_count.toString()} onValueChange={(value) => handleCharacterCountChange(parseInt(value))}>
                     <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800 w-32">
@@ -663,7 +663,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
                       <div className="grid md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
                           <Label className="text-sm text-slate-600">目标描述</Label>
-                          <Input
+              <Input
                             value={goal.description}
                             onChange={(e) => {
                               const newGoals = [...advancedConfig.story_goals];
@@ -766,13 +766,13 @@ AI将根据您的描述自动创建角色、背景和情节..."
 • 特殊环境因素（魔法世界、末日废土、太空站等）"
                     className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
                     rows={5}
-                  />
-                </div>
+              />
+            </div>
 
-                <div>
-                  <Label htmlFor="requirements" className="text-slate-700 font-medium">特殊要求（可选）</Label>
-                  <Textarea
-                    id="requirements"
+            <div>
+              <Label htmlFor="requirements" className="text-slate-700 font-medium">特殊要求（可选）</Label>
+              <Textarea
+                id="requirements"
                     value={advancedConfig.special_requirements}
                     onChange={(e) => setAdvancedConfig(prev => ({ ...prev, special_requirements: e.target.value }))}
                     placeholder="其他特殊要求，如：
@@ -780,24 +780,24 @@ AI将根据您的描述自动创建角色、背景和情节..."
 • 想要避免的内容
 • 特殊的叙述风格
 • 文化背景考虑"
-                    className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                    rows={3}
-                  />
+                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
+                rows={3}
+              />
                 </div>
-              </div>
+            </div>
 
-              <Button
-                type="submit"
+            <Button
+              type="submit"
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
                 disabled={!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.story_goals.some(goal => goal.description.trim() !== '') || !modelConfig.apiKey}
-              >
+            >
                 🎭 创建精心定制的故事
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
   }
 
   return null;

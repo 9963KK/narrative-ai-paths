@@ -536,7 +536,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                
                if (newChoices && newChoices.length > 0) {
                  setChoices(newChoices);
-                 setShowChoices(true);
+            setShowChoices(true);
                  console.log('✅ 选择项已设置并显示');
                } else {
                  console.warn('⚠️ 选择项生成完全失败');
@@ -687,6 +687,187 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     } else {
       return '故事还在初期阶段，有很多可能性等待探索';
     }
+  };
+
+  // 智能判断是否应该建议结束故事
+  const shouldSuggestEnding = (story: StoryState): { suggest: boolean; reason: string; confidence: number } => {
+    const { 
+      chapter, 
+      achievements, 
+      story_progress = 0, 
+      choices_made = [], 
+      tension_level = 5, 
+      current_scene,
+      story_goals = [],
+      mood = '神秘'
+    } = story;
+
+    let reasons: string[] = [];
+    let confidenceScore = 0;
+
+    // 1. 章节长度考虑（基础条件）
+    if (chapter < 5) {
+      return { suggest: false, reason: '故事还在发展初期', confidence: 0 };
+    }
+
+    // 2. 故事完成度分析
+    if (story_progress >= 70) {
+      reasons.push('故事进度已相当完整');
+      confidenceScore += 30;
+    }
+
+    // 3. 成就密度分析
+    const achievementDensity = achievements.length / chapter;
+    if (achievementDensity >= 0.7 && achievements.length >= 4) {
+      reasons.push('获得了丰富的成就');
+      confidenceScore += 25;
+    }
+
+    // 4. 故事节奏分析 - 检查是否刚经历高潮
+    const recentScene = current_scene.toLowerCase();
+    const hasRecentClimax = recentScene.includes('成功') || 
+                           recentScene.includes('完成') || 
+                           recentScene.includes('解决') ||
+                           recentScene.includes('胜利') ||
+                           recentScene.includes('实现');
+    
+    if (hasRecentClimax && tension_level <= 6) {
+      reasons.push('刚刚经历了重要情节高潮');
+      confidenceScore += 20;
+    }
+
+    // 5. 目标完成度分析
+    if (story_goals.length > 0) {
+      const mainGoals = story_goals.filter(g => g.type === 'main');
+      const completedMainGoals = mainGoals.filter(g => g.status === 'completed');
+      const failedMainGoals = mainGoals.filter(g => g.status === 'failed');
+      
+      if (completedMainGoals.length > 0 && completedMainGoals.length >= mainGoals.length * 0.6) {
+        reasons.push('主要目标基本完成');
+        confidenceScore += 25;
+      }
+      
+      // 如果有目标失败，但故事仍在继续，可能是好的结束点
+      if (failedMainGoals.length > 0 && chapter >= 7) {
+        reasons.push('经历挫折后到达转折点');
+        confidenceScore += 15;
+      }
+    }
+
+    // 6. 用户参与度和选择质量分析
+    const recentChoices = choices_made.slice(-3);
+    const hasThoughtfulChoices = recentChoices.some(choice => 
+      choice.length > 10 && (
+        choice.includes('深入') || 
+        choice.includes('仔细') || 
+        choice.includes('认真') ||
+        choice.includes('考虑')
+      )
+    );
+    
+    if (hasThoughtfulChoices) {
+      reasons.push('做出了深思熟虑的重要选择');
+      confidenceScore += 15;
+    }
+
+    // 7. 故事结构完整性 - 检查角色发展
+    const hasCharacterDevelopment = achievements.some(ach => 
+      ach.includes('成长') || 
+      ach.includes('理解') || 
+      ach.includes('友谊') ||
+      ach.includes('领悟')
+    );
+    
+    if (hasCharacterDevelopment) {
+      reasons.push('角色已有明显成长');
+      confidenceScore += 15;
+    }
+
+    // 8. 氛围适宜度 - 平和的氛围适合结束
+    if ((mood === '平静' || mood === '满足' || mood === '希望') && tension_level <= 5) {
+      reasons.push('当前氛围适合作为结局');
+      confidenceScore += 20;
+    }
+
+    // 9. 避免在紧张时刻建议结束
+    if (tension_level >= 8 || mood === '紧张' || mood === '危险') {
+      confidenceScore = Math.max(0, confidenceScore - 30);
+      if (confidenceScore < 50) {
+        return { suggest: false, reason: '当前正处在紧张时刻，不适合结束', confidence: confidenceScore };
+      }
+    }
+
+    // 10. 章节过长的强制建议
+    if (chapter >= 12) {
+      reasons.push('故事已经相当长，可以考虑结束');
+      confidenceScore += Math.min(30, (chapter - 12) * 5);
+    }
+
+    // 综合判断
+    const shouldSuggest = confidenceScore >= 60 && reasons.length >= 2;
+    const mainReason = reasons.length > 0 ? reasons.join('，') : '故事发展到了合适的节点';
+
+    return {
+      suggest: shouldSuggest,
+      reason: mainReason,
+      confidence: confidenceScore
+    };
+  };
+
+  // 获取结局建议的详细信息
+  const getEndingSuggestion = (story: StoryState) => {
+    const suggestion = shouldSuggestEnding(story);
+    
+    if (!suggestion.suggest) return null;
+    
+    // 根据故事状态推荐结局类型
+    let recommendedTypes: { type: 'natural' | 'satisfying' | 'open' | 'dramatic', label: string, description: string }[] = [];
+    
+    if (story.story_progress >= 80 && story.achievements.length >= 6) {
+      recommendedTypes.push({
+        type: 'satisfying',
+        label: '🎉 圆满结局',
+        description: '解决主要冲突，给角色完美归宿'
+      });
+    }
+    
+    if (story.tension_level <= 5 && (story.mood === '平静' || story.mood === '希望')) {
+      recommendedTypes.push({
+        type: 'natural',
+        label: '🌅 自然结局',
+        description: '顺应故事发展，自然而然地结束'
+      });
+    }
+    
+    if (story.story_progress < 80 || story.story_goals?.some(g => g.status === 'pending')) {
+      recommendedTypes.push({
+        type: 'open',
+        label: '🌟 开放结局',
+        description: '留有想象空间，暗示未来可能性'
+      });
+    }
+    
+    if (story.tension_level >= 6) {
+      recommendedTypes.push({
+        type: 'dramatic',
+        label: '⚡ 戏剧结局',
+        description: '情感冲击强烈，留下深刻印象'
+      });
+    }
+    
+    // 如果没有特别推荐，提供默认选项
+    if (recommendedTypes.length === 0) {
+      recommendedTypes.push({
+        type: 'natural',
+        label: '🌅 自然结局',
+        description: '顺应故事发展，自然而然地结束'
+      });
+    }
+    
+    return {
+      ...suggestion,
+      recommendedTypes
+    };
   };
 
   return (
@@ -1037,33 +1218,79 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </Card>
         )}
 
-        {/* 用户主动结束故事选项 */}
-        {!story.is_completed && story.chapter >= 6 && !isProcessingChoice && (
-          <Card className="bg-amber-50 shadow-sm border-amber-200 mb-4">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-amber-700">
-                    🎬 觉得故事可以在这里结束了？
-                  </span>
+        {/* 智能结局建议 */}
+        {!story.is_completed && !isProcessingChoice && (() => {
+          const endingSuggestion = getEndingSuggestion(story);
+          if (!endingSuggestion) return null;
+          
+          return (
+            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm border-amber-200 mb-4">
+              <CardContent className="pt-4">
+                <div className="space-y-4">
+                  {/* 建议标题和原因 */}
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <span className="text-amber-700 text-lg">🎭</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-amber-800 mb-1">
+                        故事结局建议 
+                        <span className="text-xs text-amber-600 ml-2">
+                          (置信度: {endingSuggestion.confidence}%)
+                        </span>
+                      </h4>
+                      <p className="text-sm text-amber-700 mb-2">
+                        {endingSuggestion.reason}
+                      </p>
+                      <p className="text-xs text-amber-600">
+                        您可以选择以下任一种结局类型，AI将生成符合当前故事发展的完整结局
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* 结局类型选择 */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {endingSuggestion.recommendedTypes.map((endingType, index) => (
+                      <Button
+                        key={endingType.type}
+                        onClick={() => {
+                          if (onMakeChoice) {
+                            onMakeChoice(-1, `选择${endingType.type}结局：${endingType.label}`);
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-auto p-3 border-amber-300 text-left hover:bg-amber-100 flex flex-col items-start"
+                      >
+                        <div className="font-medium text-amber-800 mb-1">
+                          {endingType.label}
+                        </div>
+                        <div className="text-xs text-amber-600 text-left">
+                          {endingType.description}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {/* 继续故事选项 */}
+                  <div className="pt-2 border-t border-amber-200">
+                    <Button
+                      onClick={() => {
+                        // 简单地关闭建议，让故事继续
+                        console.log('用户选择继续故事');
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-amber-600 hover:text-amber-800 hover:bg-amber-100"
+                    >
+                      不，我想继续故事
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  onClick={() => {
-                    if (onMakeChoice) {
-                      // 触发一个特殊的结局选择
-                      onMakeChoice(-1, '主动选择结束故事，寻找合适的结局');
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                >
-                  寻找结局
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* 故事卡住时的继续按钮 - 只在真正出现问题时显示 */}
         {!story.is_completed && isStoryStuck && onContinue && (
@@ -1113,7 +1340,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   >
                     <div className="w-full">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-semibold text-slate-800">{choice.text}</div>
+                      <div className="font-semibold text-slate-800">{choice.text}</div>
                         {choice.difficulty && (
                           <div className="flex items-center space-x-1">
                             <DifficultyIcon level={choice.difficulty} />
@@ -1201,13 +1428,13 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Button>
             </>
           ) : (
-            <Button
-              onClick={onRestart}
-              variant="outline"
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              重新开始
-            </Button>
+          <Button
+            onClick={onRestart}
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            重新开始
+          </Button>
           )}
         </div>
       </div>

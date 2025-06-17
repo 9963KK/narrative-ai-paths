@@ -12,6 +12,16 @@ export interface Character {
   backstory?: string;
 }
 
+// 故事目标接口
+export interface StoryGoal {
+  id: string;
+  description: string;
+  type: 'main' | 'sub' | 'personal' | 'relationship';
+  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  completion_chapter?: number;
+}
+
 // 故事状态接口
 export interface StoryState {
   story_id: string;
@@ -27,6 +37,7 @@ export interface StoryState {
   completion_type?: 'success' | 'failure' | 'neutral' | 'cliffhanger'; // 结束类型
   story_progress?: number; // 故事进度 0-100
   main_goal_status?: 'pending' | 'in_progress' | 'completed' | 'failed'; // 主要目标状态
+  story_goals?: StoryGoal[];
 }
 
 // 选择项接口
@@ -854,6 +865,12 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
     return baseCount;
   }
 
+  // 生成内容的通用方法
+  async generateContent(prompt: string, systemPrompt?: string): Promise<string> {
+    const response = await this.callAI(prompt, systemPrompt);
+    return this.extractContent(response);
+  }
+
   // 提取AI响应内容
   private extractContent(response: any): string {
     let content = '';
@@ -1320,6 +1337,137 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}`).join('\n
     } catch (error) {
       console.error('AI继续故事失败:', error);
       throw error;
+    }
+  }
+
+  // 智能生成定制结局
+  async generateCustomEnding(storyState: StoryState, endingType: 'natural' | 'satisfying' | 'open' | 'dramatic' = 'natural'): Promise<string> {
+    const { 
+      current_scene, 
+      characters, 
+      setting, 
+      chapter, 
+      choices_made, 
+      achievements, 
+      story_progress = 0,
+      mood = '神秘',
+      tension_level = 5,
+      story_goals = []
+    } = storyState;
+
+    // 分析用户选择倾向
+    const analyzePlayerTendency = () => {
+      const recentChoices = choices_made.slice(-5); // 最近5个选择
+      
+      let heroic = 0, cautious = 0, creative = 0, social = 0;
+      
+      recentChoices.forEach(choice => {
+        const lowerChoice = choice.toLowerCase();
+        if (lowerChoice.includes('帮助') || lowerChoice.includes('拯救') || lowerChoice.includes('正义')) heroic++;
+        if (lowerChoice.includes('小心') || lowerChoice.includes('观察') || lowerChoice.includes('谨慎')) cautious++;
+        if (lowerChoice.includes('创新') || lowerChoice.includes('尝试') || lowerChoice.includes('探索')) creative++;
+        if (lowerChoice.includes('交流') || lowerChoice.includes('合作') || lowerChoice.includes('说服')) social++;
+      });
+      
+      const total = recentChoices.length || 1;
+      return {
+        heroic: heroic / total,
+        cautious: cautious / total,
+        creative: creative / total,
+        social: social / total
+      };
+    };
+
+    // 分析故事完成度
+    const analyzeCompleteness = () => {
+      const mainGoals = story_goals.filter(g => g.type === 'main');
+      const completedGoals = story_goals.filter(g => g.status === 'completed').length;
+      const totalGoals = story_goals.length || 1;
+      
+      return {
+        goalCompletionRate: completedGoals / totalGoals,
+        hasUnresolvedConflicts: tension_level > 6,
+        storyMaturity: story_progress / 100,
+        characterDevelopment: achievements.length >= 3
+      };
+    };
+
+    const playerTendency = analyzePlayerTendency();
+    const completeness = analyzeCompleteness();
+
+    // 构建结局生成提示
+    const endingPrompts = {
+      natural: "生成一个自然而然的结局，符合当前故事发展节奏",
+      satisfying: "生成一个令人满意的结局，解决主要冲突并给角色好的归宿",
+      open: "生成一个开放式结局，留有想象空间和未来可能性",
+      dramatic: "生成一个戏剧性结局，有情感冲击力和深刻意义"
+    };
+
+    const prompt = `
+作为一个专业的故事创作者，请为当前故事生成一个${endingType === 'natural' ? '自然' : endingType === 'satisfying' ? '令人满意' : endingType === 'open' ? '开放式' : '戏剧性'}的结局。
+
+## 当前故事状态
+**场景**: ${current_scene}
+**设定**: ${setting}
+**章节**: 第${chapter}章
+**故事进度**: ${story_progress}%
+**氛围**: ${mood}
+**紧张度**: ${tension_level}/10
+
+## 角色信息
+${characters.map(char => `**${char.name}** (${char.role}): ${char.traits}`).join('\n')}
+
+## 故事发展历程
+**重要选择**: ${choices_made.slice(-3).join(' → ')}
+**获得成就**: ${achievements.slice(-3).join(', ')}
+
+## 用户行为分析
+- 英雄倾向: ${(playerTendency.heroic * 100).toFixed(0)}%
+- 谨慎倾向: ${(playerTendency.cautious * 100).toFixed(0)}%  
+- 创新倾向: ${(playerTendency.creative * 100).toFixed(0)}%
+- 社交倾向: ${(playerTendency.social * 100).toFixed(0)}%
+
+## 故事目标状态
+${story_goals.length > 0 ? story_goals.map(goal => 
+  `- ${goal.description} (${goal.status === 'completed' ? '✅已完成' : 
+    goal.status === 'failed' ? '❌已失败' : 
+    goal.status === 'in_progress' ? '🔄进行中' : '⏳待开始'})`
+).join('\n') : '暂无设定的故事目标'}
+
+## 结局要求
+${endingPrompts[endingType]}
+
+请生成一个500-800字的结局，要求：
+1. 自然承接当前情节，不突兀
+2. 体现角色的成长和变化
+3. ${endingType === 'satisfying' ? '解决主要冲突，给出积极结果' : 
+   endingType === 'open' ? '保留一些未解之谜，暗示未来可能' : 
+   endingType === 'dramatic' ? '有情感冲击，留下深刻印象' : '符合故事自然发展节奏'}
+4. 回应用户的选择倾向和故事发展
+5. 语言风格与之前保持一致
+
+请只返回结局内容，不要包含其他说明。
+`;
+
+         try {
+       const response = await this.generateContent(prompt);
+       console.log('🎬 AI生成定制结局成功');
+       return response.trim();
+     } catch (error) {
+      console.error('❌ AI生成结局失败:', error);
+      
+      // 备用结局模板
+      const fallbackEndings = {
+        natural: `经历了这段奇妙的旅程，${characters[0]?.name || '主角'}深深地感受到了成长的力量。${current_scene}的经历让所有人都有了新的认识。虽然还有许多未知等待探索，但此刻的收获已经足够珍贵。故事在这里暂告一段落，但新的冒险或许正在不远处等待着。`,
+        
+        satisfying: `最终，所有的努力都得到了回报。${characters[0]?.name || '主角'}和伙伴们成功地克服了挑战，${achievements.length > 0 ? '他们的成就' : '他们的努力'}为这个故事画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，而${setting}也因为他们的努力变得更加美好。这是一个值得纪念的结局。`,
+        
+        open: `当这一段旅程结束时，${characters[0]?.name || '主角'}望向远方，心中满怀期待。${current_scene}只是众多冒险中的一站，更大的世界还在等待探索。虽然当前的故事告一段落，但谁知道明天又会遇到什么样的奇遇呢？也许，这仅仅是一个更宏大故事的开始...`,
+        
+        dramatic: `在故事的最后关头，${characters[0]?.name || '主角'}做出了一个改变一切的决定。${current_scene}的经历深深震撼了所有人的心灵，让他们明白了真正重要的是什么。这个结局虽然出人意料，却又在情理之中，为整个故事增添了深刻的内涵和无尽的回味。`
+      };
+      
+      return fallbackEndings[endingType];
     }
   }
 }

@@ -56,8 +56,8 @@ const StoryManager: React.FC = () => {
       if (response.success && response.content) {
         // 处理故事目标
         const storyGoals = processStoryGoals(config);
-        
-        const initialStory: StoryState = {
+    
+    const initialStory: StoryState = {
           story_id: `ST${Date.now()}`,
           current_scene: response.content.scene,
           characters: response.content.characters || [],
@@ -179,31 +179,71 @@ const StoryManager: React.FC = () => {
 
     try {
       // 检查是否是主动结束故事的选择
-      if (choiceId === -1 && choiceText.includes('主动选择结束故事')) {
-        console.log('🎬 用户主动选择结束故事');
+      if (choiceId === -1 && choiceText.includes('结局')) {
+        console.log('🎬 用户主动选择结束故事:', choiceText);
         
-        // 更新故事目标
-        const updatedGoals = currentStory.story_goals ? updateStoryGoals(
-          currentStory.story_goals, 
-          choiceText, 
-          currentStory.chapter
-        ) : [];
-        
-        // 直接设置故事完成状态
-        const finalStory = {
-          ...currentStory,
-          choices_made: [...(currentStory.choices_made || []), choiceText],
-          story_goals: updatedGoals,
-          is_completed: true,
-          completion_type: 'success' as const, // 主动结束通常是满意的结局
-          needs_choice: false,
-          current_scene: currentStory.current_scene + `\n\n---\n\n🎭 **故事完结**\n**结束原因**: 玩家主动选择在合适的时机结束故事\n\n感谢您的参与，希望您享受这段故事之旅！`,
-          scene_type: 'climax' as const
-        };
-        
-        setCurrentStory(finalStory);
-        setIsProcessingChoice(false);
-        return;
+        try {
+          // 解析选择的结局类型
+          let endingType: 'natural' | 'satisfying' | 'open' | 'dramatic' = 'natural';
+          if (choiceText.includes('satisfying') || choiceText.includes('圆满')) {
+            endingType = 'satisfying';
+          } else if (choiceText.includes('open') || choiceText.includes('开放')) {
+            endingType = 'open';
+          } else if (choiceText.includes('dramatic') || choiceText.includes('戏剧')) {
+            endingType = 'dramatic';
+          }
+          
+          console.log(`🎭 生成${endingType}类型结局...`);
+          
+          // 使用AI生成定制结局
+          const customEnding = await storyAI.generateCustomEnding(currentStory, endingType);
+          
+          // 更新故事目标
+          const updatedGoals = currentStory.story_goals ? updateStoryGoals(
+            currentStory.story_goals, 
+            choiceText, 
+            currentStory.chapter
+          ) : [];
+          
+          // 设置故事完成状态，使用AI生成的结局
+          const finalStory = {
+            ...currentStory,
+            choices_made: [...(currentStory.choices_made || []), choiceText],
+            story_goals: updatedGoals,
+            is_completed: true,
+            completion_type: endingType === 'satisfying' ? 'success' as const : 
+                            endingType === 'dramatic' ? 'cliffhanger' as const : 'neutral' as const,
+            current_scene: customEnding,
+            needs_choice: false,
+            chapter: currentStory.chapter + 1, // 结局算作新的一章
+            achievements: [...(currentStory.achievements || []), `获得了${endingType === 'satisfying' ? '圆满' : endingType === 'open' ? '开放式' : endingType === 'dramatic' ? '戏剧性' : '自然'}结局`]
+          };
+          
+          setCurrentStory(finalStory);
+          setIsProcessingChoice(false);
+          console.log('✅ AI定制结局生成完成');
+          return;
+          
+        } catch (error) {
+          console.error('❌ 生成定制结局失败:', error);
+          setAiError('生成结局时发生错误，请稍后重试');
+          
+          // 备用简单结局
+          const fallbackEnding = `经历了这段精彩的旅程，${currentStory.characters[0]?.name || '主角'}和伙伴们都收获良多。虽然故事在这里告一段落，但这些经历将成为他们珍贵的回忆。感谢您的参与，希望您享受了这段冒险！`;
+          
+          const finalStory = {
+            ...currentStory,
+            choices_made: [...(currentStory.choices_made || []), choiceText],
+            is_completed: true,
+            completion_type: 'neutral' as const,
+            current_scene: fallbackEnding,
+            needs_choice: false
+          };
+          
+          setCurrentStory(finalStory);
+          setIsProcessingChoice(false);
+          return;
+        }
       }
 
       // 正常的选择处理逻辑
