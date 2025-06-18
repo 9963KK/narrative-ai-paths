@@ -89,20 +89,21 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     console.log('🎯 isProcessingChoice状态变化:', isProcessingChoice);
   }, [isProcessingChoice]);
 
-  // 监控选择生成超时
+  // 监控选择生成超时 - 考虑重试机制，延长超时时间
   useEffect(() => {
     if (choiceGenerationStartTime > 0) {
+      // 由于AI内部有3次重试，每次可能需要几秒，总超时时间应该更长
       const timeoutId = setTimeout(() => {
         const currentTime = Date.now();
         const elapsedTime = currentTime - choiceGenerationStartTime;
         
-        if (elapsedTime >= 30000) { // 30秒超时
-          console.error('⏰ 选择生成超时，故事可能卡住了');
+        if (elapsedTime >= 45000) { // 延长到45秒，给重试机制足够时间
+          console.error('⏰ 选择生成超时（包括AI内部3次重试），故事确实卡住了');
           setIsStoryStuck(true);
           setIsGeneratingChoices(false);
           setChoiceGenerationStartTime(0);
         }
-      }, 30000);
+      }, 45000); // 从30秒延长到45秒
 
       return () => clearTimeout(timeoutId);
     }
@@ -143,11 +144,18 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     }
   };
 
-  // 监控AI错误状态
+  // 监控AI错误状态 - 优化：只有严重错误才认为故事卡住
   useEffect(() => {
     if (aiError) {
       console.error('❌ AI错误detected:', aiError);
-      setIsStoryStuck(true);
+      // 只有在JSON重试逻辑都失败后才认为故事卡住
+      // AI服务内部已经实现了3次重试机制，所以这里的错误是严重错误
+      if (aiError.includes('JSON') || aiError.includes('重试') || aiError.includes('解析')) {
+        console.warn('⚠️ JSON解析相关错误，但不立即设为卡住状态（AI内部会重试）');
+        // 不立即设置为卡住，给重试机制一些时间
+      } else {
+        setIsStoryStuck(true);
+      }
     } else {
       // AI错误清除时，重置卡住状态（除非其他原因导致卡住）
       if (isStoryStuck && !choiceGenerationStartTime) {
@@ -540,8 +548,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             console.warn('⚠️ AI选择生成返回空数组');
           }
         } catch (aiError) {
-          console.warn('❌ AI选择生成失败，使用智能回退:', aiError);
-          // AI调用失败，但还有回退方案，不算真正卡住
+          console.warn('❌ AI选择生成经过重试后仍然失败，使用智能回退:', aiError);
+          // AI内部已经重试了3次都失败了，这是一个严重问题
+          // 但我们还有智能回退方案，所以暂时不设为卡住
         }
       }
       
@@ -551,8 +560,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         console.log('✅ 智能回退选择生成成功');
         return contextualChoices;
       } else {
-        // 连回退都失败了，使用最基本的通用选择
-        console.warn('❌ 智能回退也失败了，使用通用选择');
+        // 连回退都失败了，这才是真正的问题
+        // 此时AI已经重试了3次，智能回退也失败了
+        console.error('❌ AI重试3次失败 + 智能回退也失败，故事可能真的卡住了');
         setIsStoryStuck(true);
         
         // 通用选择，适应当前故事内容
@@ -574,7 +584,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         return baseChoices;
       }
     } catch (error) {
-      console.error('❌ 生成选择发生严重错误:', error);
+      console.error('❌ 生成选择发生严重错误（包含AI重试3次失败）:', error);
+      // 这是最严重的错误，连try-catch都捕获了
       setIsStoryStuck(true);
       
       // 错误回退 - 最后的保险，保证总是有选择
@@ -627,7 +638,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 setShowChoices(true);
                 console.log('✅ 选择项已设置并显示');
               } else {
-                console.warn('⚠️ 选择项生成完全失败，设置故事为卡住状态');
+                console.error('⚠️ 所有选择项生成方法都失败（AI重试3次+智能回退+通用回退），故事真的卡住了');
                 setIsStoryStuck(true);
                 // 即使生成失败，也提供基本选择
                 const fallbackChoices = [

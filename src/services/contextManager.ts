@@ -86,17 +86,18 @@ class ContextManager {
       const contextId = options.customId || this.generateContextId();
       const now = new Date();
       
-      // 如果是手动保存，检查是否存在同一故事的自动保存
-      if (!options.isAutoSave) {
-        const autoSaveId = `auto_${storyState.story_id}`;
-        const existingContexts = this.getSavedContexts();
-        
-        // 如果存在自动保存，删除它以避免重复
-        if (existingContexts[autoSaveId] && contextId !== autoSaveId) {
-          console.log('🗑️ 删除重复的自动保存:', autoSaveId);
-          delete existingContexts[autoSaveId];
-          localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(existingContexts));
-        }
+      // 获取现有存档（只获取一次）
+      const existingContexts = this.getSavedContexts();
+      
+      // 改进的重复处理逻辑：不再需要删除，因为使用统一ID系统
+      // 除非是创建额外快照（customId不是主存档ID格式）
+      const primarySaveId = `story_${storyState.story_id}`;
+      const isCreatingSnapshot = options.customId && options.customId !== primarySaveId;
+      
+      if (!isCreatingSnapshot) {
+        console.log('📝 使用统一存档系统，ID:', contextId);
+      } else {
+        console.log('📸 创建故事快照，ID:', contextId);
       }
       
       const savedContext: SavedStoryContext = {
@@ -117,13 +118,10 @@ class ContextManager {
         genre: this.extractGenre(storyState)
       };
 
-      // 获取现有存档
-      const existingContexts = this.getSavedContexts();
-      
       // 添加或更新存档
       existingContexts[contextId] = savedContext;
       
-      // 保存到本地存储
+      // 一次性保存到本地存储
       localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(existingContexts));
       
       console.log(`💾 故事上下文已保存: ${savedContext.title} (ID: ${contextId})`);
@@ -245,7 +243,41 @@ class ContextManager {
   }
 
   /**
-   * 自动保存当前上下文
+   * 保存故事进度（用户手动保存）
+   * 可以选择更新主存档或创建新快照
+   */
+  saveStoryProgress(
+    storyState: StoryState,
+    conversationHistory: ConversationMessage[],
+    modelConfig: ModelConfig,
+    options: {
+      title?: string;
+      createSnapshot?: boolean; // 是否创建快照而不是更新主存档
+    } = {}
+  ): string {
+    const primarySaveId = `story_${storyState.story_id}`;
+    
+    if (options.createSnapshot) {
+      // 创建新快照
+      const snapshotId = this.generateContextId();
+      return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
+        title: options.title || `[快照] ${this.generateStoryTitle(storyState)}`,
+        isAutoSave: false,
+        customId: snapshotId
+      });
+    } else {
+      // 更新主存档（升级为手动保存）
+      return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
+        title: options.title || this.generateStoryTitle(storyState),
+        isAutoSave: false,
+        customId: primarySaveId
+      });
+    }
+  }
+
+  /**
+   * 自动保存当前上下文 - 改进版本
+   * 每个故事只维护一个主存档，自动保存更新这个主存档
    */
   autoSave(
     storyState: StoryState,
@@ -253,13 +285,33 @@ class ContextManager {
     modelConfig: ModelConfig
   ): string | null {
     try {
-      // 自动保存使用固定ID，会覆盖之前的自动保存
-      const autoSaveId = `auto_${storyState.story_id}`;
+      // 使用统一的故事主存档ID
+      const primarySaveId = `story_${storyState.story_id}`;
+      
+      // 检查是否已有该故事的存档
+      const existingContexts = this.getSavedContexts();
+      const existingContext = existingContexts[primarySaveId];
+      
+      // 确定存档标题和状态
+      let title: string;
+      let isAutoSave: boolean;
+      
+      if (existingContext && !existingContext.isAutoSave) {
+        // 如果已有手动保存，保持其标题和手动状态
+        title = existingContext.title;
+        isAutoSave = false;
+        console.log('🔄 更新现有手动存档:', title);
+      } else {
+        // 创建或更新自动保存
+        title = `[自动保存] ${this.generateStoryTitle(storyState)}`;
+        isAutoSave = true;
+        console.log('🔄 更新自动保存');
+      }
       
       return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
-        title: `[自动保存] ${this.generateStoryTitle(storyState)}`,
-        isAutoSave: true,
-        customId: autoSaveId
+        title,
+        isAutoSave,
+        customId: primarySaveId
       });
       
     } catch (error) {
@@ -289,6 +341,86 @@ class ContextManager {
       
     } catch (error) {
       console.error('清理自动保存失败:', error);
+    }
+  }
+
+  /**
+   * 清理重复的存档（修复现有的重复问题）
+   * 迁移旧的自动保存格式到新的统一存档系统
+   */
+  cleanupDuplicates(): void {
+    try {
+      const savedContexts = this.getSavedContexts();
+      let hasChanges = false;
+      
+      // 按story_id分组
+      const storyGroups: { [storyId: string]: SavedStoryContext[] } = {};
+      
+      Object.values(savedContexts).forEach(context => {
+        const storyId = context.storyState.story_id;
+        if (!storyGroups[storyId]) {
+          storyGroups[storyId] = [];
+        }
+        storyGroups[storyId].push(context);
+      });
+      
+      // 检查每个故事组中的重复项并迁移到统一系统
+      Object.entries(storyGroups).forEach(([storyId, contexts]) => {
+        const primarySaveId = `story_${storyId}`;
+        const oldAutoSaveId = `auto_${storyId}`;
+        
+        // 找到主存档、旧自动保存和其他存档
+        const primarySave = contexts.find(ctx => ctx.id === primarySaveId);
+        const oldAutoSave = contexts.find(ctx => ctx.id === oldAutoSaveId);
+        const manualSaves = contexts.filter(ctx => !ctx.isAutoSave && ctx.id !== primarySaveId);
+        const otherAutoSaves = contexts.filter(ctx => ctx.isAutoSave && ctx.id !== oldAutoSaveId);
+        
+        // 迁移逻辑
+        if (oldAutoSave && !primarySave) {
+          // 将旧自动保存迁移为主存档
+          console.log('🔄 迁移旧自动保存到主存档:', oldAutoSave.title);
+          const migratedSave = { ...oldAutoSave, id: primarySaveId };
+          savedContexts[primarySaveId] = migratedSave;
+          delete savedContexts[oldAutoSaveId];
+          hasChanges = true;
+        } else if (oldAutoSave && primarySave) {
+          // 如果已有主存档，删除旧自动保存
+          console.log('🗑️ 删除重复的旧自动保存:', oldAutoSave.title);
+          delete savedContexts[oldAutoSaveId];
+          hasChanges = true;
+        }
+        
+        // 清理其他重复的自动保存
+        otherAutoSaves.forEach(autoSave => {
+          console.log('🗑️ 清理重复的自动保存:', autoSave.title);
+          delete savedContexts[autoSave.id];
+          hasChanges = true;
+        });
+        
+        // 如果有多个手动保存但没有主存档，将最新的升级为主存档
+        if (manualSaves.length > 0 && !primarySave && !oldAutoSave) {
+          const latestManualSave = manualSaves.sort((a, b) => 
+            new Date(b.saveTime).getTime() - new Date(a.saveTime).getTime()
+          )[0];
+          
+          console.log('🔄 将最新手动保存升级为主存档:', latestManualSave.title);
+          const upgradedSave = { ...latestManualSave, id: primarySaveId };
+          savedContexts[primarySaveId] = upgradedSave;
+          delete savedContexts[latestManualSave.id];
+          hasChanges = true;
+        }
+      });
+      
+      // 如果有变化，保存到localStorage
+      if (hasChanges) {
+        localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+        console.log('✅ 存档清理和迁移完成');
+      } else {
+        console.log('✅ 没有发现需要清理的存档');
+      }
+      
+    } catch (error) {
+      console.error('清理重复存档失败:', error);
     }
   }
 
@@ -414,7 +546,9 @@ export const contextManager = new ContextManager();
 
 // 导出便捷函数
 export const saveStoryContext = contextManager.saveStoryContext.bind(contextManager);
+export const saveStoryProgress = contextManager.saveStoryProgress.bind(contextManager);
 export const loadStoryContext = contextManager.loadStoryContext.bind(contextManager);
 export const getSavedContexts = contextManager.getSavedContexts.bind(contextManager);
 export const deleteStoryContext = contextManager.deleteStoryContext.bind(contextManager);
-export const autoSaveContext = contextManager.autoSave.bind(contextManager); 
+export const autoSaveContext = contextManager.autoSave.bind(contextManager);
+export const cleanupDuplicates = contextManager.cleanupDuplicates.bind(contextManager); 

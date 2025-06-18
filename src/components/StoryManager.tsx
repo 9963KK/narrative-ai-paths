@@ -10,7 +10,8 @@ import {
   contextManager, 
   SavedStoryContext, 
   ConversationMessage,
-  autoSaveContext 
+  autoSaveContext,
+  saveStoryProgress 
 } from '../services/contextManager';
 
 // 导入新的配置类型
@@ -737,20 +738,20 @@ const StoryManager: React.FC = () => {
         chapter: currentStory.chapter
       })) as ConversationMessage[];
 
-      // 如果已有contextId，复用它；否则生成新的
-      const contextId = contextManager.saveStoryContext(
+      // 使用新的统一存档系统
+      const contextId = saveStoryProgress(
         currentStory,
         conversationHistory,
         currentModelConfig,
         { 
           title,
-          customId: currentContextId || undefined // 复用现有ID或生成新的
+          createSnapshot: false // 更新主存档，不创建快照
         }
       );
 
       setCurrentContextId(contextId);
       setHasSavedProgress(true); // 更新存档状态
-      console.log('📁 故事进度已保存，ID:', contextId);
+      console.log('📁 故事进度已保存到主存档，ID:', contextId);
       
     } catch (error) {
       console.error('保存故事失败:', error);
@@ -884,7 +885,7 @@ const StoryManager: React.FC = () => {
     console.log(`🔄 自动保存已${enabled ? '启用' : '禁用'}`);
   };
 
-  // 检查是否有存档
+  // 检查是否有存档 - 适配统一存档系统
   const checkHasSavedProgress = () => {
     if (!currentStory) {
       setHasSavedProgress(false);
@@ -892,17 +893,24 @@ const StoryManager: React.FC = () => {
     }
     
     const savedContexts = contextManager.getSavedContexts();
-    // 检查是否有该故事的存档（自动保存或手动保存）
-    const autoSaveId = `auto_${currentStory.story_id}`;
-    const hasAutoSave = savedContexts[autoSaveId];
-    const hasManualSave = currentContextId && savedContexts[currentContextId];
+    // 检查是否有该故事的主存档
+    const primarySaveId = `story_${currentStory.story_id}`;
+    const hasPrimarySave = savedContexts[primarySaveId];
     
-    setHasSavedProgress(hasAutoSave || hasManualSave);
+    // 检查是否有当前正在使用的存档
+    const hasCurrentSave = currentContextId && savedContexts[currentContextId];
+    
+    setHasSavedProgress(hasPrimarySave || hasCurrentSave);
+    
+    // 更新当前上下文ID为主存档ID（如果存在）
+    if (hasPrimarySave && (!currentContextId || currentContextId !== primarySaveId)) {
+      console.log('🔄 切换到主存档ID:', primarySaveId);
+      setCurrentContextId(primarySaveId);
+    }
     
     // 如果当前存档被删除了，但不要清除故事状态（保持用户在存档管理界面）
-    if (currentContextId && !savedContexts[currentContextId] && !hasAutoSave) {
+    if (currentContextId && !savedContexts[currentContextId] && !hasPrimarySave) {
       console.log('🔍 当前存档已被删除，但保持故事状态');
-      // 清除当前上下文ID，但保留故事状态以维持界面稳定
       // 在存档管理界面时，不清除contextId以避免界面状态混乱
       if (!showSaveManager) {
         setCurrentContextId('');
