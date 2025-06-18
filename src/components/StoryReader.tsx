@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5 } from 'lucide-react';
+import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, ToggleLeft, ToggleRight } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface StoryState {
   story_id: string;
@@ -47,6 +48,12 @@ interface StoryReaderProps {
   modelConfig?: any; // AI模型配置
   aiError?: string | null; // AI错误信息
   isProcessingChoice?: boolean; // 是否正在处理选择
+  onSaveStory?: (title?: string) => void; // 保存故事回调
+  onShowSaveManager?: () => void; // 显示存档管理器
+  onReturnHome?: () => void; // 返回主页回调
+  autoSaveEnabled?: boolean; // 自动保存是否启用
+  onToggleAutoSave?: (enabled: boolean) => void; // 切换自动保存状态
+  hasSavedProgress?: boolean; // 当前是否有已保存的进度
 }
 
 const StoryReader: React.FC<StoryReaderProps> = ({ 
@@ -56,7 +63,13 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   onContinue, 
   modelConfig,
   aiError,
-  isProcessingChoice = false
+  isProcessingChoice = false,
+  onSaveStory,
+  onShowSaveManager,
+  onReturnHome,
+  autoSaveEnabled,
+  onToggleAutoSave,
+  hasSavedProgress
 }) => {
   const [story, setStory] = useState<StoryState>(initialStory);
   const [currentText, setCurrentText] = useState('');
@@ -68,6 +81,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [choiceStartTime, setChoiceStartTime] = useState<number>(0);
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
   const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
+  const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
+  const [isSaving, setIsSaving] = useState(false); // 是否正在保存
   
   // 调试：监控isProcessingChoice状态变化
   useEffect(() => {
@@ -97,6 +112,36 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory]);
+
+  // 当故事发生变化时，标记为有未保存的进度
+  useEffect(() => {
+    setHasUnsavedProgress(true);
+  }, [story.chapter, story.current_scene, story.choices_made]);
+
+  // 处理保存故事
+  const handleSaveStory = async () => {
+    if (!onSaveStory || isSaving) return; // 防止重复调用
+    
+    setIsSaving(true);
+    try {
+      await onSaveStory();
+      setHasUnsavedProgress(false);
+      toast({
+        title: "保存成功",
+        description: "故事进度已保存",
+        duration: 2000,
+      });
+    } catch (error) {
+      toast({
+        title: "保存失败",
+        description: "保存故事时出现错误，请重试",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // 监控AI错误状态
   useEffect(() => {
@@ -455,7 +500,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           const { storyAI } = await import('../services/storyAI');
           storyAI.setModelConfig(modelConfig);
           
-          const aiChoices = await storyAI.generateChoices(scene, characters, story);
+          const aiChoices = await storyAI.generateChoices(scene, characters, {
+            ...story,
+            mood: story.mood || '神秘'
+          });
           if (aiChoices && aiChoices.length > 0) {
             console.log('✅ AI选择生成成功');
             return aiChoices;
@@ -474,22 +522,33 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         console.log('✅ 智能回退选择生成成功');
         return contextualChoices;
       } else {
-        // 连回退都失败了，故事真的卡住了，但还是提供最基本的选择
-        console.error('❌ 所有选择生成方案都失败了，使用紧急回退选择');
+        // 连回退都失败了，使用最基本的通用选择
+        console.warn('❌ 智能回退也失败了，使用通用选择');
         setIsStoryStuck(true);
         
-        // 紧急回退选择
-        return [
+        // 通用选择，适应当前故事内容
+        const baseChoices = [
           { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
           { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
           { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
         ];
+        
+        // 根据故事设定稍作调整
+        if (story.setting.toLowerCase().includes('科幻')) {
+          baseChoices.push({ id: 4, text: "检查科技设备", description: "查看身边的科技装备", difficulty: 2 });
+        } else if (story.setting.toLowerCase().includes('奇幻')) {
+          baseChoices.push({ id: 4, text: "感知魔法", description: "尝试感知周围的魔法力量", difficulty: 2 });
+        } else if (story.setting.toLowerCase().includes('现代') || story.setting.toLowerCase().includes('当代')) {
+          baseChoices.push({ id: 4, text: "查看手机", description: "检查是否有新的信息", difficulty: 1 });
+        }
+        
+        return baseChoices;
       }
     } catch (error) {
       console.error('❌ 生成选择发生严重错误:', error);
       setIsStoryStuck(true);
       
-      // 错误回退 - 最后的保险
+      // 错误回退 - 最后的保险，保证总是有选择
       return [
         { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
         { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
@@ -529,23 +588,31 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               chapter: story.chapter
             });
             
-                         if (shouldShowChoices) {
-               console.log('✅ 开始生成选择项...');
-               const newChoices = await generateAIChoices(story.current_scene, story.characters);
-               console.log('🎯 生成的选择项:', newChoices);
-               
-               if (newChoices && newChoices.length > 0) {
-                 setChoices(newChoices);
-            setShowChoices(true);
-                 console.log('✅ 选择项已设置并显示');
-               } else {
-                 console.warn('⚠️ 选择项生成完全失败');
-                 // 如果连默认选择都没有返回，说明真的卡住了
-                 // generateAIChoices内部已经设置了isStoryStuck状态
-               }
-             } else {
-               console.log('❌ 不需要显示选择项，或故事已完成');
-             }
+            if (shouldShowChoices) {
+              console.log('✅ 开始生成选择项...');
+              const newChoices = await generateAIChoices(story.current_scene, story.characters);
+              console.log('🎯 生成的选择项:', newChoices);
+              
+              if (newChoices && newChoices.length > 0) {
+                setChoices(newChoices);
+                setShowChoices(true);
+                console.log('✅ 选择项已设置并显示');
+              } else {
+                console.warn('⚠️ 选择项生成完全失败，设置故事为卡住状态');
+                setIsStoryStuck(true);
+                // 即使生成失败，也提供基本选择
+                const fallbackChoices = [
+                  { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
+                  { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
+                  { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
+                ];
+                setChoices(fallbackChoices);
+                setShowChoices(true);
+                console.log('🚨 使用紧急回退选择');
+              }
+            } else {
+              console.log('❌ 不需要显示选择项，或故事已完成');
+            }
           }, 800);
           clearInterval(interval);
         }
@@ -880,38 +947,89 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               <CardTitle className="text-xl text-slate-800">
                 第 {story.chapter} 章
               </CardTitle>
-              <div className="flex items-center space-x-4">
-                <Badge variant="outline" className="border-slate-300 text-slate-600">
-                  ID: {story.story_id}
-                </Badge>
+              <div className="flex items-center space-x-3">
+                {/* 自动保存切换按钮 */}
+                {onToggleAutoSave && (
+                  <Button
+                    onClick={() => onToggleAutoSave(!autoSaveEnabled)}
+                    variant="outline"
+                    size="sm"
+                    className={`flex items-center gap-1 ${
+                      autoSaveEnabled 
+                        ? 'border-green-300 text-green-600 hover:bg-green-50' 
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                    title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
+                  >
+                    {autoSaveEnabled ? (
+                      <ToggleRight className="h-3 w-3" />
+                    ) : (
+                      <ToggleLeft className="h-3 w-3" />
+                    )}
+                    自动保存
+                  </Button>
+                )}
+                
+                {/* 返回主页按钮 */}
+                {onReturnHome && (
+                  <Button
+                    onClick={onReturnHome}
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasSavedProgress}
+                    className={`flex items-center gap-1 ${
+                      !hasSavedProgress 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:bg-blue-50 border-blue-300'
+                    }`}
+                    title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
+                  >
+                    <Home className="h-3 w-3" />
+                    返回主页
+                  </Button>
+                )}
+                
+                {/* 保存进度按钮 */}
+                {onSaveStory && (
+                  <Button
+                    onClick={handleSaveStory}
+                    disabled={isSaving}
+                    variant="outline"
+                    size="sm"
+                    className={`flex items-center gap-1 ${
+                      hasUnsavedProgress 
+                        ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
+                        : 'border-green-300 text-green-600 hover:bg-green-50'
+                    } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                    {isSaving ? '保存中...' : hasUnsavedProgress ? '保存进度' : '已保存'}
+                  </Button>
+                )}
+                
+                {/* 氛围显示 */}
                 {story.mood && (
                   <Badge variant="outline" className="border-blue-300 text-blue-600">
                     氛围: {story.mood}
                   </Badge>
                 )}
-                {story.tension_level && (
-                  <Badge variant="outline" className="border-orange-300 text-orange-600">
-                    紧张度: {story.tension_level}/10
-                  </Badge>
-                )}
-                {story.scene_type && (
-                  <Badge variant="outline" className="border-purple-300 text-purple-600">
-                    {story.scene_type === 'action' && '行动'}
-                    {story.scene_type === 'dialogue' && '对话'}
-                    {story.scene_type === 'exploration' && '探索'}
-                    {story.scene_type === 'reflection' && '思考'}
-                    {story.scene_type === 'climax' && '高潮'}
-                  </Badge>
-                )}
-                <Progress 
-                  value={story.story_progress || (story.chapter / 12) * 100} 
-                  className="w-32" 
-                />
-                {story.story_progress && (
-                  <span className="text-xs text-slate-500 ml-1">
-                    {Math.round(story.story_progress)}%
-                  </span>
-                )}
+                
+                {/* 进度显示 */}
+                <div className="flex items-center gap-2">
+                  <Progress 
+                    value={story.story_progress || (story.chapter / 12) * 100} 
+                    className="w-32" 
+                  />
+                  {story.story_progress && (
+                    <span className="text-xs text-slate-500">
+                      {Math.round(story.story_progress)}%
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>

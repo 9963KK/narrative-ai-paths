@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import StoryInitializer from './StoryInitializer';
 import StoryReader from './StoryReader';
+import SaveManager from './SaveManager';
 import { ModelConfig } from './model-config/constants';
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
 import { loadModelConfig } from '../services/configStorage';
+import { 
+  contextManager, 
+  SavedStoryContext, 
+  ConversationMessage,
+  autoSaveContext 
+} from '../services/contextManager';
 
 // 导入新的配置类型
 import { StoryConfig } from './StoryInitializer';
@@ -40,6 +47,10 @@ const StoryManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isProcessingChoice, setIsProcessingChoice] = useState(false);
+  const [currentContextId, setCurrentContextId] = useState<string | null>(null);
+  const [showSaveManager, setShowSaveManager] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // 自动保存状态
+  const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
 
   // 组件加载时尝试加载保存的模型配置
   useEffect(() => {
@@ -370,11 +381,18 @@ const StoryManager: React.FC = () => {
       updatedStory.mood || '神秘'
     );
     
-    setCurrentStory({
+    const finalStory = {
       ...updatedStory,
       needs_choice: needsChoice.needs,
       scene_type: needsChoice.type
-    });
+    };
+    
+    setCurrentStory(finalStory);
+    
+    // 自动保存进度（每章节完成后）
+    if (updatedStory.chapter > (currentStory?.chapter || 0)) {
+      setTimeout(() => performAutoSave(), 500); // 延迟执行确保状态已更新
+    }
   };
 
   // 计算故事进度
@@ -643,17 +661,149 @@ const StoryManager: React.FC = () => {
         current_scene: randomOutcome,
         chapter: prev.chapter + 1,
         choices_made: [...(prev.choices_made || []), choiceText],
-        needs_choice: prev.chapter % 2 === 0, // 每2章一次选择
+        needs_choice: true, // 修复：确保显示选择项
         scene_type: 'exploration'
       };
     });
     
-    setIsProcessingChoice(false);
+    console.log('✅ 简单场景生成完成，状态将由finally块重置');
   };
 
   const handleRestart = () => {
     setCurrentStory(null);
     setAiError(null);
+    setCurrentContextId(null);
+  };
+
+  const handleReturnHome = () => {
+    setCurrentStory(null);
+    setAiError(null);
+    setCurrentContextId(null);
+    storyAI.clearConversationHistory();
+  };
+
+  // 保存故事进度
+  const handleSaveStory = async (title?: string) => {
+    if (!currentStory || !currentModelConfig) {
+      console.warn('无法保存：缺少故事状态或模型配置');
+      return;
+    }
+
+    try {
+      // 获取对话历史
+      const conversationHistory = storyAI.getConversationHistory().map(msg => ({
+        ...msg,
+        timestamp: new Date(),
+        chapter: currentStory.chapter
+      })) as ConversationMessage[];
+
+      // 如果已有contextId，复用它；否则生成新的
+      const contextId = contextManager.saveStoryContext(
+        currentStory,
+        conversationHistory,
+        currentModelConfig,
+        { 
+          title,
+          customId: currentContextId || undefined // 复用现有ID或生成新的
+        }
+      );
+
+      setCurrentContextId(contextId);
+      setHasSavedProgress(true); // 更新存档状态
+      console.log('📁 故事进度已保存，ID:', contextId);
+      
+    } catch (error) {
+      console.error('保存故事失败:', error);
+      setAiError(error instanceof Error ? error.message : '保存失败');
+      throw error; // 重新抛出错误，让StoryReader能够捕获
+    }
+  };
+
+  // 加载故事进度
+  const handleLoadStory = async (contextId: string) => {
+    console.log(`🔍 开始加载故事，contextId: ${contextId}`);
+    
+    try {
+      setIsLoading(true);
+      
+      // 先检查存档是否存在
+      const allContexts = contextManager.getSavedContexts();
+      console.log(`📋 当前所有存档:`, Object.keys(allContexts));
+      console.log(`🎯 目标存档ID: ${contextId}`);
+      console.log(`✅ 存档是否存在: ${contextId in allContexts}`);
+      
+      const savedContext = contextManager.loadStoryContext(contextId);
+      
+      if (!savedContext) {
+        console.error(`❌ loadStoryContext返回null，contextId: ${contextId}`);
+        throw new Error('未找到指定的存档');
+      }
+
+      console.log(`📂 成功获取存档数据:`, {
+        title: savedContext.title,
+        chapter: savedContext.storyState.chapter,
+        isAutoSave: savedContext.isAutoSave
+      });
+
+      // 恢复故事状态
+      setCurrentStory(savedContext.storyState);
+      setCurrentModelConfig(savedContext.modelConfig);
+      setCurrentContextId(contextId);
+      setHasSavedProgress(true); // 设置为已有存档状态
+
+      // 恢复AI配置和对话历史
+      storyAI.setModelConfig(savedContext.modelConfig);
+      storyAI.setConversationHistory(savedContext.conversationHistory);
+
+      console.log('✅ 故事进度已成功加载');
+      
+    } catch (error) {
+      console.error('❌ 加载故事失败:', error);
+      setAiError(error instanceof Error ? error.message : '加载失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 自动保存功能（仅在启用时执行）
+  const performAutoSave = () => {
+    if (!currentStory || !currentModelConfig || !autoSaveEnabled) return;
+
+    try {
+      const conversationHistory = storyAI.getConversationHistory().map(msg => ({
+        ...msg,
+        timestamp: new Date(),
+        chapter: currentStory.chapter
+      })) as ConversationMessage[];
+
+      autoSaveContext(currentStory, conversationHistory, currentModelConfig);
+      console.log('🔄 自动保存完成');
+      setHasSavedProgress(true); // 更新存档状态
+    } catch (error) {
+      console.error('自动保存失败:', error);
+    }
+  };
+
+  // 切换自动保存状态
+  const handleToggleAutoSave = (enabled: boolean) => {
+    setAutoSaveEnabled(enabled);
+    console.log(`🔄 自动保存已${enabled ? '启用' : '禁用'}`);
+  };
+
+  // 检查是否有存档
+  const checkHasSavedProgress = () => {
+    if (!currentStory) {
+      setHasSavedProgress(false);
+      return;
+    }
+    
+    const savedContexts = contextManager.getSavedContexts();
+    // 检查是否有该故事的存档（自动保存或手动保存）
+    const autoSaveId = `auto_${currentStory.story_id}`;
+    const hasAutoSave = savedContexts[autoSaveId];
+    const hasManualSave = currentContextId && savedContexts[currentContextId];
+    
+    setHasSavedProgress(hasAutoSave || hasManualSave);
   };
 
   const handleContinueStory = async () => {
@@ -740,6 +890,11 @@ const StoryManager: React.FC = () => {
     }
   };
 
+  // 组件挂载时和故事变化时检查存档状态
+  useEffect(() => {
+    checkHasSavedProgress();
+  }, [currentStory, currentContextId]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -763,7 +918,22 @@ const StoryManager: React.FC = () => {
   }
 
   if (!currentStory) {
-    return <StoryInitializer onInitializeStory={initializeStory} />;
+    return <StoryInitializer 
+      onInitializeStory={initializeStory} 
+      onLoadStory={handleLoadStory}
+    />;
+  }
+
+  // 显示存档管理器
+  if (showSaveManager) {
+    return (
+      <SaveManager
+        onLoadStory={handleLoadStory}
+        onSaveStory={handleSaveStory}
+        currentStoryExists={!!currentStory}
+        onClose={() => setShowSaveManager(false)}
+      />
+    );
   }
 
   return (
@@ -775,6 +945,12 @@ const StoryManager: React.FC = () => {
       modelConfig={currentModelConfig}
       aiError={aiError}
       isProcessingChoice={isProcessingChoice}
+      onSaveStory={handleSaveStory}
+      onShowSaveManager={() => setShowSaveManager(true)}
+      onReturnHome={handleReturnHome}
+      autoSaveEnabled={autoSaveEnabled}
+      onToggleAutoSave={handleToggleAutoSave}
+      hasSavedProgress={hasSavedProgress}
     />
   );
 };

@@ -6,10 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Wand2, Wrench, ArrowLeft, Users, Target, MapPin, Sparkles } from 'lucide-react';
+import { Settings, Wand2, Wrench, ArrowLeft, Users, Target, MapPin, Sparkles, FolderOpen, BookOpen } from 'lucide-react';
 import ModelConfig from './ModelConfig';
+import SaveManager from './SaveManager';
 import { ModelConfig as ModelConfigType } from './model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
+import { getSavedContexts } from '@/services/contextManager';
 
 // 基础故事配置
 interface BaseStoryConfig {
@@ -46,10 +48,11 @@ export type StoryConfig = BaseStoryConfig | AdvancedStoryConfig;
 
 interface StoryInitializerProps {
   onInitializeStory: (config: StoryConfig, modelConfig: ModelConfigType, isAdvanced: boolean) => void;
+  onLoadStory?: (contextId: string) => void;
 }
 
-const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }) => {
-  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced'>('select');
+const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory }) => {
+  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves'>('select');
   
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
@@ -90,8 +93,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
 
   const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
+  const [savedContextsCount, setSavedContextsCount] = useState(0);
 
-  // 组件加载时检查本地配置
+  // 组件加载时检查本地配置和存档
   useEffect(() => {
     const savedConfig = loadModelConfig();
     if (savedConfig && savedConfig.apiKey) {
@@ -101,7 +105,23 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
     } else {
       setHasValidConfig(hasSavedConfig());
     }
+    
+    // 检查存档数量
+    updateSavedContextsCount();
   }, []);
+
+  // 更新存档数量的函数
+  const updateSavedContextsCount = () => {
+    const savedContexts = getSavedContexts();
+    setSavedContextsCount(Object.keys(savedContexts).length);
+  };
+
+  // 当切换到select模式时，重新更新存档数量
+  useEffect(() => {
+    if (configMode === 'select') {
+      updateSavedContextsCount();
+    }
+  }, [configMode]);
 
   const genres = [
     { value: 'sci-fi', label: '🚀 科幻小说', desc: '探索未来科技与太空' },
@@ -252,6 +272,43 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
               </div>
             )}
 
+            {/* 存档管理区域 - 置顶 */}
+            {savedContextsCount > 0 && (
+              <div className="mb-8">
+                <div className="border-2 border-green-200 rounded-lg bg-green-50 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <FolderOpen className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-800">继续之前的冒险</h3>
+                        <p className="text-sm text-slate-600">发现了 {savedContextsCount} 个已保存的故事</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setConfigMode('saves')}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                    >
+                      查看所有存档
+                    </Button>
+                  </div>
+                  <div className="text-sm text-green-700">
+                    📚 点击上方按钮查看详细进度，一键继续您的故事之旅
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 分隔线 */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex-1 h-px bg-slate-200"></div>
+              <span className="text-slate-500 font-medium px-4">
+                {savedContextsCount > 0 ? '或者开始新的故事' : '开始您的故事之旅'}
+              </span>
+              <div className="flex-1 h-px bg-slate-200"></div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-8">
               {/* 简单配置 */}
               <Card className="border-2 border-blue-200 hover:border-blue-300 transition-all duration-300 cursor-pointer group"
@@ -314,6 +371,24 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory }
                 </CardContent>
               </Card>
             </div>
+
+            {/* 如果没有存档，提供存档管理入口 */}
+            {savedContextsCount === 0 && (
+              <div className="mt-8 text-center">
+                <div className="inline-flex items-center gap-2 text-slate-500 text-sm">
+                  <FolderOpen className="h-4 w-4" />
+                  <span>还没有保存的故事？</span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setConfigMode('saves')}
+                    className="text-green-600 hover:text-green-700 p-0 h-auto"
+                  >
+                    查看存档管理
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -600,7 +675,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
                   角色设定
                 </h3>
 
-            <div>
+                <div>
                   <Label className="text-slate-700 font-medium">角色数量</Label>
                   <Select value={advancedConfig.character_count.toString()} onValueChange={(value) => handleCharacterCountChange(parseInt(value))}>
                     <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800 w-32">
@@ -702,7 +777,7 @@ AI将根据您的描述自动创建角色、背景和情节..."
                       <div className="grid md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
                           <Label className="text-sm text-slate-600">目标描述</Label>
-              <Input
+                          <Input
                             value={goal.description}
                             onChange={(e) => {
                               const newGoals = [...advancedConfig.story_goals];
@@ -837,6 +912,44 @@ AI将根据您的描述自动创建角色、背景和情节..."
       </Card>
     </div>
   );
+  }
+
+  // 存档管理界面
+  if (configMode === 'saves') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => setConfigMode('select')}
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              返回主页
+            </Button>
+            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+              <FolderOpen className="h-8 w-8 text-green-600" />
+              存档管理
+            </h1>
+            <div className="w-20"></div> {/* 占位符，保持标题居中 */}
+          </div>
+          
+          <SaveManager
+            onLoadStory={(contextId) => {
+              if (onLoadStory) {
+                onLoadStory(contextId);
+              }
+            }}
+            onSaveStory={() => {}}
+            currentStoryExists={false}
+            onClose={() => setConfigMode('select')}
+            showInHomePage={true}
+            onContextCountChange={setSavedContextsCount}
+          />
+        </div>
+      </div>
+    );
   }
 
   return null;
