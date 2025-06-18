@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import StoryInitializer from './StoryInitializer';
 import StoryReader from './StoryReader';
 import SaveManager from './SaveManager';
+import DebugSaveManager from './DebugSaveManager';
 import { ModelConfig } from './model-config/constants';
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
 import { loadModelConfig } from '../services/configStorage';
@@ -49,6 +50,7 @@ const StoryManager: React.FC = () => {
   const [isProcessingChoice, setIsProcessingChoice] = useState(false);
   const [currentContextId, setCurrentContextId] = useState<string | null>(null);
   const [showSaveManager, setShowSaveManager] = useState(false);
+  const [showDebugManager, setShowDebugManager] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // 自动保存状态
   const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
 
@@ -216,8 +218,44 @@ const StoryManager: React.FC = () => {
           
           console.log(`🎭 生成${endingType}类型结局...`);
           
+          // 检查并设置AI配置
+          if (!currentModelConfig || !currentModelConfig.apiKey) {
+            throw new Error('AI模型配置缺失，无法生成定制结局');
+          }
+          
+          // 配置AI服务
+          storyAI.setModelConfig(currentModelConfig);
+          
           // 使用AI生成定制结局
           const customEnding = await storyAI.generateCustomEnding(currentStory, endingType);
+          
+          // 清理AI响应，确保是纯文本而不是JSON
+          const cleanedEnding = (() => {
+            try {
+              // 如果是JSON格式，尝试提取scene字段
+              if (customEnding.trim().startsWith('{') && customEnding.trim().endsWith('}')) {
+                const parsed = JSON.parse(customEnding);
+                if (parsed.scene) {
+                  return parsed.scene;
+                } else if (parsed.current_scene) {
+                  return parsed.current_scene;
+                } else if (typeof parsed === 'string') {
+                  return parsed;
+                }
+              }
+              // 如果不是JSON或无法解析，直接返回原文本
+              return customEnding;
+            } catch (error) {
+              console.warn('清理AI结局响应时出错，使用原始文本:', error);
+              return customEnding;
+            }
+          })();
+          
+          console.log('🎬 结局内容处理:', {
+            original: customEnding.substring(0, 100) + '...',
+            cleaned: cleanedEnding.substring(0, 100) + '...',
+            isJson: customEnding.trim().startsWith('{')
+          });
           
           // 更新故事目标
           const updatedGoals = currentStory.story_goals ? updateStoryGoals(
@@ -226,7 +264,7 @@ const StoryManager: React.FC = () => {
             currentStory.chapter
           ) : [];
           
-          // 设置故事完成状态，使用AI生成的结局
+          // 设置故事完成状态，使用清理后的结局
           const finalStory = {
             ...currentStory,
             choices_made: [...(currentStory.choices_made || []), choiceText],
@@ -234,7 +272,7 @@ const StoryManager: React.FC = () => {
             is_completed: true,
             completion_type: endingType === 'satisfying' ? 'success' as const : 
                             endingType === 'dramatic' ? 'cliffhanger' as const : 'neutral' as const,
-            current_scene: customEnding,
+            current_scene: cleanedEnding,
             needs_choice: false,
             chapter: currentStory.chapter + 1, // 结局算作新的一章
             achievements: [...(currentStory.achievements || []), `获得了${endingType === 'satisfying' ? '圆满' : endingType === 'open' ? '开放式' : endingType === 'dramatic' ? '戏剧性' : '自然'}结局`]
@@ -247,22 +285,38 @@ const StoryManager: React.FC = () => {
           
         } catch (error) {
           console.error('❌ 生成定制结局失败:', error);
-          setAiError('生成结局时发生错误，请稍后重试');
+          setAiError(error instanceof Error ? error.message : '生成结局时发生未知错误');
           
-          // 备用简单结局
-          const fallbackEnding = `经历了这段精彩的旅程，${currentStory.characters[0]?.name || '主角'}和伙伴们都收获良多。虽然故事在这里告一段落，但这些经历将成为他们珍贵的回忆。感谢您的参与，希望您享受了这段冒险！`;
+          // 根据选择的结局类型生成不同的备用结局
+          let fallbackEnding = '';
+          const protagonist = currentStory.characters[0]?.name || '主角';
+          const achievements = currentStory.achievements || [];
+          
+          if (choiceText.includes('圆满') || choiceText.includes('satisfying')) {
+            fallbackEnding = `最终，所有的努力都得到了回报。${protagonist}和伙伴们成功地克服了所有挑战，${achievements.length > 0 ? '他们取得的成就' : '他们的坚持不懈'}为这段冒险画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，这是一个值得纪念的圆满结局。`;
+          } else if (choiceText.includes('开放') || choiceText.includes('open')) {
+            fallbackEnding = `当这段旅程告一段落时，${protagonist}望向远方，心中满怀期待。虽然当前的冒险结束了，但更大的世界还在等待探索。这次经历只是漫长人生中的一个篇章，未来还有无数可能性等待着他们去发现...`;
+          } else if (choiceText.includes('戏剧') || choiceText.includes('dramatic')) {
+            fallbackEnding = `在故事的最后关头，${protagonist}做出了一个改变一切的重要决定。这个选择的后果远比想象中更加深远，为整个故事增添了深刻的内涵。虽然结局出人意料，却又在情理之中，留下了无尽的回味。`;
+          } else {
+            fallbackEnding = `经历了这段奇妙的旅程，${protagonist}和同伴们都收获了珍贵的经历。虽然故事在这里告一段落，但这些回忆将伴随他们一生。每一个选择，每一次冒险，都成为了他们成长路上重要的里程碑。`;
+          }
           
           const finalStory = {
             ...currentStory,
             choices_made: [...(currentStory.choices_made || []), choiceText],
             is_completed: true,
-            completion_type: 'neutral' as const,
+            completion_type: choiceText.includes('圆满') ? 'success' as const : 
+                            choiceText.includes('戏剧') ? 'cliffhanger' as const : 'neutral' as const,
             current_scene: fallbackEnding,
-            needs_choice: false
+            needs_choice: false,
+            chapter: currentStory.chapter + 1, // 结局算作新的一章
+            achievements: [...achievements, `获得了${choiceText.includes('圆满') ? '圆满' : choiceText.includes('开放') ? '开放式' : choiceText.includes('戏剧') ? '戏剧性' : '温馨'}结局`]
           };
           
           setCurrentStory(finalStory);
           setIsProcessingChoice(false);
+          console.log('✅ 使用备用结局完成故事');
           return;
         }
       }
@@ -331,35 +385,8 @@ const StoryManager: React.FC = () => {
             story_goals: updatedGoals
           };
 
-          // 检查故事是否应该结束（使用新的目标系统）
-          const goalBasedEndingCheck = checkStoryEndingByGoals(updatedStory.story_goals, updatedStory.chapter);
-          
-          console.log('🔚 基于目标的故事结束检查:', {
-            shouldEnd: goalBasedEndingCheck.shouldEnd,
-            reason: goalBasedEndingCheck.reason,
-            type: goalBasedEndingCheck.type,
-            goals: updatedStory.story_goals,
-            chapter: updatedStory.chapter,
-            achievements: updatedStory.achievements?.length
-          });
-
-          if (goalBasedEndingCheck.shouldEnd) {
-            // 直接设置故事完成状态，不再调用AI生成结局
-            console.log('🎬 基于目标设置故事结局');
-            const finalStory = {
-              ...updatedStory,
-              is_completed: true,
-              completion_type: goalBasedEndingCheck.type === 'success' ? 'success' : 
-                              goalBasedEndingCheck.type === 'failure' ? 'failure' : 'neutral',
-              needs_choice: false,
-              current_scene: updatedStory.current_scene + `\n\n---\n\n🎭 **故事完结**\n**结束原因**: ${goalBasedEndingCheck.reason}\n\n感谢您的参与，希望您享受这段故事之旅！`,
-              scene_type: 'climax'
-            };
-            setCurrentStory(finalStory);
-          } else {
-            // 正常故事流程
-            setNormalStoryFlow(updatedStory, response.content.scene);
-          }
+          // 正常故事流程 - 不再强制结束
+          setNormalStoryFlow(updatedStory, response.content.scene);
         } else {
           // AI失败时的简单处理
           await generateSimpleNextScene(choiceText, startTime);
@@ -397,10 +424,21 @@ const StoryManager: React.FC = () => {
 
   // 计算故事进度
   const calculateStoryProgress = (chapter: number, achievementCount: number): number => {
-    // 基于章节和成就计算进度百分比，设置更高的目标值
-    const chapterProgress = Math.min((chapter / 20) * 70, 70); // 20章达到最大章节进度
-    const achievementProgress = Math.min((achievementCount / 15) * 30, 30); // 15个成就达到最大成就进度
-    return Math.min(chapterProgress + achievementProgress, 100);
+    // 调整进度计算，让进度更符合实际发展
+    // 使用更平滑的曲线，让第17章约为90%
+    const baseProgress = Math.min((chapter / 18) * 85, 85); // 18章达到85%基础进度
+    const achievementBonus = Math.min((achievementCount / 8) * 15, 15); // 8个成就达到15%奖励进度
+    const totalProgress = Math.min(baseProgress + achievementBonus, 100);
+    
+    console.log('📊 计算故事进度:', {
+      chapter,
+      achievementCount,
+      baseProgress: Math.round(baseProgress),
+      achievementBonus: Math.round(achievementBonus),
+      totalProgress: Math.round(totalProgress)
+    });
+    
+    return Math.round(totalProgress);
   };
 
   // 更新故事目标状态
@@ -732,10 +770,64 @@ const StoryManager: React.FC = () => {
       console.log(`🎯 目标存档ID: ${contextId}`);
       console.log(`✅ 存档是否存在: ${contextId in allContexts}`);
       
+      // 添加详细的存档数据检查
+      if (contextId in allContexts) {
+        const targetContext = allContexts[contextId];
+        console.log(`📊 目标存档详情:`, {
+          id: targetContext.id,
+          title: targetContext.title,
+          saveTime: targetContext.saveTime,
+          isAutoSave: targetContext.isAutoSave,
+          hasStoryState: !!targetContext.storyState,
+          storyId: targetContext.storyState?.story_id,
+          chapter: targetContext.storyState?.chapter
+        });
+      } else {
+        // 如果指定ID不存在，检查是否有相似的ID
+        const similarIds = Object.keys(allContexts).filter(id => 
+          id.includes(contextId.replace('auto_', '')) || 
+          contextId.includes(id.replace('auto_', ''))
+        );
+        console.log(`🔍 相似的存档ID:`, similarIds);
+        
+        // 检查localStorage原始数据
+        const rawData = localStorage.getItem('narrative-ai-saved-contexts');
+        console.log(`💾 localStorage原始数据长度:`, rawData?.length || 0);
+        if (rawData) {
+          try {
+            const parsedRaw = JSON.parse(rawData);
+            console.log(`📦 原始存档键列表:`, Object.keys(parsedRaw));
+          } catch (e) {
+            console.error(`❌ 解析localStorage数据失败:`, e);
+          }
+        }
+      }
+      
       const savedContext = contextManager.loadStoryContext(contextId);
       
       if (!savedContext) {
         console.error(`❌ loadStoryContext返回null，contextId: ${contextId}`);
+        
+        // 尝试自动修复：查找最近的自动保存
+        const autoSavePattern = contextId.startsWith('auto_') ? contextId : `auto_${contextId}`;
+        const manualSavePattern = contextId.replace('auto_', '');
+        
+        console.log(`🔧 尝试修复，查找模式: auto="${autoSavePattern}", manual="${manualSavePattern}"`);
+        
+        const fallbackContext = allContexts[autoSavePattern] || allContexts[manualSavePattern];
+        if (fallbackContext) {
+          console.log(`✅ 找到备用存档，ID: ${fallbackContext.id}`);
+          // 使用找到的存档
+          setCurrentStory(fallbackContext.storyState);
+          setCurrentModelConfig(fallbackContext.modelConfig);
+          setCurrentContextId(fallbackContext.id);
+          setHasSavedProgress(true);
+          storyAI.setModelConfig(fallbackContext.modelConfig);
+          storyAI.setConversationHistory(fallbackContext.conversationHistory);
+          console.log('✅ 故事进度已通过修复成功加载');
+          return;
+        }
+        
         throw new Error('未找到指定的存档');
       }
 

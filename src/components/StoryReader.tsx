@@ -478,6 +478,35 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       }));
     }
     
+    // 当进度达到80%且低于95%时，添加直通结局选项
+    // 也可以基于章节数作为后备条件
+    const currentProgress = story.story_progress || 0;
+    const calculatedProgress = Math.min((story.chapter / 18) * 85, 85);
+    const effectiveProgress = Math.max(currentProgress, calculatedProgress);
+    
+    console.log('🎬 检查直通结局选项条件:', {
+      currentProgress,
+      calculatedProgress: Math.round(calculatedProgress),
+      effectiveProgress: Math.round(effectiveProgress),
+      chapter: story.chapter,
+      shouldShowEndingOption: effectiveProgress >= 80 && effectiveProgress < 95,
+      chapterBasedFallback: story.chapter >= 15 && story.chapter < 20
+    });
+    
+    // 进度条件或章节条件满足时显示直通结局选项
+    if ((effectiveProgress >= 80 && effectiveProgress < 95) || (story.chapter >= 15 && story.chapter < 20)) {
+      console.log('✅ 添加直通结局选项');
+      choices.push({
+        id: -999, // 特殊ID标识直通结局选项
+        text: "寻找故事结局",
+        description: "故事已经发展得相当充分，可以开始寻找一个合适的结局",
+        difficulty: 1,
+        consequences: "将开始结局流程，结束当前的冒险故事"
+      });
+    } else {
+      console.log('❌ 不满足直通结局选项条件');
+    }
+    
     console.log(`🎲 最终生成选择数量: ${choices.length}/${targetChoiceCount}`);
     
     return choices;
@@ -1155,7 +1184,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     <span>{getProgressLabel(story.chapter)}</span>
                   </div>
                   <Progress 
-                    value={Math.min((story.chapter / 15) * 100, 100)} 
+                    value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
                     className="h-2"
                   />
                   <div className="flex justify-between text-xs text-slate-400">
@@ -1336,79 +1365,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </Card>
         )}
 
-        {/* 智能结局建议 */}
-        {!story.is_completed && !isProcessingChoice && (() => {
-          const endingSuggestion = getEndingSuggestion(story);
-          if (!endingSuggestion) return null;
-          
-          return (
-            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm border-amber-200 mb-4">
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  {/* 建议标题和原因 */}
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                      <span className="text-amber-700 text-lg">🎭</span>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-amber-800 mb-1">
-                        故事结局建议 
-                        <span className="text-xs text-amber-600 ml-2">
-                          (置信度: {endingSuggestion.confidence}%)
-                        </span>
-                      </h4>
-                      <p className="text-sm text-amber-700 mb-2">
-                        {endingSuggestion.reason}
-                      </p>
-                      <p className="text-xs text-amber-600">
-                        您可以选择以下任一种结局类型，AI将生成符合当前故事发展的完整结局
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* 结局类型选择 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {endingSuggestion.recommendedTypes.map((endingType, index) => (
-                      <Button
-                        key={endingType.type}
-                        onClick={() => {
-                          if (onMakeChoice) {
-                            onMakeChoice(-1, `选择${endingType.type}结局：${endingType.label}`);
-                          }
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="h-auto p-3 border-amber-300 text-left hover:bg-amber-100 flex flex-col items-start"
-                      >
-                        <div className="font-medium text-amber-800 mb-1">
-                          {endingType.label}
-                        </div>
-                        <div className="text-xs text-amber-600 text-left">
-                          {endingType.description}
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  {/* 继续故事选项 */}
-                  <div className="pt-2 border-t border-amber-200">
-                    <Button
-                      onClick={() => {
-                        // 简单地关闭建议，让故事继续
-                        console.log('用户选择继续故事');
-                      }}
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-amber-600 hover:text-amber-800 hover:bg-amber-100"
-                    >
-                      不，我想继续故事
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })()}
+
 
         {/* 故事卡住时的继续按钮 - 只在真正出现问题时显示 */}
         {!story.is_completed && isStoryStuck && onContinue && (
@@ -1440,8 +1397,107 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </Card>
         )}
 
-        {/* 选择项 - 只在故事未结束时显示 */}
-        {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (
+        {/* 进度 >= 95% 或章节 >= 20 时的结局类型选择 */}
+        {!story.is_completed && ((story.story_progress || 0) >= 95 || story.chapter >= 20) && !isProcessingChoice && (
+          <Card className="bg-purple-50 shadow-lg border-purple-300 animate-in slide-in-from-bottom-4">
+            <CardHeader>
+              <CardTitle className="text-lg text-purple-800 flex items-center gap-2">
+                🎬 选择故事结局类型
+                <Badge className="bg-purple-600 text-white text-xs">
+                  完成度: {Math.round(story.story_progress || 0)}%
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-purple-100 border border-purple-300 rounded-lg p-4">
+                <p className="text-sm text-purple-700 mb-2">
+                  经过 {story.chapter} 章的精彩冒险，故事已经非常完整了！现在是时候为这个故事选择一个合适的结局了。
+                </p>
+                <p className="text-xs text-purple-600">
+                  选择您喜欢的结局类型，AI将生成相应的完整结局场景。
+                </p>
+              </div>
+              
+              {/* 结局类型选择 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    if (onMakeChoice) {
+                      // 设置显示友好的文本，但传递识别用的文本
+                      setSelectedChoiceText('🎉 圆满结局');
+                      onMakeChoice(-1, '选择圆满结局：给所有角色一个完美的归宿');
+                    }
+                  }}
+                  className="h-auto p-4 bg-green-500 hover:bg-green-600 text-white flex flex-col items-start"
+                >
+                  <div className="font-medium mb-1">
+                    🎉 圆满结局
+                  </div>
+                  <div className="text-xs text-green-100 text-left">
+                    解决所有冲突，给角色完美归宿
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    if (onMakeChoice) {
+                      // 设置显示友好的文本，但传递识别用的文本
+                      setSelectedChoiceText('🌟 开放结局');
+                      onMakeChoice(-1, '选择开放结局：留有想象空间和未来可能性');
+                    }
+                  }}
+                  className="h-auto p-4 bg-blue-500 hover:bg-blue-600 text-white flex flex-col items-start"
+                >
+                  <div className="font-medium mb-1">
+                    🌟 开放结局
+                  </div>
+                  <div className="text-xs text-blue-100 text-left">
+                    留有想象空间，暗示未来可能
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    if (onMakeChoice) {
+                      // 设置显示友好的文本，但传递识别用的文本
+                      setSelectedChoiceText('⚡ 戏剧结局');
+                      onMakeChoice(-1, '选择戏剧结局：创造情感冲击和深刻印象');
+                    }
+                  }}
+                  className="h-auto p-4 bg-red-500 hover:bg-red-600 text-white flex flex-col items-start"
+                >
+                  <div className="font-medium mb-1">
+                    ⚡ 戏剧结局
+                  </div>
+                  <div className="text-xs text-red-100 text-left">
+                    情感冲击强烈，留下深刻印象
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    if (onMakeChoice) {
+                      // 设置显示友好的文本，但传递识别用的文本
+                      setSelectedChoiceText('🎲 意外结局');
+                      onMakeChoice(-1, '选择意外结局：出人意料的转折和惊喜');
+                    }
+                  }}
+                  className="h-auto p-4 bg-orange-500 hover:bg-orange-600 text-white flex flex-col items-start"
+                >
+                  <div className="font-medium mb-1">
+                    🎲 意外结局
+                  </div>
+                  <div className="text-xs text-orange-100 text-left">
+                    出人意料的转折和惊喜
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 选择项 - 只在故事未结束且未达到强制结局条件时显示 */}
+        {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (story.story_progress || 0) < 95 && story.chapter < 20 && (
           <Card className="bg-white shadow-lg border-slate-200 animate-in slide-in-from-bottom-4">
             <CardHeader>
               <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
@@ -1454,21 +1510,41 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     variant="outline"
                     onClick={() => handleChoice(choice.id)}
                     disabled={isProcessingChoice}
-                    className="w-full text-left h-auto p-4 bg-slate-50 border-slate-300 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`w-full text-left h-auto p-4 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      choice.id === -999 // 特殊的直通结局选项ID
+                        ? "bg-gradient-to-r from-yellow-100 to-orange-100 border-orange-300 hover:from-yellow-200 hover:to-orange-200 hover:border-orange-400"
+                        : "bg-slate-50 border-slate-300 hover:bg-blue-50 hover:border-blue-300"
+                    }`}
                   >
                     <div className="w-full">
                       <div className="flex items-center justify-between mb-1">
-                      <div className="font-semibold text-slate-800">{choice.text}</div>
+                        <div className={`font-semibold ${
+                          choice.id === -999 ? "text-orange-800" : "text-slate-800"
+                        }`}>
+                          {choice.id === -999 && "🎬 "}
+                          {choice.text}
+                        </div>
                         {choice.difficulty && (
                           <div className="flex items-center space-x-1">
                             <DifficultyIcon level={choice.difficulty} />
                             <span className="text-xs text-slate-500">难度{choice.difficulty}</span>
                           </div>
                         )}
+                        {choice.id === -999 && (
+                          <Badge className="bg-orange-500 text-white text-xs">
+                            直通结局
+                          </Badge>
+                        )}
                       </div>
-                      <div className="text-sm text-slate-600">{choice.description}</div>
+                      <div className={`text-sm ${
+                        choice.id === -999 ? "text-orange-700" : "text-slate-600"
+                      }`}>
+                        {choice.description}
+                      </div>
                       {choice.consequences && (
-                        <div className="text-xs text-slate-500 mt-1 italic">
+                        <div className={`text-xs mt-1 italic ${
+                          choice.id === -999 ? "text-orange-600" : "text-slate-500"
+                        }`}>
                           可能后果: {choice.consequences}
                         </div>
                       )}
