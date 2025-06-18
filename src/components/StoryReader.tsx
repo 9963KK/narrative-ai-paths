@@ -1596,14 +1596,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         <div className="flex justify-center space-x-4">
           {story.is_completed ? (
             <>
-              {onContinue && (
+              {/* 暂时禁用继续冒险功能 */}
+              {/* {onContinue && (
                 <Button
                   onClick={onContinue}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   继续冒险
                 </Button>
-              )}
+              )} */}
               <Button
                 onClick={onRestart}
                 className="bg-purple-600 hover:bg-purple-700 text-white"

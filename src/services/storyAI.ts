@@ -355,40 +355,76 @@ ${advConfig.character_details.map((char, i) =>
       // 清除任何现有的对话历史，开始新故事
       this.clearConversationHistory();
       
-      // 首先尝试真实AI生成
+      // 尝试AI生成，在JSON解析失败时重新生成
       if (this.modelConfig && this.modelConfig.apiKey) {
-        try {
-          // 初始故事生成时不使用历史记录，但保存对话
-          const response = await this.callAI(prompt, systemPrompt, false);
-          const content = this.extractContent(response);
-          
-          // 为后续对话建立基础
-          this.addToConversationHistory('system', systemPrompt);
-          this.addToConversationHistory('user', prompt);
-          this.addToConversationHistory('assistant', content);
-          
-          // 尝试解析JSON
-          let parsedContent;
+        let attempts = 0;
+        const maxAttempts = 3; // 最多重试3次
+        
+        while (attempts < maxAttempts) {
           try {
-            parsedContent = JSON.parse(content);
+            attempts++;
+            console.log(`尝试第${attempts}次生成故事...`);
             
-            // 验证必需字段
-            if (!parsedContent.scene || !parsedContent.characters) {
-              throw new Error('AI返回的格式不完整');
+            // 根据重试次数调整提示词
+            let currentPrompt = prompt;
+            let currentSystemPrompt = systemPrompt;
+            
+            if (attempts > 1) {
+              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON，包含所有必需字段。避免使用省略号、不完整的句子或格式错误。`;
+              
+              if (attempts === 3) {
+                currentSystemPrompt += '\n\n这是最后一次尝试，请特别注意JSON格式的正确性，确保所有大括号、中括号、引号都正确闭合。';
+              }
             }
             
-            return {
-              success: true,
-              content: parsedContent
-            };
-          } catch (parseError) {
-            console.warn('AI返回的JSON格式有问题，使用回退方案:', parseError);
-            return this.generateFallbackStory(config, isAdvanced);
+            // 调用AI生成内容
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, false);
+            const content = this.extractContent(response);
+            
+            // 为后续对话建立基础（只在第一次成功时建立）
+            if (attempts === 1) {
+              this.addToConversationHistory('system', systemPrompt);
+              this.addToConversationHistory('user', prompt);
+              this.addToConversationHistory('assistant', content);
+            }
+            
+            // 尝试解析JSON
+            let parsedContent;
+            try {
+              parsedContent = JSON.parse(content);
+              
+              // 验证必需字段
+              if (!parsedContent.scene || !parsedContent.characters) {
+                throw new Error('AI返回的格式不完整，缺少必需字段');
+              }
+              
+              console.log(`第${attempts}次尝试成功生成故事`);
+              return {
+                success: true,
+                content: parsedContent
+              };
+            } catch (parseError) {
+              console.warn(`第${attempts}次尝试JSON解析失败:`, parseError);
+              if (attempts >= maxAttempts) {
+                console.warn('达到最大重试次数，使用回退方案');
+                return this.generateFallbackStory(config, isAdvanced);
+              }
+              // 继续下一次循环尝试
+              continue;
+            }
+          } catch (apiError) {
+            console.warn(`第${attempts}次AI API调用失败:`, apiError);
+            if (attempts >= maxAttempts) {
+              console.warn('达到最大重试次数，使用回退方案');
+              return this.generateFallbackStory(config, isAdvanced);
+            }
+            // 继续下一次循环尝试
+            continue;
           }
-        } catch (apiError) {
-          console.warn('AI API调用失败，使用回退方案:', apiError);
-          return this.generateFallbackStory(config, isAdvanced);
         }
+        
+        // 如果所有尝试都失败了，使用回退方案
+        return this.generateFallbackStory(config, isAdvanced);
       } else {
         // 没有API配置，直接使用回退方案
         return this.generateFallbackStory(config, isAdvanced);
@@ -639,38 +675,71 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 请创作一个让读者完全沉浸其中的精彩场景。`;
 
     try {
-      // 尝试AI生成 - 使用多轮对话
+      // 尝试AI生成，在JSON解析失败时重新生成
       if (this.modelConfig && this.modelConfig.apiKey) {
-        try {
-          // 第一次调用时初始化对话历史
-          if (currentStory.chapter === 1 && this.conversationHistory.length === 0) {
-            this.addToConversationHistory('system', systemPrompt);
-          }
-          
-          const response = await this.callAI(prompt, systemPrompt, true); // 启用历史记录
-          const content = this.extractContent(response);
-          
+        let attempts = 0;
+        const maxAttempts = 3; // 最多重试3次
+        
+        while (attempts < maxAttempts) {
           try {
-            const parsedContent = JSON.parse(content);
+            attempts++;
+            console.log(`尝试第${attempts}次生成下一章节...`);
             
-            // 验证必需字段
-            if (!parsedContent.scene) {
-              console.warn('AI返回的场景描述不完整，使用回退方案');
-              return this.generateFallbackNextChapter(currentStory, selectedChoice);
+            // 根据重试次数调整提示词
+            let currentPrompt = prompt;
+            let currentSystemPrompt = systemPrompt;
+            
+            if (attempts > 1) {
+              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON。特别注意scene字段必须包含丰富的故事内容。`;
+              
+              if (attempts === 3) {
+                currentSystemPrompt += '\n\n最后一次尝试：请特别注意JSON格式的正确性，确保所有字段都完整且格式正确。';
+              }
             }
             
-            return {
-              success: true,
-              content: parsedContent
-            };
-          } catch (parseError) {
-            console.warn('AI返回JSON解析失败，使用回退方案:', parseError);
-            return this.generateFallbackNextChapter(currentStory, selectedChoice);
+            // 第一次调用时初始化对话历史
+            if (currentStory.chapter === 1 && this.conversationHistory.length === 0) {
+              this.addToConversationHistory('system', systemPrompt);
+            }
+            
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录
+            const content = this.extractContent(response);
+            
+            try {
+              const parsedContent = JSON.parse(content);
+              
+              // 验证必需字段
+              if (!parsedContent.scene) {
+                throw new Error('AI返回的场景描述不完整，缺少scene字段');
+              }
+              
+              console.log(`第${attempts}次尝试成功生成下一章节`);
+              return {
+                success: true,
+                content: parsedContent
+              };
+            } catch (parseError) {
+              console.warn(`第${attempts}次尝试JSON解析失败:`, parseError);
+              if (attempts >= maxAttempts) {
+                console.warn('达到最大重试次数，使用回退方案');
+                return this.generateFallbackNextChapter(currentStory, selectedChoice);
+              }
+              // 继续下一次循环尝试
+              continue;
+            }
+          } catch (apiError) {
+            console.warn(`第${attempts}次AI API调用失败:`, apiError);
+            if (attempts >= maxAttempts) {
+              console.warn('达到最大重试次数，使用回退方案');
+              return this.generateFallbackNextChapter(currentStory, selectedChoice);
+            }
+            // 继续下一次循环尝试
+            continue;
           }
-        } catch (apiError) {
-          console.warn('AI API调用失败，使用回退方案:', apiError);
-          return this.generateFallbackNextChapter(currentStory, selectedChoice);
         }
+        
+        // 如果所有尝试都失败了，使用回退方案
+        return this.generateFallbackNextChapter(currentStory, selectedChoice);
       } else {
         // 没有API配置，使用回退方案
         return this.generateFallbackNextChapter(currentStory, selectedChoice);
@@ -871,10 +940,63 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 请根据当前情况生成${choiceCount}个选择项。如果是关键时刻或紧张情况，可以提供更多选择；如果是简单场景，2-3个选择就足够了。`;
 
     try {
-      const response = await this.callAI(prompt, systemPrompt);
-      const content = this.extractContent(response);
-      const choices = JSON.parse(content);
-      return choices;
+      // 尝试AI生成，在JSON解析失败时重新生成
+      if (this.modelConfig && this.modelConfig.apiKey) {
+        let attempts = 0;
+        const maxAttempts = 3; // 最多重试3次
+        
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            console.log(`尝试第${attempts}次生成选择项...`);
+            
+            // 根据重试次数调整提示词
+            let currentPrompt = prompt;
+            let currentSystemPrompt = systemPrompt;
+            
+            if (attempts > 1) {
+              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON数组。每个选择项都必须包含id、text、description、difficulty字段。`;
+              
+              if (attempts === 3) {
+                currentSystemPrompt += '\n\n最后一次尝试：请特别注意JSON数组格式的正确性，确保所有选择项都完整且格式正确。';
+              }
+            }
+            
+            const response = await this.callAI(currentPrompt, currentSystemPrompt);
+            const content = this.extractContent(response);
+            const choices = JSON.parse(content);
+            
+            // 验证选择项格式
+            if (!Array.isArray(choices) || choices.length === 0) {
+              throw new Error('AI返回的选择项不是有效数组或为空');
+            }
+            
+            // 验证每个选择项的必需字段
+            for (const choice of choices) {
+              if (!choice.id || !choice.text || !choice.description) {
+                throw new Error('选择项缺少必需字段');
+              }
+            }
+            
+            console.log(`第${attempts}次尝试成功生成选择项`);
+            return choices;
+          } catch (error) {
+            console.warn(`第${attempts}次尝试生成选择项失败:`, error);
+            if (attempts >= maxAttempts) {
+              console.warn('达到最大重试次数，使用默认选择项');
+              return this.getDefaultChoices();
+            }
+            // 继续下一次循环尝试
+            continue;
+          }
+        }
+        
+        // 如果所有尝试都失败了，使用默认选择项
+        return this.getDefaultChoices();
+      } else {
+        // 没有API配置，使用默认选择项
+        return this.getDefaultChoices();
+      }
     } catch (error) {
       console.error('生成选择项失败:', error);
       return this.getDefaultChoices();
@@ -982,7 +1104,12 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     }
     
     // 尝试修复JSON格式
-    content = this.fixJsonFormat(content);
+    try {
+      content = this.fixJsonFormat(content);
+    } catch (fixError) {
+      // JSON修复失败，抛出错误让上层重新生成
+      throw new Error('JSON格式修复失败: ' + fixError.message);
+    }
     
     // 验证JSON格式
     try {
@@ -998,8 +1125,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         return `{"scene": "${escapedContent}", "mood": "神秘", "achievements": []}`;
       }
       
-      // 最后的回退方案 - 抛出错误而不是返回占位符
-      console.error('无法提取有效的AI内容');
+      // 抛出错误让上层重新生成
       throw new Error('AI响应格式无效，无法解析为有效的JSON');
     }
   }
@@ -1271,24 +1397,71 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 创作一个${endingType === 'success' ? '成功' : endingType === 'failure' ? '悲剧' : endingType === 'neutral' ? '开放' : '悬崖'}结局。`;
 
     try {
+      // 尝试AI生成，在JSON解析失败时重新生成
       if (this.modelConfig && this.modelConfig.apiKey) {
-        const response = await this.callAI(prompt, systemPrompt, true);
-        const content = this.extractContent(response);
+        let attempts = 0;
+        const maxAttempts = 3; // 最多重试3次
         
-        try {
-          const parsedContent = JSON.parse(content);
-          return {
-            success: true,
-            content: {
-              scene: parsedContent.scene,
-              achievements: parsedContent.achievements || [],
-              mood: parsedContent.mood || 'epic'
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            console.log(`尝试第${attempts}次生成故事结局...`);
+            
+            // 根据重试次数调整提示词
+            let currentPrompt = prompt;
+            let currentSystemPrompt = systemPrompt;
+            
+            if (attempts > 1) {
+              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON。必须包含scene字段，且内容要丰富有感情。`;
+              
+              if (attempts === 3) {
+                currentSystemPrompt += '\n\n最后一次尝试：请特别注意JSON格式的正确性，确保scene字段包含完整的结局描述。';
+              }
             }
-          };
-        } catch (parseError) {
-          console.warn('结局JSON解析失败，使用回退方案:', parseError);
-          return this.generateFallbackEnding(storyState, endingType);
+            
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, true);
+            const content = this.extractContent(response);
+            
+            try {
+              const parsedContent = JSON.parse(content);
+              
+              // 验证必需字段
+              if (!parsedContent.scene) {
+                throw new Error('AI返回的结局不完整，缺少scene字段');
+              }
+              
+              console.log(`第${attempts}次尝试成功生成故事结局`);
+              return {
+                success: true,
+                content: {
+                  scene: parsedContent.scene,
+                  choices: [], // 结局不需要选择项
+                  achievements: parsedContent.achievements || [],
+                  mood: parsedContent.mood || 'epic'
+                }
+              };
+            } catch (parseError) {
+              console.warn(`第${attempts}次尝试结局JSON解析失败:`, parseError);
+              if (attempts >= maxAttempts) {
+                console.warn('达到最大重试次数，使用回退方案');
+                return this.generateFallbackEnding(storyState, endingType);
+              }
+              // 继续下一次循环尝试
+              continue;
+            }
+          } catch (apiError) {
+            console.warn(`第${attempts}次AI API调用失败:`, apiError);
+            if (attempts >= maxAttempts) {
+              console.warn('达到最大重试次数，使用回退方案');
+              return this.generateFallbackEnding(storyState, endingType);
+            }
+            // 继续下一次循环尝试
+            continue;
+          }
         }
+        
+        // 如果所有尝试都失败了，使用回退方案
+        return this.generateFallbackEnding(storyState, endingType);
       } else {
         return this.generateFallbackEnding(storyState, endingType);
       }
@@ -1332,6 +1505,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       success: true,
       content: {
         scene: endingScenes[endingType],
+        choices: [], // 结局不需要选择项
         achievements: finalAchievements[endingType],
         mood: endingType === 'success' ? '胜利' : endingType === 'failure' ? '悲壮' : endingType === 'neutral' ? '平静' : '悬疑'
       }

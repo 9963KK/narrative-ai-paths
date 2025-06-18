@@ -51,20 +51,28 @@ const SaveManager: React.FC<SaveManagerProps> = ({
   };
 
   const handleLoadContext = (contextId: string) => {
+    console.log('📖 尝试加载存档:', contextId);
     if (onLoadStory) {
       onLoadStory(contextId);
-      if (onClose) onClose();
+      if (onClose) {
+        console.log('📤 关闭存档管理器');
+        onClose();
+      }
     }
   };
 
   const handleDeleteContext = (contextId: string) => {
     try {
+      console.log('🗑️ 开始删除存档:', contextId);
       const success = contextManager.deleteStoryContext(contextId);
       if (success) {
+        console.log('✅ 存档删除成功，重新加载列表');
         loadSavedContexts(); // 重新加载列表
+      } else {
+        console.warn('⚠️ 删除操作未成功');
       }
     } catch (error) {
-      console.error('删除存档失败:', error);
+      console.error('❌ 删除存档失败:', error);
     }
   };
 
@@ -147,9 +155,8 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {sortedContexts.map((context) => (
-                <Card key={context.id} className="border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                      onClick={() => handleLoadContext(context.id)}>
-                  <CardContent className="p-4">
+                <Card key={context.id} className="border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                  <CardContent className="p-4" onClick={() => handleLoadContext(context.id)}>
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -212,7 +219,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         </div>
                       </div>
                       
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           size="sm" 
                           className="flex-1 text-xs"
@@ -234,7 +241,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                             <AlertDialogHeader>
                               <AlertDialogTitle>确认删除</AlertDialogTitle>
                               <AlertDialogDescription>
@@ -242,8 +249,15 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>取消</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteContext(context.id)}>
+                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                                取消
+                              </AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteContext(context.id);
+                                }}
+                              >
                                 删除
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -395,7 +409,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                           <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -403,9 +417,14 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>取消</AlertDialogCancel>
+                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                              取消
+                            </AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteContext(context.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteContext(context.id);
+                              }}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               删除

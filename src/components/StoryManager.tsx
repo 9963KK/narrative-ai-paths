@@ -275,6 +275,7 @@ const StoryManager: React.FC = () => {
             current_scene: cleanedEnding,
             needs_choice: false,
             chapter: currentStory.chapter + 1, // 结局算作新的一章
+            story_progress: 100, // 故事完成时进度设置为100%
             achievements: [...(currentStory.achievements || []), `获得了${endingType === 'satisfying' ? '圆满' : endingType === 'open' ? '开放式' : endingType === 'dramatic' ? '戏剧性' : '自然'}结局`]
           };
           
@@ -311,6 +312,7 @@ const StoryManager: React.FC = () => {
             current_scene: fallbackEnding,
             needs_choice: false,
             chapter: currentStory.chapter + 1, // 结局算作新的一章
+            story_progress: 100, // 故事完成时进度设置为100%
             achievements: [...achievements, `获得了${choiceText.includes('圆满') ? '圆满' : choiceText.includes('开放') ? '开放式' : choiceText.includes('戏剧') ? '戏剧性' : '温馨'}结局`]
           };
           
@@ -896,96 +898,115 @@ const StoryManager: React.FC = () => {
     const hasManualSave = currentContextId && savedContexts[currentContextId];
     
     setHasSavedProgress(hasAutoSave || hasManualSave);
+    
+    // 如果当前存档被删除了，但不要清除故事状态（保持用户在存档管理界面）
+    if (currentContextId && !savedContexts[currentContextId] && !hasAutoSave) {
+      console.log('🔍 当前存档已被删除，但保持故事状态');
+      // 清除当前上下文ID，但保留故事状态以维持界面稳定
+      // 在存档管理界面时，不清除contextId以避免界面状态混乱
+      if (!showSaveManager) {
+        setCurrentContextId('');
+      }
+    }
   };
 
   const handleContinueStory = async () => {
     if (!currentStory) return;
     
-    console.log('🔄 手动继续故事，生成新场景...');
+    console.log('🔄 开始续篇冒险，创建新故事...');
     
     // 清除之前的AI错误状态
     setAiError(null);
     
     try {
-      // 尝试用AI生成新的故事场景
-      if (currentModelConfig && currentModelConfig.apiKey) {
-        const { storyAI } = await import('../services/storyAI');
-        storyAI.setModelConfig(currentModelConfig);
-        
-        try {
-          const result = await storyAI.continueStory(currentStory);
-          
-          if (result.current_scene && result.current_scene !== currentStory.current_scene) {
-            console.log('✅ AI成功生成新场景');
-            
-            // 更新故事目标
-            const updatedGoals = currentStory.story_goals ? updateStoryGoals(
-              currentStory.story_goals, 
-              '继续探索', 
-              result.chapter || currentStory.chapter
-            ) : [];
-            
-            const updatedStory = {
-              ...result,
-              story_goals: updatedGoals,
-              choices_made: [...(currentStory.choices_made || []), '继续探索'],
-              is_completed: false,
-              completion_type: undefined,
-              needs_choice: true
-            };
-            
-            setNormalStoryFlow(updatedStory, result.current_scene);
-            return;
-          }
-        } catch (aiError) {
-          console.warn('AI继续故事失败，使用备用方案:', aiError);
-        }
-      }
+      // 生成新的故事ID
+      const newStoryId = `ST${Date.now()}`;
       
-      // 备用方案：生成简单的继续场景
-      const continueScenes = [
-        "时间流逝，新的机会出现在眼前。你意识到必须做出一个重要的决定...",
-        "经过深思熟虑，你决定采取行动。周围的环境开始发生微妙的变化...",
-        "一个意想不到的转折点出现了。你感觉到故事正在朝着新的方向发展...",
-        "随着故事的推进，你面临着新的挑战和选择。接下来该怎么办？",
-        "事情变得越来越有趣。你注意到一些之前没有发现的重要细节..."
-      ];
-      
-      const randomScene = continueScenes[Math.floor(Math.random() * continueScenes.length)];
-      
-      // 更新故事目标
-      const updatedGoals = currentStory.story_goals ? updateStoryGoals(
-        currentStory.story_goals, 
-        '继续探索', 
-        currentStory.chapter + 1
-      ) : [];
-      
-      const updatedStory = {
-        ...currentStory,
-        current_scene: randomScene,
-        chapter: currentStory.chapter + 1,
-        choices_made: [...(currentStory.choices_made || []), '继续探索'],
-        story_goals: updatedGoals,
-        is_completed: false,
-        completion_type: undefined,
+      // 创建续篇故事的初始状态
+      const continuedStory: StoryState = {
+        story_id: newStoryId,
+        current_scene: generateFallbackContinueScene(currentStory), // 直接使用备用场景
+        characters: currentStory.characters, // 保留原有角色
+        setting: currentStory.setting, // 保留原设定
+        chapter: 1, // 重置章节
+        choices_made: [`基于前作：${currentStory.story_id}`], // 记录来源
+        achievements: [], // 重置成就
+        mood: currentStory.mood || '神秘',
+        tension_level: 3, // 重置紧张度
         needs_choice: true,
-        scene_type: 'exploration' as const,
-        story_progress: calculateStoryProgress(currentStory.chapter + 1, currentStory.achievements.length)
+        scene_type: 'exploration',
+        is_completed: false,
+        story_progress: 0, // 重置进度
+        main_goal_status: 'pending',
+        story_goals: [
+          {
+            id: 'continue_main',
+            description: '在新的冒险中寻找新的目标',
+            type: 'main',
+            priority: 'high',
+            status: 'pending'
+          },
+          {
+            id: 'continue_growth',
+            description: '角色进一步成长和发展',
+            type: 'personal',
+            priority: 'medium',
+            status: 'pending'
+          }
+        ]
       };
       
-      console.log('✅ 使用备用场景继续故事');
-      setNormalStoryFlow(updatedStory, randomScene);
+      // 更新当前故事状态
+      setCurrentStory(continuedStory);
+      
+      // 清空当前上下文ID，因为这是新故事
+      setCurrentContextId('');
+      
+      // 如果启用了自动保存，保存新故事
+      if (autoSaveEnabled && currentModelConfig) {
+        setTimeout(() => {
+          try {
+            autoSaveContext(continuedStory, [], currentModelConfig);
+            console.log('🔄 续篇故事自动保存完成');
+            setHasSavedProgress(true);
+          } catch (error) {
+            console.error('续篇自动保存失败:', error);
+          }
+        }, 1000);
+      }
+      
+      console.log('✅ 续篇冒险已开始，这是一个全新的故事');
       
     } catch (error) {
-      console.error('继续故事失败:', error);
-      setAiError('无法继续故事，请尝试重新开始');
+      console.error('创建续篇失败:', error);
+      setAiError('无法创建续篇，请尝试重新开始');
     }
+  };
+  
+  // 生成备用的续篇开场场景
+  const generateFallbackContinueScene = (previousStory: StoryState): string => {
+    const protagonist = previousStory.characters[0]?.name || '主角';
+    const setting = previousStory.setting;
+    
+    const continueScenes = [
+      `经历了之前的冒险后，${protagonist}在${setting}中获得了宝贵的经验。如今，新的挑战悄然而至，一个全新的故事即将展开...`,
+      `时光荏苒，${protagonist}已经从之前的冒险中成长了许多。在${setting}的某个角落，新的机遇正在等待着他们的到来...`,
+      `之前的冒险虽然结束了，但${protagonist}的故事还在继续。在${setting}中，新的谜团和挑战正等待着被揭开...`,
+      `${protagonist}回望过去的冒险，心中充满了成就感。然而，在${setting}的远方，新的传说正在召唤着他们前进...`,
+      `休整了一段时间后，${protagonist}再次踏上了冒险的征程。这一次，在${setting}中等待他们的又会是什么样的奇遇呢？`
+    ];
+    
+    return continueScenes[Math.floor(Math.random() * continueScenes.length)];
   };
 
   // 组件挂载时和故事变化时检查存档状态
   useEffect(() => {
+    // 如果正在显示存档管理器，则跳过存档状态检查，避免删除操作导致的状态混乱
+    if (showSaveManager) {
+      return;
+    }
     checkHasSavedProgress();
-  }, [currentStory, currentContextId]);
+  }, [currentStory, currentContextId, showSaveManager]); // 添加showSaveManager依赖
 
   if (isLoading) {
     return (
