@@ -913,7 +913,7 @@ const StoryManager: React.FC = () => {
       console.log('🔍 当前存档已被删除，但保持故事状态');
       // 在存档管理界面时，不清除contextId以避免界面状态混乱
       if (!showSaveManager) {
-        setCurrentContextId('');
+      setCurrentContextId('');
       }
     }
   };

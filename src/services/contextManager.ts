@@ -87,8 +87,8 @@ class ContextManager {
       const now = new Date();
       
       // 获取现有存档（只获取一次）
-      const existingContexts = this.getSavedContexts();
-      
+        const existingContexts = this.getSavedContexts();
+        
       // 改进的重复处理逻辑：不再需要删除，因为使用统一ID系统
       // 除非是创建额外快照（customId不是主存档ID格式）
       const primarySaveId = `story_${storyState.story_id}`;
@@ -117,7 +117,7 @@ class ContextManager {
         thumbnail: this.generateThumbnail(storyState),
         genre: this.extractGenre(storyState)
       };
-
+      
       // 添加或更新存档
       existingContexts[contextId] = savedContext;
       
@@ -550,5 +550,5 @@ export const saveStoryProgress = contextManager.saveStoryProgress.bind(contextMa
 export const loadStoryContext = contextManager.loadStoryContext.bind(contextManager);
 export const getSavedContexts = contextManager.getSavedContexts.bind(contextManager);
 export const deleteStoryContext = contextManager.deleteStoryContext.bind(contextManager);
-export const autoSaveContext = contextManager.autoSave.bind(contextManager);
+export const autoSaveContext = contextManager.autoSave.bind(contextManager); 
 export const cleanupDuplicates = contextManager.cleanupDuplicates.bind(contextManager); 

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2 } from 'lucide-react';
-import { contextManager, SavedStoryContext, getSavedContexts, cleanupDuplicates } from '../services/contextManager';
+import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
 
 interface SaveManagerProps {
   onLoadStory?: (contextId: string) => void;
@@ -119,16 +119,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
     }
   };
 
-  const handleCleanupDuplicates = () => {
-    try {
-      console.log('🧹 开始清理重复存档...');
-      cleanupDuplicates();
-      loadSavedContexts(); // 重新加载列表
-      console.log('✅ 重复存档清理完成');
-    } catch (error) {
-      console.error('❌ 清理重复存档失败:', error);
-    }
-  };
+
 
   const formatPlayTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -162,14 +153,6 @@ const SaveManager: React.FC<SaveManagerProps> = ({
               <h2 className="text-lg font-semibold text-slate-800">
                 最近的故事 ({sortedContexts.length} 个存档)
               </h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleCleanupDuplicates}
-                className="text-sm"
-              >
-                🧹 清理重复
-              </Button>
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

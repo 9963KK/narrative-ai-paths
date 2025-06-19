@@ -154,7 +154,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         console.warn('⚠️ JSON解析相关错误，但不立即设为卡住状态（AI内部会重试）');
         // 不立即设置为卡住，给重试机制一些时间
       } else {
-        setIsStoryStuck(true);
+      setIsStoryStuck(true);
       }
     } else {
       // AI错误清除时，重置卡住状态（除非其他原因导致卡住）

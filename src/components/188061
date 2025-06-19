@@ -10,7 +10,6 @@ import { Settings, Wand2, Wrench, ArrowLeft, Users, Target, MapPin, Sparkles, Fo
 import ModelConfig from './ModelConfig';
 import SaveManager from './SaveManager';
 import DocumentAnalyzer from './DocumentAnalyzer';
-import DocumentAnalysisResultView from './DocumentAnalysisResultView';
 import { ModelConfig as ModelConfigType } from './model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { getSavedContexts } from '@/services/contextManager';
@@ -32,9 +31,7 @@ interface AdvancedStoryConfig extends BaseStoryConfig {
   character_details: Array<{
     name: string;
     role: string;
-    traits: string;
-    appearance?: string;
-    backstory?: string;
+    personality: string;
   }>;
   environment_details: string;
   preferred_ending: 'open' | 'success' | 'failure' | 'surprise' | 'romantic' | 'tragic';
@@ -60,7 +57,7 @@ interface StoryInitializerProps {
 }
 
 const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory }) => {
-  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document' | 'analysis-result'>('select');
+  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document'>('select');
   
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
@@ -78,9 +75,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     special_requirements: '',
     character_count: 3,
     character_details: [
-      { name: '', role: '主角', traits: '' },
-      { name: '', role: '伙伴', traits: '' },
-      { name: '', role: '反派', traits: '' }
+      { name: '', role: '主角', personality: '' },
+      { name: '', role: '伙伴', personality: '' },
+      { name: '', role: '反派', personality: '' }
     ],
     environment_details: '',
     preferred_ending: 'open',
@@ -102,7 +99,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [savedContextsCount, setSavedContextsCount] = useState(0);
-  const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
 
   // 组件加载时检查本地配置和存档
   useEffect(() => {
@@ -178,7 +174,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           newCharacters.push({
             name: '',
             role: roles[i] || '配角',
-            traits: ''
+            personality: ''
           });
         }
       } else if (count < newCharacters.length) {
@@ -233,161 +229,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     }
   };
 
-  // 处理文档分析完成
-  const handleDocumentAnalysisComplete = (result: DocumentAnalysisResult) => {
-    setDocumentAnalysisResult(result);
-    console.log('📄 文档分析完成，切换到结果展示界面', result);
-    
-    if (result.success && result.data) {
-      // 直接跳转到分析结果展示界面
-      setConfigMode('analysis-result');
-    }
-  };
-
-  // 基于文档分析创建故事
-  const handleCreateFromAnalysis = (selectedSeed?: any) => {
-    if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
-    
-    const hasApiKey = modelConfig.apiKey || hasValidConfig;
-    if (!hasApiKey) {
-      alert('请先配置AI模型');
-      return;
-    }
-
-    // 使用文档分析结果创建配置
-    const analysisData = documentAnalysisResult.data;
-    
-    // 从写作风格推断文体类型
-    let inferredGenre = 'fantasy'; // 默认
-    const genre = analysisData.writingStyle.genre.toLowerCase();
-    if (genre.includes('科幻') || genre.includes('sci-fi')) {
-      inferredGenre = 'sci-fi';
-    } else if (genre.includes('奇幻') || genre.includes('fantasy')) {
-      inferredGenre = 'fantasy';
-    } else if (genre.includes('推理') || genre.includes('悬疑') || genre.includes('mystery')) {
-      inferredGenre = 'mystery';
-    } else if (genre.includes('爱情') || genre.includes('浪漫') || genre.includes('romance')) {
-      inferredGenre = 'romance';
-    } else if (genre.includes('惊悚') || genre.includes('恐怖')) {
-      inferredGenre = 'thriller';
-    } else if (genre.includes('历史')) {
-      inferredGenre = 'historical';
-    } else if (genre.includes('日常') || genre.includes('生活')) {
-      inferredGenre = 'slice-of-life';
-    } else if (genre.includes('冒险')) {
-      inferredGenre = 'adventure';
-    }
-
-    // 从语调推断故事基调
-    let inferredTone: 'light' | 'serious' | 'humorous' | 'dark' | 'romantic' = 'serious';
-    const tone = analysisData.writingStyle.tone.toLowerCase();
-    if (tone.includes('轻松') || tone.includes('轻快')) {
-      inferredTone = 'light';
-    } else if (tone.includes('幽默') || tone.includes('诙谐')) {
-      inferredTone = 'humorous';
-    } else if (tone.includes('黑暗') || tone.includes('沉重')) {
-      inferredTone = 'dark';
-    } else if (tone.includes('浪漫') || tone.includes('温馨')) {
-      inferredTone = 'romantic';
-    }
-
-    // 使用选中的创意种子，或者默认使用第一个
-    const seedToUse = selectedSeed || analysisData.suggestedStorySeeds[0];
-    const baseStoryIdea = seedToUse 
-      ? `基于《${seedToUse.title}》的创意：${seedToUse.premise}`
-      : '继承原作精神的全新故事';
-
-    // 如果有选中的创意种子，优先使用其角色和背景
-    const charactersToUse = seedToUse?.characters 
-      ? seedToUse.characters.map((charName: string, index: number) => {
-          // 尝试从分析的角色中找到匹配的角色，如果没有则创建新角色
-          const matchedChar = analysisData.characters.find(char => 
-            char.name && char.name.includes(charName) || charName.includes(char.name || '')
-          );
-          return {
-            name: charName,
-            role: index === 0 ? '主角' : '配角',
-            traits: matchedChar?.traits || '待定义的角色特征',
-            appearance: matchedChar?.appearance || '待描述',
-            backstory: matchedChar?.backstory || '待补充的背景故事'
-          };
-        })
-      : analysisData.characters.slice(0, 6).map((char, index) => ({
-          name: char.name || `角色${index + 1}`,
-          role: char.role || '配角',
-          traits: char.traits || '待定义',
-          appearance: char.appearance || '',
-          backstory: char.backstory || ''
-        }));
-
-    // 如果有选中的创意种子，优先使用其背景设定
-    const settingToUse = seedToUse?.setting 
-      ? `${seedToUse.setting}。${analysisData.setting.worldBackground}`
-      : `${analysisData.setting.time}，${analysisData.setting.place}。${analysisData.setting.worldBackground}`;
-
-    const documentBasedConfig: AdvancedStoryConfig = {
-      genre: inferredGenre,
-      story_idea: baseStoryIdea,
-      protagonist: charactersToUse[0]?.name || '新主角',
-      setting: settingToUse,
-      special_requirements: seedToUse ? `特别注重创意种子"${seedToUse.title}"中的核心元素和角色关系` : '',
-      character_count: Math.min(Math.max(charactersToUse.length, 3), 6),
-      character_details: charactersToUse.slice(0, 6),
-      environment_details: `${settingToUse}。整体氛围：${analysisData.setting.atmosphere}`,
-      preferred_ending: 'open',
-      story_length: 'medium',
-      tone: inferredTone,
-      story_goals: analysisData.plotElements.keyEvents.slice(0, 3).map((event, index) => ({
-        id: `goal_${index + 1}`,
-        description: event,
-        type: index === 0 ? 'main' as const : 'sub' as const,
-        priority: index === 0 ? 'high' as const : 'medium' as const
-      })),
-      documentAnalysis: documentAnalysisResult,
-      useDocumentAnalysis: true
-    };
-
-    let configToUse = modelConfig;
-    if (!modelConfig.apiKey && hasValidConfig) {
-      const savedConfig = loadModelConfig();
-      if (savedConfig) {
-        configToUse = savedConfig;
-        setModelConfig(savedConfig);
-      }
-    }
-
-    onInitializeStory(documentBasedConfig, configToUse, true);
-  };
-
-  // 导出分析结果
-  const handleExportAnalysisResult = () => {
-    if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
-    
-    const dataStr = JSON.stringify(documentAnalysisResult.data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `document-analysis-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // 处理文档分析结果变更
-  const handleAnalysisResultChange = (updatedResult: DocumentAnalysisResult) => {
-    setDocumentAnalysisResult(updatedResult);
-    
-    // 如果当前在advanced模式，更新高级配置中的文档分析数据
-    if (configMode === 'advanced' && advancedConfig.documentAnalysis) {
-      setAdvancedConfig(prev => ({
-        ...prev,
-        documentAnalysis: updatedResult
-      }));
-    }
-    
-    console.log('文档分析结果已更新:', updatedResult);
-  };
-
   // 模型配置界面
   if (showModelConfig) {
     return (
@@ -401,68 +242,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           onClose={() => setShowModelConfig(false)}
         />
       </div>
-    );
-  }
-
-  // 文档分析界面
-  if (configMode === 'document') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => setConfigMode('select')}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回主页
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowModelConfig(true)}
-              className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              <Settings className="h-4 w-4" />
-              模型配置
-            </Button>
-          </div>
-          
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-amber-800 text-sm text-center">
-                ⚠️ 请先配置AI模型才能进行文档分析
-              </p>
-            </div>
-          )}
-
-          <DocumentAnalyzer
-            modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
-            onAnalysisComplete={handleDocumentAnalysisComplete}
-            onClose={() => setConfigMode('select')}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // 文档分析结果展示界面
-  if (configMode === 'analysis-result') {
-    if (!documentAnalysisResult) {
-      // 如果没有分析结果，返回文档分析界面
-      setConfigMode('document');
-      return null;
-    }
-
-    return (
-      <DocumentAnalysisResultView
-        result={documentAnalysisResult}
-        onBack={() => setConfigMode('document')}
-        onCreateStory={handleCreateFromAnalysis}
-        onExportResult={handleExportAnalysisResult}
-        onSaveChanges={handleAnalysisResultChange}
-      />
     );
   }
 
@@ -535,7 +314,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <div className="flex-1 h-px bg-slate-200"></div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               {/* 简单配置 */}
               <Card className="border-2 border-blue-200 hover:border-blue-300 transition-all duration-300 cursor-pointer group"
                     onClick={() => setConfigMode('simple')}>
@@ -592,37 +371,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                   <div className="pt-2">
                     <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
                       适合有经验的用户
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 文档分析 */}
-              <Card className="border-2 border-orange-200 hover:border-orange-300 transition-all duration-300 cursor-pointer group"
-                    onClick={() => setConfigMode('document')}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-orange-100 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                    <Upload className="h-8 w-8 text-orange-600" />
-                  </div>
-                  <CardTitle className="text-xl text-slate-800">📄 文档分析</CardTitle>
-                  <p className="text-slate-600 text-sm">上传小说，AI提取创作元素</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-orange-500" />
-                      智能分析：
-                    </h4>
-                    <ul className="text-sm text-slate-600 space-y-1 ml-6">
-                      <li>• 自动识别人物角色</li>
-                      <li>• 提取故事背景设定</li>
-                      <li>• 分析写作风格和主题</li>
-                      <li>• 生成创作灵感种子</li>
-                    </ul>
-                  </div>
-                  <div className="pt-2">
-                    <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
-                      创新功能
                     </Badge>
                   </div>
                 </CardContent>
@@ -788,8 +536,8 @@ AI将根据您的描述自动创建角色、背景和情节..."
   // 高级配置界面
   if (configMode === 'advanced') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg border-slate-200">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-4xl bg-white shadow-lg border-slate-200 max-h-[90vh] overflow-y-auto">
           <CardHeader>
             <div className="flex items-center justify-between">
               <Button
@@ -819,41 +567,6 @@ AI将根据您的描述自动创建角色、背景和情节..."
             </div>
           </CardHeader>
           <CardContent>
-            {/* 文档分析结果显示 */}
-            {advancedConfig.useDocumentAnalysis && advancedConfig.documentAnalysis?.data && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    基于文档分析自动填充
-                  </h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setConfigMode('document')}
-                    className="text-green-700 border-green-300 hover:bg-green-100"
-                  >
-                    查看完整分析
-                  </Button>
-                </div>
-                <div className="text-sm text-green-700 mb-2">
-                  ✅ 已从上传的文档中自动提取了角色、背景、风格等信息，您可以在下方进一步调整
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {advancedConfig.documentAnalysis.data.characters.length} 个角色
-                  </Badge>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {advancedConfig.documentAnalysis.data.themes.mainThemes.length} 个主题
-                  </Badge>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {advancedConfig.documentAnalysis.data.suggestedStorySeeds.length} 个创意种子
-                  </Badge>
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleAdvancedSubmit} className="space-y-8">
               {!modelConfig.apiKey && !hasValidConfig && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -1017,39 +730,13 @@ AI将根据您的描述自动创建角色、背景和情节..."
                         <div>
                           <Label className="text-sm text-slate-600">性格特征</Label>
                           <Input
-                            value={character.traits}
+                            value={character.personality}
                             onChange={(e) => {
                               const newCharacters = [...advancedConfig.character_details];
-                              newCharacters[index].traits = e.target.value;
+                              newCharacters[index].personality = e.target.value;
                               setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
                             }}
                             placeholder="性格描述"
-                            className="mt-1 bg-white border-slate-300 text-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm text-slate-600">外观描述（可选）</Label>
-                          <Input
-                            value={character.appearance || ''}
-                            onChange={(e) => {
-                              const newCharacters = [...advancedConfig.character_details];
-                              newCharacters[index].appearance = e.target.value;
-                              setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
-                            }}
-                            placeholder="外貌特征描述"
-                            className="mt-1 bg-white border-slate-300 text-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm text-slate-600">背景故事（可选）</Label>
-                          <Input
-                            value={character.backstory || ''}
-                            onChange={(e) => {
-                              const newCharacters = [...advancedConfig.character_details];
-                              newCharacters[index].backstory = e.target.value;
-                              setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
-                            }}
-                            placeholder="角色背景描述"
                             className="mt-1 bg-white border-slate-300 text-slate-800"
                           />
                         </div>

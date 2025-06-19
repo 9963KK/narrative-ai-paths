@@ -58,6 +58,10 @@ export interface StoryGenerationResponse {
     characters?: Character[];
     mood?: string;
     achievements?: string[];
+    tension_level?: number;
+    story_length_target?: string;
+    preferred_ending_type?: string;
+    setting_details?: string;
   };
   error?: string;
 }
@@ -220,6 +224,49 @@ class StoryAI {
       // 高级配置 - 精确按照用户要求创作
       const advConfig = config as any; // 高级配置类型
       
+      // 检查是否使用了文档分析
+      const hasDocumentAnalysis = advConfig.useDocumentAnalysis && advConfig.documentAnalysis?.data;
+      let documentContext = '';
+      
+      if (hasDocumentAnalysis) {
+        const docData = advConfig.documentAnalysis.data;
+        
+        // 检查是否有选中的创意种子（从special_requirements中解析）
+        let selectedSeedInfo = '';
+        if (advConfig.special_requirements && advConfig.special_requirements.includes('创意种子')) {
+          // 从story_idea中提取选中的创意种子信息
+          const seedTitle = advConfig.story_idea.match(/基于《(.+?)》的创意/)?.[1];
+          if (seedTitle) {
+            const selectedSeed = docData.suggestedStorySeeds.find(s => 
+              s.title === seedTitle || advConfig.story_idea.includes(s.premise)
+            );
+            if (selectedSeed) {
+              selectedSeedInfo = `
+
+**🎯 选中的创意种子**（重点参考）：
+- 标题: ${selectedSeed.title}
+- 核心创意: ${selectedSeed.premise}
+- 建议角色: ${selectedSeed.characters.join('、')}
+- 建议背景: ${selectedSeed.setting}
+
+请以此创意种子为核心，结合原作分析创作故事。`;
+            }
+          }
+        }
+
+        documentContext = `
+
+**文档分析参考**（请从中汲取灵感，但创作全新故事）：
+- 原作风格: ${docData.writingStyle.tone}，${docData.writingStyle.narrativePerspective}
+- 原作主题: ${docData.themes.mainThemes.join('、')}
+- 深层含义: ${docData.themes.deeperMeaning}
+- 原作设定: ${docData.setting.time}，${docData.setting.place}，${docData.setting.atmosphere}
+- 参考角色类型: ${docData.characters.map(c => `${c.name}(${c.role})`).join('、')}
+- 所有创意种子: ${docData.suggestedStorySeeds.map(s => s.premise).join('；')}${selectedSeedInfo}
+
+请以上述分析为灵感源泉，但创作完全原创的新故事，避免直接复制内容。`;
+      }
+      
       systemPrompt = `你是一个专业的交互式小说创作AI。请根据用户的详细设定创建一个完全符合要求的${config.genre}故事开场。你需要创作出极具沉浸感和文学价值的开场场景。
 
 用户已经提供了详细的配置，请严格按照这些设定来创作：
@@ -228,7 +275,7 @@ class StoryAI {
 - 期望结局: ${advConfig.preferred_ending}
 - 角色数量: ${advConfig.character_count}个
 - 角色详情: ${JSON.stringify(advConfig.character_details)}
-- 环境设定: ${advConfig.environment_details}
+- 环境设定: ${advConfig.environment_details}${documentContext}
 
 高质量创作标准：
 1. 角色塑造（严格遵循用户设定）：
@@ -379,45 +426,45 @@ ${advConfig.character_details.map((char, i) =>
             
             // 调用AI生成内容
             const response = await this.callAI(currentPrompt, currentSystemPrompt, false);
-            const content = this.extractContent(response);
-            
+          const content = this.extractContent(response);
+          
             // 为后续对话建立基础（只在第一次成功时建立）
             if (attempts === 1) {
-              this.addToConversationHistory('system', systemPrompt);
-              this.addToConversationHistory('user', prompt);
-              this.addToConversationHistory('assistant', content);
+          this.addToConversationHistory('system', systemPrompt);
+          this.addToConversationHistory('user', prompt);
+          this.addToConversationHistory('assistant', content);
+            }
+          
+          // 尝试解析JSON
+          let parsedContent;
+          try {
+            parsedContent = JSON.parse(content);
+            
+            // 验证必需字段
+            if (!parsedContent.scene || !parsedContent.characters) {
+                throw new Error('AI返回的格式不完整，缺少必需字段');
             }
             
-            // 尝试解析JSON
-            let parsedContent;
-            try {
-              parsedContent = JSON.parse(content);
-              
-              // 验证必需字段
-              if (!parsedContent.scene || !parsedContent.characters) {
-                throw new Error('AI返回的格式不完整，缺少必需字段');
-              }
-              
               console.log(`第${attempts}次尝试成功生成故事`);
-              return {
-                success: true,
-                content: parsedContent
-              };
-            } catch (parseError) {
+            return {
+              success: true,
+              content: parsedContent
+            };
+          } catch (parseError) {
               console.warn(`第${attempts}次尝试JSON解析失败:`, parseError);
               if (attempts >= maxAttempts) {
                 console.warn('达到最大重试次数，使用回退方案');
-                return this.generateFallbackStory(config, isAdvanced);
+            return this.generateFallbackStory(config, isAdvanced);
               }
               // 继续下一次循环尝试
               continue;
-            }
-          } catch (apiError) {
+          }
+        } catch (apiError) {
             console.warn(`第${attempts}次AI API调用失败:`, apiError);
             if (attempts >= maxAttempts) {
               console.warn('达到最大重试次数，使用回退方案');
-              return this.generateFallbackStory(config, isAdvanced);
-            }
+          return this.generateFallbackStory(config, isAdvanced);
+        }
             // 继续下一次循环尝试
             continue;
           }
@@ -499,7 +546,8 @@ ${advConfig.character_details.map((char, i) =>
           tension_level: tensionLevel,
           achievements: ['开始冒险'],
           story_length_target: advConfig.story_length,
-          preferred_ending_type: advConfig.preferred_ending
+          preferred_ending_type: advConfig.preferred_ending,
+          choices: this.getDefaultChoices()
         }
       };
     }
@@ -601,7 +649,8 @@ ${advConfig.character_details.map((char, i) =>
         characters: template.characters,
         mood: template.mood,
         tension_level: template.tension_level,
-        achievements: ['开始冒险']
+        achievements: ['开始冒险'],
+        choices: this.getDefaultChoices()
       }
     };
   }
@@ -697,42 +746,42 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
             }
             
-            // 第一次调用时初始化对话历史
-            if (currentStory.chapter === 1 && this.conversationHistory.length === 0) {
-              this.addToConversationHistory('system', systemPrompt);
+          // 第一次调用时初始化对话历史
+          if (currentStory.chapter === 1 && this.conversationHistory.length === 0) {
+            this.addToConversationHistory('system', systemPrompt);
+          }
+          
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录
+          const content = this.extractContent(response);
+          
+          try {
+            const parsedContent = JSON.parse(content);
+            
+            // 验证必需字段
+            if (!parsedContent.scene) {
+                throw new Error('AI返回的场景描述不完整，缺少scene字段');
             }
             
-            const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录
-            const content = this.extractContent(response);
-            
-            try {
-              const parsedContent = JSON.parse(content);
-              
-              // 验证必需字段
-              if (!parsedContent.scene) {
-                throw new Error('AI返回的场景描述不完整，缺少scene字段');
-              }
-              
               console.log(`第${attempts}次尝试成功生成下一章节`);
-              return {
-                success: true,
-                content: parsedContent
-              };
-            } catch (parseError) {
+            return {
+              success: true,
+              content: parsedContent
+            };
+          } catch (parseError) {
               console.warn(`第${attempts}次尝试JSON解析失败:`, parseError);
               if (attempts >= maxAttempts) {
                 console.warn('达到最大重试次数，使用回退方案');
-                return this.generateFallbackNextChapter(currentStory, selectedChoice);
+            return this.generateFallbackNextChapter(currentStory, selectedChoice);
               }
               // 继续下一次循环尝试
               continue;
-            }
-          } catch (apiError) {
+          }
+        } catch (apiError) {
             console.warn(`第${attempts}次AI API调用失败:`, apiError);
             if (attempts >= maxAttempts) {
               console.warn('达到最大重试次数，使用回退方案');
-              return this.generateFallbackNextChapter(currentStory, selectedChoice);
-            }
+          return this.generateFallbackNextChapter(currentStory, selectedChoice);
+        }
             // 继续下一次循环尝试
             continue;
           }
@@ -809,7 +858,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         scene: sceneContent,
         mood: newMood,
         tension_level: newTensionLevel,
-        achievements: (difficulty >= 4 && Math.random() > 0.5) ? [`勇敢者 - 选择了难度${difficulty}的行动`] : []
+        achievements: (difficulty >= 4 && Math.random() > 0.5) ? [`勇敢者 - 选择了难度${difficulty}的行动`] : [],
+        choices: this.getDefaultChoices()
       }
     };
   }
@@ -963,8 +1013,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             }
             
             const response = await this.callAI(currentPrompt, currentSystemPrompt);
-            const content = this.extractContent(response);
-            const choices = JSON.parse(content);
+      const content = this.extractContent(response);
+      const choices = JSON.parse(content);
             
             // 验证选择项格式
             if (!Array.isArray(choices) || choices.length === 0) {
@@ -979,7 +1029,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             }
             
             console.log(`第${attempts}次尝试成功生成选择项`);
-            return choices;
+      return choices;
           } catch (error) {
             console.warn(`第${attempts}次尝试生成选择项失败:`, error);
             if (attempts >= maxAttempts) {
@@ -1105,7 +1155,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     
     // 尝试修复JSON格式
     try {
-      content = this.fixJsonFormat(content);
+    content = this.fixJsonFormat(content);
     } catch (fixError) {
       // JSON修复失败，抛出错误让上层重新生成
       throw new Error('JSON格式修复失败: ' + fixError.message);
@@ -1420,10 +1470,10 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             }
             
             const response = await this.callAI(currentPrompt, currentSystemPrompt, true);
-            const content = this.extractContent(response);
-            
-            try {
-              const parsedContent = JSON.parse(content);
+        const content = this.extractContent(response);
+        
+        try {
+          const parsedContent = JSON.parse(content);
               
               // 验证必需字段
               if (!parsedContent.scene) {
@@ -1431,21 +1481,21 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
               
               console.log(`第${attempts}次尝试成功生成故事结局`);
-              return {
-                success: true,
-                content: {
-                  scene: parsedContent.scene,
+          return {
+            success: true,
+            content: {
+              scene: parsedContent.scene,
                   choices: [], // 结局不需要选择项
-                  achievements: parsedContent.achievements || [],
-                  mood: parsedContent.mood || 'epic'
-                }
-              };
-            } catch (parseError) {
+              achievements: parsedContent.achievements || [],
+              mood: parsedContent.mood || 'epic'
+            }
+          };
+        } catch (parseError) {
               console.warn(`第${attempts}次尝试结局JSON解析失败:`, parseError);
               if (attempts >= maxAttempts) {
                 console.warn('达到最大重试次数，使用回退方案');
-                return this.generateFallbackEnding(storyState, endingType);
-              }
+          return this.generateFallbackEnding(storyState, endingType);
+        }
               // 继续下一次循环尝试
               continue;
             }
@@ -1581,7 +1631,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               ...storyState.achievements,
               ...(parsed.achievements || [])
             ],
-            scene_type: parsed.scene_type || 'exploration'
+
           };
         } catch (parseError) {
           console.warn('继续故事JSON解析失败，使用回退方案:', parseError);
