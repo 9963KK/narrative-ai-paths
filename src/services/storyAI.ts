@@ -1232,7 +1232,13 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         // 如果仍然失败，尝试提取有效的JSON部分
         const jsonMatch = fixed.match(/{[^{}]*"scene"[^{}]*}/);
         if (jsonMatch) {
-          return this.fixJsonFormat(jsonMatch[0]);
+          try {
+            JSON.parse(jsonMatch[0]);
+            return jsonMatch[0];
+          } catch (nestedError) {
+            // 如果提取的部分也无法解析，则抛出错误
+            throw new Error('无法修复JSON格式');
+          }
         }
         
         // 最后的回退 - 抛出错误而不是返回占位符
