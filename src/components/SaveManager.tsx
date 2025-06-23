@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2 } from 'lucide-react';
 import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
 
@@ -214,7 +215,11 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                           </div>
                           <div className="w-full bg-slate-200 rounded-full h-1.5">
                             <div 
-                              className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                (context.storyState.story_progress || 0) >= 100 
+                                  ? 'bg-green-500' 
+                                  : 'bg-blue-500'
+                              }`}
                               style={{ width: `${context.storyState.story_progress || 0}%` }}
                             ></div>
                           </div>
@@ -222,16 +227,28 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       </div>
                       
                       <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-                        <Button 
-                          size="sm" 
-                          className="flex-1 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLoadContext(context.id);
-                          }}
-                        >
-                          继续游戏
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                className="flex-1 text-xs"
+                                disabled={(context.storyState.story_progress || 0) >= 100}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLoadContext(context.id);
+                                }}
+                              >
+                                {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续游戏'}
+                              </Button>
+                            </TooltipTrigger>
+                            {(context.storyState.story_progress || 0) >= 100 && (
+                              <TooltipContent>
+                                <p>此功能正在开发中，敬请期待！</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button 
@@ -377,14 +394,26 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     </div>
                     
                     <div className="flex gap-2 ml-4">
-                      <Button
-                        onClick={() => handleLoadContext(context.id)}
-                        size="sm"
-                        className="flex items-center gap-1"
-                      >
-                        <Gamepad2 className="h-3 w-3" />
-                        继续
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => handleLoadContext(context.id)}
+                              size="sm"
+                              className="flex items-center gap-1"
+                              disabled={(context.storyState.story_progress || 0) >= 100}
+                            >
+                              <Gamepad2 className="h-3 w-3" />
+                              {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续'}
+                            </Button>
+                          </TooltipTrigger>
+                          {(context.storyState.story_progress || 0) >= 100 && (
+                            <TooltipContent>
+                              <p>此功能正在开发中，敬请期待！</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                       
                       <Button
                         onClick={() => {

@@ -289,6 +289,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
   // 基于故事内容的上下文选择生成
   const generateContextualChoices = (scene: string, characters: any[], story: any): Choice[] => {
+    // 安全检查 scene 参数
+    if (!scene || typeof scene !== 'string') {
+      console.warn('⚠️ generateContextualChoices 收到无效的 scene 参数:', scene);
+      return generateDynamicChoices('', characters, story); // 回退到动态选择生成
+    }
+    
     const sceneText = scene.toLowerCase();
     
     // 分析场景中的关键元素
@@ -618,14 +624,19 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           // 打字完成后根据需要显示选择项
           setTimeout(async () => {
             // 检查是否需要显示选择项 - 增强逻辑，明确检查故事状态
+            // 当达到结局条件时不再生成AI选择，而是显示结局选择
+            const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
             const shouldShowChoices = story.needs_choice !== false && 
                                     !story.is_completed && 
-                                    !initialStory.is_completed;
+                                    !initialStory.is_completed &&
+                                    !hasReachedEndingCondition;
             
             console.log('🎯 检查是否需要显示选择项:', {
               needs_choice: story.needs_choice,
               is_completed: story.is_completed,
               initialStory_is_completed: initialStory.is_completed,
+              hasReachedEndingCondition,
+              story_progress: story.story_progress,
               shouldShowChoices,
               scene_length: story.current_scene?.length,
               chapter: story.chapter
