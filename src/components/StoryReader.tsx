@@ -83,6 +83,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
+  const [isMoodExpanded, setIsMoodExpanded] = useState(false); // 氛围是否展开
   
   // 调试：监控isProcessingChoice状态变化
   useEffect(() => {
@@ -545,7 +546,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           const aiChoices = await storyAI.generateChoices(scene, characters, {
             ...story,
-            mood: story.mood || '神秘'
+            mood: story.mood || '神秘',
+            tension_level: story.tension_level || 5
           });
           if (aiChoices && aiChoices.length > 0) {
             console.log('✅ AI选择生成成功');
@@ -991,6 +993,19 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     };
   };
 
+  // 限制氛围文本长度的工具函数
+  const truncateMood = (mood: string, maxLength: number = 6): string => {
+    if (!mood) return '';
+    
+    // 如果文本长度小于等于限制，直接返回
+    if (mood.length <= maxLength) {
+      return mood;
+    }
+    
+    // 截断并添加省略号
+    return mood.substring(0, maxLength) + '...';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -1067,9 +1082,20 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 
                 {/* 氛围显示 */}
                 {story.mood && (
-                  <Badge variant="outline" className="border-blue-300 text-blue-600">
-                    氛围: {story.mood}
-                  </Badge>
+                  <div className="relative">
+                    <Badge 
+                      variant="outline" 
+                      className="border-blue-300 text-blue-600 cursor-pointer hover:bg-blue-50 transition-colors"
+                      onClick={() => setIsMoodExpanded(!isMoodExpanded)}
+                    >
+                      氛围: {isMoodExpanded ? story.mood : truncateMood(story.mood, 6)}
+                      {story.mood.length > 6 && (
+                        <span className="ml-1 text-xs">
+                          {isMoodExpanded ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </Badge>
+                  </div>
                 )}
                 
                 {/* 进度显示 */}

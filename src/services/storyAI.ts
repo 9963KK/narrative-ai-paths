@@ -67,10 +67,44 @@ export interface StoryGenerationResponse {
   error?: string;
 }
 
+// 摘要数据接口定义
+interface SummaryData {
+  plot_developments: string[];
+  character_changes: Array<{name: string, change: string}>;
+  key_decisions: Array<{decision: string, consequence: string}>;
+  atmosphere: {
+    mood: string;
+    tension_level: number;
+  };
+  important_clues: string[];
+  timestamp: string;
+  summary_version: number;
+}
+
 class StoryAI {
   private modelConfig: ModelConfig | null = null;
   // 添加对话历史管理
   private conversationHistory: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [];
+  
+  // 新增摘要管理属性
+  private historySummary: string = '';
+  private summaryTriggerCount: number = 0;
+  private lastSummaryIndex: number = 0;
+  private readonly SUMMARY_TRIGGER_INTERVAL = 6; // 每6轮对话触发一次摘要
+  private readonly MAX_SUMMARY_LENGTH = 2000; // 摘要最大长度阈值
+
+  // 工具函数：限制氛围文本长度
+  private truncateMood(mood: string, maxLength: number = 8): string {
+    if (!mood) return '神秘';
+    
+    // 如果文本长度小于等于限制，直接返回
+    if (mood.length <= maxLength) {
+      return mood;
+    }
+    
+    // 截断并添加省略号
+    return mood.substring(0, maxLength) + '...';
+  }
 
   // 设置AI模型配置
   setModelConfig(config: ModelConfig) {
@@ -80,6 +114,10 @@ class StoryAI {
   // 清除对话历史（开始新故事时调用）
   clearConversationHistory() {
     this.conversationHistory = [];
+    // 重置摘要相关状态
+    this.historySummary = '';
+    this.summaryTriggerCount = 0;
+    this.lastSummaryIndex = 0;
   }
 
   // 获取对话历史（用于调试或保存）
@@ -88,13 +126,57 @@ class StoryAI {
   }
 
   // 导入对话历史（用于恢复会话）
-  setConversationHistory(history: Array<{role: 'system' | 'user' | 'assistant', content: string}>) {
+  setConversationHistory(history: Array<{role: 'system' | 'user' | 'assistant', content: string}>, summaryState?: {
+    historySummary: string;
+    summaryTriggerCount: number;
+    lastSummaryIndex: number;
+  }) {
     this.conversationHistory = [...history];
+    
+    if (summaryState) {
+      // 恢复完整的摘要状态
+      this.historySummary = summaryState.historySummary;
+      this.summaryTriggerCount = summaryState.summaryTriggerCount;
+      this.lastSummaryIndex = summaryState.lastSummaryIndex;
+      console.log('✅ 摘要状态已恢复:', {
+        summaryLength: this.historySummary.length,
+        triggerCount: this.summaryTriggerCount,
+        lastIndex: this.lastSummaryIndex
+      });
+    } else {
+      // 兼容旧存档：重新计算摘要触发状态
+      this.summaryTriggerCount = history.filter(msg => msg.role === 'assistant').length;
+      this.lastSummaryIndex = 0;
+      console.log('⚠️ 旧存档兼容模式，重新计算摘要状态:', {
+        assistantCount: this.summaryTriggerCount
+      });
+    }
   }
 
-  // 添加消息到对话历史
+  // 新增：获取当前摘要状态（用于保存）
+  getSummaryState(): {
+    historySummary: string;
+    summaryTriggerCount: number;
+    lastSummaryIndex: number;
+  } {
+    return {
+      historySummary: this.historySummary,
+      summaryTriggerCount: this.summaryTriggerCount,
+      lastSummaryIndex: this.lastSummaryIndex
+    };
+  }
+
+  // 添加消息到对话历史 - 增强版本，支持摘要触发
   private addToConversationHistory(role: 'system' | 'user' | 'assistant', content: string) {
     this.conversationHistory.push({ role, content });
+    
+    // 触发摘要检查（每当有assistant回复时检查）- 异步执行，不阻塞主流程
+    if (role === 'assistant') {
+      this.summaryTriggerCount++;
+      this.checkAndGenerateSummary().catch(error => {
+        console.error('后台摘要生成异常:', error);
+      });
+    }
     
     // 控制对话历史长度，避免token消耗过多
     const maxHistoryLength = 20; // 保持最近10轮对话
@@ -103,6 +185,543 @@ class StoryAI {
       const systemMessages = this.conversationHistory.filter(msg => msg.role === 'system');
       const recentMessages = this.conversationHistory.slice(-maxHistoryLength + systemMessages.length);
       this.conversationHistory = [...systemMessages, ...recentMessages.filter(msg => msg.role !== 'system')];
+    }
+  }
+
+  // 新增：检查并生成摘要
+  private async checkAndGenerateSummary() {
+    console.log(`🔍 检查摘要触发条件:`);
+    console.log(`  - 当前计数: ${this.summaryTriggerCount}`);
+    console.log(`  - 触发阈值: ${this.SUMMARY_TRIGGER_INTERVAL}`);
+    console.log(`  - 上次索引: ${this.lastSummaryIndex}`);
+    console.log(`  - 满足触发条件: ${this.summaryTriggerCount >= this.SUMMARY_TRIGGER_INTERVAL && this.summaryTriggerCount > this.lastSummaryIndex}`);
+    
+    if (this.summaryTriggerCount >= this.SUMMARY_TRIGGER_INTERVAL && 
+        this.summaryTriggerCount > this.lastSummaryIndex) {
+      
+      console.log(`🔄 触发摘要生成 - 对话轮数: ${this.summaryTriggerCount}`);
+      await this.generateBackgroundSummary();
+      this.lastSummaryIndex = this.summaryTriggerCount;
+    } else {
+      console.log(`⏳ 摘要暂未触发，还需 ${this.SUMMARY_TRIGGER_INTERVAL - this.summaryTriggerCount} 轮对话`);
+    }
+  }
+
+  // 新增：后台摘要生成核心方法
+  private async generateBackgroundSummary() {
+    try {
+      console.log('🎯 开始后台摘要生成...');
+      
+      // 获取需要摘要的历史对话（排除最近的对话窗口）
+      const historyToSummarize = this.getHistoryForSummary();
+      
+      if (historyToSummarize.length === 0) {
+        console.log('📝 暂无需要摘要的历史内容');
+        return;
+      }
+
+      // 生成摘要
+      const newSummary = await this.generateSummary(historyToSummarize);
+      
+      // 合并摘要
+      this.historySummary = this.mergeSummaries(this.historySummary, newSummary);
+      
+      console.log('✅ 后台摘要生成完成');
+      console.log('📋 当前摘要内容:');
+      console.log('=' .repeat(60));
+      this.displayFormattedSummary(this.historySummary);
+      console.log('=' .repeat(60));
+      
+    } catch (error) {
+      console.error('❌ 后台摘要生成失败:', error);
+    }
+  }
+
+  // 新增：获取需要摘要的历史对话
+  private getHistoryForSummary(): Array<{role: string, content: string}> {
+    // 保留最近的对话不进行摘要（保持详细上下文）
+    const recentWindowSize = 8; // 保留最近4轮对话的详细内容
+    
+    if (this.conversationHistory.length <= recentWindowSize) {
+      return [];
+    }
+    
+    // 获取需要摘要的部分（除了system消息和最近的对话）
+    const systemMessages = this.conversationHistory.filter(msg => msg.role === 'system');
+    const nonSystemHistory = this.conversationHistory.filter(msg => msg.role !== 'system');
+    const historyToSummarize = nonSystemHistory.slice(0, -recentWindowSize);
+    
+    return historyToSummarize;
+  }
+
+  // 重构：生成JSON格式摘要内容
+  private async generateSummary(historyToSummarize: Array<{role: string, content: string}>): Promise<string> {
+    try {
+      console.log('🔄 正在调用AI生成JSON格式摘要...');
+      
+      const historyText = historyToSummarize
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n\n');
+
+      // 构建包含历史摘要的上下文
+      let contextPrompt = '';
+      if (this.historySummary) {
+        try {
+          // 尝试解析现有摘要
+          const existingSummaryData = JSON.parse(this.historySummary);
+          contextPrompt = `历史摘要参考（用于保持连续性，请智能合并避免重复）：
+${JSON.stringify(existingSummaryData, null, 2)}
+
+新的对话历史：`;
+        } catch {
+          contextPrompt = `历史摘要参考：
+${this.historySummary}
+
+新的对话历史：`;
+        }
+      } else {
+        contextPrompt = '对话历史：';
+      }
+
+      // 计算版本号
+      const currentVersion = this.historySummary ? (this.getSummaryVersion() + 1) : 1;
+      const timestamp = new Date().toISOString();
+
+      const summaryPrompt = `你是一个专业的故事摘要分析师。请为以下故事对话历史生成结构化的JSON摘要。
+
+${contextPrompt}
+${historyText}
+
+⚠️ **CRITICAL: 输出要求**
+- 必须以 { 开始，以 } 结束
+- 不得包含任何解释、说明或额外文本
+- 不得使用省略号(...)或缩写
+- 所有字符串必须用双引号包围
+- 所有字段都必须完整填写，不能留空或省略
+
+JSON格式模板（必须严格遵循）：
+{
+  "plot_developments": ["完整的剧情进展描述1", "完整的剧情进展描述2"],
+  "character_changes": [{"name": "具体角色名", "change": "完整的变化描述"}],
+  "key_decisions": [{"decision": "完整的决策描述", "consequence": "完整的后果描述"}],
+  "atmosphere": {"mood": "具体的情感基调", "tension_level": 7},
+  "important_clues": ["完整的线索描述1", "完整的线索描述2"],
+  "timestamp": "${timestamp}",
+  "summary_version": ${currentVersion}
+}
+
+🎯 **内容要求**：
+- plot_developments: 2-3个最重要的剧情发展
+- character_changes: 主要角色的重要变化
+- key_decisions: 影响故事走向的关键选择
+- atmosphere.mood: 当前故事的情感氛围
+- atmosphere.tension_level: 1-10的紧张程度数值
+- important_clues: 对后续剧情重要的线索信息
+
+**重要要求：必须使用中文创作，所有内容都必须是中文**
+
+现在开始生成JSON：`;
+
+      const systemPrompt = `你是一个专业的故事摘要专家。你必须返回严格的JSON格式摘要，确保可以被JSON.parse()解析。智能分析故事发展，避免信息重复，保持连续性。
+
+**重要要求：必须使用中文创作，所有内容都必须是中文**`;
+
+      const result = await this.callAI(summaryPrompt, systemPrompt, false);
+
+      if (result.choices && result.choices[0] && result.choices[0].message) {
+        const summaryText = result.choices[0].message.content;
+        console.log('🔍 AI返回的原始摘要内容:', summaryText);
+        
+        // 验证和解析JSON
+        const parsedSummary = this.parseSummaryJSON(summaryText);
+        if (parsedSummary) {
+          console.log('✅ JSON摘要生成成功');
+          return JSON.stringify(parsedSummary, null, 2);
+        } else {
+          console.warn('⚠️ JSON解析失败，使用备用格式');
+          return this.createFallbackSummary(historyToSummarize);
+        }
+      } else {
+        throw new Error('摘要生成响应格式无效');
+      }
+    } catch (error) {
+      console.error('❌ 摘要生成失败:', error);
+      return this.createFallbackSummary(historyToSummarize);
+    }
+  }
+
+  // 重构：智能合并JSON摘要
+  private mergeSummaries(existingSummary: string, newSummary: string): string {
+    if (!existingSummary) {
+      return newSummary;
+    }
+    
+    try {
+      // 尝试智能合并JSON摘要
+      const existingData = JSON.parse(existingSummary);
+      const newData = JSON.parse(newSummary);
+      
+      // 智能合并逻辑
+      const mergedData: SummaryData = {
+        plot_developments: [
+          ...this.deduplicate(existingData.plot_developments || []),
+          ...this.deduplicate(newData.plot_developments || [])
+        ].slice(-5), // 保留最近5个剧情发展
+        character_changes: [
+          ...this.mergeCharacterChanges(existingData.character_changes || [], newData.character_changes || [])
+        ].slice(-8), // 保留最近8个角色变化
+        key_decisions: [
+          ...this.deduplicate(existingData.key_decisions || [], 'decision'),
+          ...this.deduplicate(newData.key_decisions || [], 'decision')
+        ].slice(-6), // 保留最近6个关键决策
+        atmosphere: newData.atmosphere || existingData.atmosphere || { mood: "平静", tension_level: 3 },
+        important_clues: [
+          ...this.deduplicate(existingData.important_clues || []),
+          ...this.deduplicate(newData.important_clues || [])
+        ].slice(-10), // 保留最近10个重要线索
+        timestamp: new Date().toISOString(),
+        summary_version: (existingData.summary_version || 1) + 1
+      };
+      
+      // 检查合并后的摘要长度
+      const mergedSummaryText = JSON.stringify(mergedData);
+      if (mergedSummaryText.length > this.MAX_SUMMARY_LENGTH) {
+        console.log('⚠️ 摘要过长，执行压缩');
+        return this.compressSummary(mergedData);
+      }
+      
+      return JSON.stringify(mergedData, null, 2);
+    } catch (error) {
+      console.warn('⚠️ JSON摘要合并失败，使用文本合并:', error);
+      // 降级到文本合并
+      return `## 故事摘要 (更新时间: ${new Date().toLocaleTimeString()})
+
+### 📚 历史摘要
+${existingSummary}
+
+### 🆕 最新进展
+${newSummary}`;
+    }
+  }
+
+  // 新增：获取摘要版本号
+  private getSummaryVersion(): number {
+    if (!this.historySummary) return 0;
+    
+    try {
+      const summaryData = JSON.parse(this.historySummary);
+      return summaryData.summary_version || 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  // 新增：解析JSON摘要
+  private parseSummaryJSON(summaryText: string): SummaryData | null {
+    console.log('🔍 开始解析JSON摘要...');
+    console.log('📄 原始内容长度:', summaryText.length);
+    console.log('📄 原始内容前100字符:', summaryText.substring(0, 100));
+    
+    try {
+      // 尝试直接解析
+      const parsed = JSON.parse(summaryText);
+      console.log('✅ 直接解析成功');
+      
+      // 验证必要字段
+      if (parsed && typeof parsed === 'object') {
+        const result = {
+          plot_developments: parsed.plot_developments || [],
+          character_changes: parsed.character_changes || [],
+          key_decisions: parsed.key_decisions || [],
+          atmosphere: parsed.atmosphere || { mood: "平静", tension_level: 3 },
+          important_clues: parsed.important_clues || [],
+          timestamp: parsed.timestamp || new Date().toISOString(),
+          summary_version: parsed.summary_version || 1
+        };
+        console.log('📋 解析结果字段数量:', Object.keys(result).length);
+        return result;
+      }
+    } catch (error) {
+      console.warn('🔧 JSON直接解析失败，尝试修复:', error);
+      console.log('❌ 解析失败的具体位置:', (error as any).message);
+      
+      // 尝试修复JSON格式
+      const fixedJson = this.fixSummaryJSON(summaryText);
+      if (fixedJson) {
+        try {
+          const parsed = JSON.parse(fixedJson);
+          console.log('✅ 修复后解析成功');
+          return {
+            plot_developments: parsed.plot_developments || [],
+            character_changes: parsed.character_changes || [],
+            key_decisions: parsed.key_decisions || [],
+            atmosphere: parsed.atmosphere || { mood: "平静", tension_level: 3 },
+            important_clues: parsed.important_clues || [],
+            timestamp: parsed.timestamp || new Date().toISOString(),
+            summary_version: parsed.summary_version || 1
+          };
+        } catch (repairError) {
+          console.error('❌ JSON修复后仍然解析失败:', repairError);
+        }
+      } else {
+        console.error('❌ JSON修复方法返回null');
+      }
+    }
+    
+    console.log('❌ 所有解析方法都失败，返回null');
+    return null;
+  }
+
+  // 新增：创建备用摘要
+  private createFallbackSummary(historyToSummarize: Array<{role: string, content: string}>): string {
+    const timestamp = new Date().toISOString();
+    const fallbackData: SummaryData = {
+      plot_developments: ["故事继续发展中..."],
+      character_changes: [],
+      key_decisions: [],
+      atmosphere: { mood: "未知", tension_level: 5 },
+      important_clues: [],
+      timestamp,
+      summary_version: this.getSummaryVersion() + 1
+    };
+    
+    console.log('🛡️ 使用备用摘要格式');
+    return JSON.stringify(fallbackData, null, 2);
+  }
+
+  // 新增：去重工具方法
+  private deduplicate(items: any[], keyField?: string): any[] {
+    if (!Array.isArray(items)) return [];
+    
+    if (keyField) {
+      // 基于指定字段去重
+      const seen = new Set();
+      return items.filter(item => {
+        const key = item[keyField];
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    } else {
+      // 简单去重
+      return [...new Set(items.filter(item => item && item.trim && item.trim() !== ''))];
+    }
+  }
+
+  // 新增：合并角色变化
+  private mergeCharacterChanges(existing: Array<{name: string, change: string}>, newChanges: Array<{name: string, change: string}>): Array<{name: string, change: string}> {
+    const characterMap = new Map<string, string>();
+    
+    // 添加已有的角色变化
+    existing.forEach(change => {
+      if (change.name && change.change) {
+        characterMap.set(change.name, change.change);
+      }
+    });
+    
+    // 更新/添加新的角色变化
+    newChanges.forEach(change => {
+      if (change.name && change.change) {
+        characterMap.set(change.name, change.change);
+      }
+    });
+    
+    return Array.from(characterMap.entries()).map(([name, change]) => ({ name, change }));
+  }
+
+  // 新增：压缩摘要
+  private compressSummary(summaryData: SummaryData): string {
+    const compressedData: SummaryData = {
+      plot_developments: summaryData.plot_developments.slice(-3), // 只保留最近3个
+      character_changes: summaryData.character_changes.slice(-4), // 只保留最近4个
+      key_decisions: summaryData.key_decisions.slice(-3), // 只保留最近3个
+      atmosphere: summaryData.atmosphere,
+      important_clues: summaryData.important_clues.slice(-5), // 只保留最近5个
+      timestamp: summaryData.timestamp,
+      summary_version: summaryData.summary_version
+    };
+    
+    console.log('🗜️ 摘要已压缩');
+    return JSON.stringify(compressedData, null, 2);
+  }
+
+  // 新增：修复JSON格式
+  private fixSummaryJSON(content: string): string | null {
+    let cleanContent = '';
+    
+    try {
+      console.log('🔧 尝试修复JSON格式...');
+      console.log('📄 修复前内容预览:', content.substring(0, 200));
+      
+      // 移除可能的markdown代码块标记
+      cleanContent = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      
+      // 移除前后的解释性文本（更严格的匹配）
+      cleanContent = cleanContent.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+      
+      // 尝试找到JSON对象的开始和结束
+      const jsonStart = cleanContent.indexOf('{');
+      const jsonEnd = cleanContent.lastIndexOf('}');
+      
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+        
+        // 🔧 增强的JSON修复算法
+        cleanContent = cleanContent
+          // 修复省略号问题 - 这是主要问题！
+          .replace(/"\.\.\./g, '"')  // 移除字符串末尾的省略号
+          .replace(/\.\.\.\s*"/g, '"')  // 移除字符串开头的省略号  
+          .replace(/\.\.\./g, '')    // 移除其他位置的省略号
+          
+          // 修复常见JSON格式错误
+          .replace(/,\s*}/g, '}')    // 移除对象末尾的多余逗号
+          .replace(/,\s*]/g, ']')    // 移除数组末尾的多余逗号
+          .replace(/([{,]\s*)(\w+):/g, '$1"$2":')  // 给属性名加引号
+          .replace(/:\s*'([^']*)'/g, ': "$1"')     // 将单引号改为双引号
+          
+          // 修复不完整的字符串
+          .replace(/:\s*"[^"]*$/, ': ""')  // 修复不完整的字符串值
+          .replace(/^\s*"[^"]*:/, '"": ')   // 修复不完整的属性名
+          
+          // 清理空白字符
+          .replace(/\n/g, ' ')       // 移除换行符
+          .replace(/\t/g, ' ')       // 移除制表符
+          .replace(/\s+/g, ' ')      // 压缩多余空格
+          
+          // 修复数组格式
+          .replace(/\[\s*,/g, '[')   // 修复数组开头的逗号
+          .replace(/,\s*,/g, ',')    // 修复连续逗号
+          
+          // 最后清理
+          .trim();
+        
+        console.log('🔧 修复后的JSON:', cleanContent.substring(0, 200));
+        
+        // 尝试解析，如果成功就返回
+        JSON.parse(cleanContent);
+        console.log('✅ JSON修复成功');
+        return cleanContent;
+      } else {
+        console.warn('❌ 找不到有效的JSON边界');
+      }
+    } catch (error) {
+      console.warn('❌ JSON修复失败:', error);
+      console.log('❌ 修复失败的内容:', cleanContent.substring(0, 200));
+    }
+    
+    return null;
+  }
+
+  // 新增：获取当前摘要（用于上下文构建）
+  public getCurrentSummary(): string {
+    return this.historySummary;
+  }
+
+  // 调试方法：检查摘要是否被用于AI调用
+  public debugSummaryUsage(): {
+    hasSummary: boolean;
+    summaryLength: number;
+    summaryPreview: string;
+    triggerCount: number;
+    lastUsed: string;
+  } {
+    return {
+      hasSummary: !!this.historySummary,
+      summaryLength: this.historySummary.length,
+      summaryPreview: this.historySummary.substring(0, 200) + (this.historySummary.length > 200 ? '...' : ''),
+      triggerCount: this.summaryTriggerCount,
+      lastUsed: this.historySummary ? '在AI调用时会自动包含' : '暂无摘要'
+    };
+  }
+
+  // 新增：手动触发摘要生成（用于测试）
+  public async triggerManualSummary(): Promise<void> {
+    console.log('🔧 手动触发摘要生成');
+    await this.generateBackgroundSummary();
+  }
+
+  // 新增：获取摘要状态调试信息
+  public getSummaryStatus(): { 
+    triggerCount: number; 
+    lastIndex: number; 
+    interval: number; 
+    historyLength: number; 
+    hasSummary: boolean;
+    willTriggerNext: boolean;
+  } {
+    const status = {
+      triggerCount: this.summaryTriggerCount,
+      lastIndex: this.lastSummaryIndex,
+      interval: this.SUMMARY_TRIGGER_INTERVAL,
+      historyLength: this.conversationHistory.length,
+      hasSummary: this.historySummary.length > 0,
+      willTriggerNext: (this.summaryTriggerCount + 1) >= this.SUMMARY_TRIGGER_INTERVAL && 
+                      (this.summaryTriggerCount + 1) > this.lastSummaryIndex
+    };
+    
+    console.log('📊 摘要状态调试信息:', status);
+    console.log('📋 当前对话历史条数:', this.conversationHistory.length);
+    console.log('🔢 触发计数:', `${this.summaryTriggerCount}/${this.SUMMARY_TRIGGER_INTERVAL}`);
+    console.log('📝 历史摘要长度:', this.historySummary.length, '字符');
+    console.log('⏭️ 下次对话将触发摘要:', status.willTriggerNext ? '是' : '否');
+    
+    return status;
+  }
+
+  // 新增：强制触发摘要（跳过条件检查）
+  public async forceTriggerSummary(): Promise<void> {
+    console.log('⚡ 强制触发摘要生成（跳过条件检查）');
+    console.log('📊 触发前状态:', this.getSummaryStatus());
+    
+    // 临时修改计数器以触发摘要
+    const originalCount = this.summaryTriggerCount;
+    this.summaryTriggerCount = this.SUMMARY_TRIGGER_INTERVAL;
+    this.lastSummaryIndex = 0;
+    
+    await this.generateBackgroundSummary();
+    
+    // 更新lastSummaryIndex但保持原计数
+    this.lastSummaryIndex = this.summaryTriggerCount;
+    this.summaryTriggerCount = originalCount;
+    
+    console.log('✅ 强制摘要完成');
+  }
+
+  // 新增：格式化显示摘要
+  private displayFormattedSummary(summaryText: string): void {
+    try {
+      const summaryData = JSON.parse(summaryText);
+      
+      console.log('📖 剧情发展:');
+      summaryData.plot_developments?.forEach((plot: string, index: number) => {
+        console.log(`  ${index + 1}. ${plot}`);
+      });
+      
+      console.log('\n👥 角色变化:');
+      summaryData.character_changes?.forEach((change: {name: string, change: string}, index: number) => {
+        console.log(`  ${index + 1}. ${change.name}: ${change.change}`);
+      });
+      
+      console.log('\n🎯 关键决策:');
+      summaryData.key_decisions?.forEach((decision: {decision: string, consequence: string}, index: number) => {
+        console.log(`  ${index + 1}. ${decision.decision} → ${decision.consequence}`);
+      });
+      
+      console.log('\n🌟 故事氛围:');
+      console.log(`  情绪: ${summaryData.atmosphere?.mood || '未知'}`);
+      console.log(`  紧张度: ${summaryData.atmosphere?.tension_level || 'N/A'}/10`);
+      
+      console.log('\n💡 重要线索:');
+      summaryData.important_clues?.forEach((clue: string, index: number) => {
+        console.log(`  ${index + 1}. ${clue}`);
+      });
+      
+      console.log(`\n⏰ 更新时间: ${summaryData.timestamp || 'N/A'}`);
+      console.log(`📊 版本: v${summaryData.summary_version || 1}`);
+      
+    } catch (error) {
+      console.log('📄 原始格式摘要:');
+      console.log(summaryText);
     }
   }
 
@@ -176,7 +795,25 @@ class StoryAI {
       if (systemPrompt) {
         const hasSystemMessage = messages.some(msg => msg.role === 'system');
         if (!hasSystemMessage) {
-          messages.unshift({ role: 'system', content: systemPrompt });
+          // 如果有历史摘要，将其添加到系统提示词中
+          let enhancedSystemPrompt = systemPrompt;
+          if (this.historySummary && this.historySummary.trim()) {
+            enhancedSystemPrompt += `\n\n**📚 故事发展摘要**（重要背景信息，请参考此信息保持故事连贯性）：\n${this.historySummary}`;
+            console.log('🎯 已将历史摘要添加到AI上下文中，摘要长度:', this.historySummary.length);
+          }
+          messages.unshift({ role: 'system', content: enhancedSystemPrompt });
+        } else {
+          // 如果已有系统消息但存在摘要，更新第一个系统消息
+          if (this.historySummary && this.historySummary.trim()) {
+            const systemMessageIndex = messages.findIndex(msg => msg.role === 'system');
+            if (systemMessageIndex !== -1) {
+              const currentSystemContent = messages[systemMessageIndex].content;
+              if (!currentSystemContent.includes('故事发展摘要')) {
+                messages[systemMessageIndex].content += `\n\n**📚 故事发展摘要**（重要背景信息，请参考此信息保持故事连贯性）：\n${this.historySummary}`;
+                console.log('🎯 已更新现有系统消息，添加历史摘要，摘要长度:', this.historySummary.length);
+              }
+            }
+          }
         }
       }
       
@@ -446,6 +1083,11 @@ ${advConfig.character_details.map((char, i) =>
                 throw new Error('AI返回的格式不完整，缺少必需字段');
             }
             
+            // 限制氛围文本长度
+            if (parsedContent.mood) {
+              parsedContent.mood = this.truncateMood(parsedContent.mood);
+            }
+            
               console.log(`第${attempts}次尝试成功生成故事`);
             return {
               success: true,
@@ -543,7 +1185,7 @@ ${advConfig.character_details.map((char, i) =>
         content: {
           scene: `基于您的故事想法"${config.story_idea}"，${scene}`,
           characters: userCharacters,
-          mood,
+          mood: this.truncateMood(mood),
           tension_level: tensionLevel,
           achievements: ['开始冒险'],
           story_length_target: advConfig.story_length,
@@ -648,7 +1290,7 @@ ${advConfig.character_details.map((char, i) =>
       content: {
         scene: template.scene,
         characters: template.characters,
-        mood: template.mood,
+        mood: this.truncateMood(template.mood),
         tension_level: template.tension_level,
         achievements: ['开始冒险'],
         choices: this.getDefaultChoices()
@@ -771,6 +1413,11 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
                 throw new Error('AI返回的场景描述不完整，缺少scene字段');
             }
             
+            // 限制氛围文本长度
+            if (parsedContent.mood) {
+              parsedContent.mood = this.truncateMood(parsedContent.mood);
+            }
+            
               console.log(`第${attempts}次尝试成功生成下一章节`);
             return {
               success: true,
@@ -860,6 +1507,9 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     if (newTensionLevel >= 8) newMood = '紧张';
     else if (newTensionLevel >= 6) newMood = '激烈';
     else if (newTensionLevel <= 3) newMood = '平静';
+    
+    // 限制氛围文本长度
+    newMood = this.truncateMood(newMood);
 
     return {
       success: true,
@@ -1021,7 +1671,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
             }
             
-            const response = await this.callAI(currentPrompt, currentSystemPrompt);
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录和摘要
       const content = this.extractContent(response);
       const choices = JSON.parse(content);
             
@@ -1496,13 +2146,17 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
               
               console.log(`第${attempts}次尝试成功生成故事结局`);
+          
+          // 限制氛围文本长度
+          const truncatedMood = parsedContent.mood ? this.truncateMood(parsedContent.mood) : 'epic';
+          
           return {
             success: true,
             content: {
               scene: parsedContent.scene,
                   choices: [], // 结局不需要选择项
               achievements: parsedContent.achievements || [],
-              mood: parsedContent.mood || 'epic'
+              mood: truncatedMood
             }
           };
         } catch (parseError) {
@@ -1572,7 +2226,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         scene: endingScenes[endingType],
         choices: [], // 结局不需要选择项
         achievements: finalAchievements[endingType],
-        mood: endingType === 'success' ? '胜利' : endingType === 'failure' ? '悲壮' : endingType === 'neutral' ? '平静' : '悬疑'
+        mood: this.truncateMood(endingType === 'success' ? '胜利' : endingType === 'failure' ? '悲壮' : endingType === 'neutral' ? '平静' : '悬疑')
       }
     };
   }
@@ -1640,7 +2294,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             ...storyState,
             current_scene: parsed.current_scene || storyState.current_scene,
             chapter: storyState.chapter + 1,
-            mood: parsed.mood || storyState.mood,
+            mood: this.truncateMood(parsed.mood || storyState.mood),
             tension_level: parsed.tension_level || storyState.tension_level,
             achievements: [
               ...storyState.achievements,

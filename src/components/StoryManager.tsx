@@ -282,6 +282,13 @@ const StoryManager: React.FC = () => {
           
           setCurrentStory(finalStory);
           setIsProcessingChoice(false);
+          
+          // 🎯 故事完成后自动保存进度
+          setTimeout(() => {
+            performAutoSave();
+            console.log('📁 故事完成，已自动保存最终进度');
+          }, 500);
+          
           console.log('✅ AI定制结局生成完成');
           return;
           
@@ -319,6 +326,13 @@ const StoryManager: React.FC = () => {
           
           setCurrentStory(finalStory);
           setIsProcessingChoice(false);
+          
+          // 🎯 故事完成后自动保存进度  
+          setTimeout(() => {
+            performAutoSave();
+            console.log('📁 故事完成（备用结局），已自动保存最终进度');
+          }, 500);
+          
           console.log('✅ 使用备用结局完成故事');
           return;
         }
@@ -840,12 +854,14 @@ const StoryManager: React.FC = () => {
     }
 
     try {
-      // 获取对话历史
+      // 获取对话历史和摘要状态
       const conversationHistory = storyAI.getConversationHistory().map(msg => ({
         ...msg,
         timestamp: new Date(),
         chapter: currentStory.chapter
       })) as ConversationMessage[];
+
+      const summaryState = storyAI.getSummaryState();
 
       // 使用新的统一存档系统
       const contextId = saveStoryProgress(
@@ -854,13 +870,15 @@ const StoryManager: React.FC = () => {
         currentModelConfig,
         { 
           title,
-          createSnapshot: false // 更新主存档，不创建快照
+          createSnapshot: false, // 更新主存档，不创建快照
+          summaryState // 包含摘要状态
         }
       );
 
       setCurrentContextId(contextId);
       setHasSavedProgress(true); // 更新存档状态
       console.log('📁 故事进度已保存到主存档，ID:', contextId);
+      console.log('💾 摘要状态已保存:', summaryState);
       
     } catch (error) {
       console.error('保存故事失败:', error);
@@ -955,11 +973,14 @@ const StoryManager: React.FC = () => {
       setCurrentContextId(contextId);
       setHasSavedProgress(true); // 设置为已有存档状态
 
-      // 恢复AI配置和对话历史
+      // 恢复AI配置和对话历史，包含摘要状态
       storyAI.setModelConfig(savedContext.modelConfig);
-      storyAI.setConversationHistory(savedContext.conversationHistory);
+      storyAI.setConversationHistory(savedContext.conversationHistory, savedContext.summaryState);
 
       console.log('✅ 故事进度已成功加载');
+      if (savedContext.summaryState) {
+        console.log('✅ 摘要状态已恢复:', savedContext.summaryState);
+      }
       
     } catch (error) {
       console.error('❌ 加载故事失败:', error);
@@ -980,8 +1001,16 @@ const StoryManager: React.FC = () => {
         chapter: currentStory.chapter
       })) as ConversationMessage[];
 
-      autoSaveContext(currentStory, conversationHistory, currentModelConfig);
-      console.log('🔄 自动保存完成');
+      // 获取摘要状态
+      const summaryState = storyAI.getSummaryState();
+
+      // 更新自动保存以包含摘要状态
+      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState);
+      if (contextId) {
+        setCurrentContextId(contextId);
+      }
+      
+      console.log('🔄 自动保存完成，包含摘要状态');
       setHasSavedProgress(true); // 更新存档状态
     } catch (error) {
       console.error('自动保存失败:', error);
@@ -1115,6 +1144,21 @@ const StoryManager: React.FC = () => {
     
     return continueScenes[Math.floor(Math.random() * continueScenes.length)];
   };
+
+  // 监听故事完成状态，确保自动保存
+  useEffect(() => {
+    if (currentStory?.is_completed && !isProcessingChoice && autoSaveEnabled) {
+      console.log('📚 检测到故事已完成，触发自动保存...');
+      
+      // 延迟保存确保状态完全更新
+      const saveTimer = setTimeout(() => {
+        performAutoSave();
+        console.log('📁 故事完成，已自动保存最终进度');
+      }, 800);
+      
+      return () => clearTimeout(saveTimer);
+    }
+  }, [currentStory?.is_completed, isProcessingChoice, autoSaveEnabled]);
 
   // 组件挂载时和故事变化时检查存档状态
   useEffect(() => {

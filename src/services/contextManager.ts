@@ -50,6 +50,12 @@ export interface SavedStoryContext {
   playTime: number; // 总游玩时间（秒）
   thumbnail?: string; // 故事描述/缩略图
   genre?: string; // 故事类型
+  // 新增：摘要状态持久化
+  summaryState?: {
+    historySummary: string;
+    summaryTriggerCount: number;
+    lastSummaryIndex: number;
+  };
 }
 
 // 存档列表接口
@@ -80,6 +86,11 @@ class ContextManager {
       title?: string;
       isAutoSave?: boolean;
       customId?: string;
+      summaryState?: {
+        historySummary: string;
+        summaryTriggerCount: number;
+        lastSummaryIndex: number;
+      };
     } = {}
   ): string {
     try {
@@ -115,7 +126,8 @@ class ContextManager {
         isAutoSave: options.isAutoSave || false,
         playTime: this.calculatePlayTime(storyState.chapter),
         thumbnail: this.generateThumbnail(storyState),
-        genre: this.extractGenre(storyState)
+        genre: this.extractGenre(storyState),
+        summaryState: options.summaryState // 保存摘要状态
       };
       
       // 添加或更新存档
@@ -253,6 +265,11 @@ class ContextManager {
     options: {
       title?: string;
       createSnapshot?: boolean; // 是否创建快照而不是更新主存档
+      summaryState?: {
+        historySummary: string;
+        summaryTriggerCount: number;
+        lastSummaryIndex: number;
+      };
     } = {}
   ): string {
     const primarySaveId = `story_${storyState.story_id}`;
@@ -263,14 +280,16 @@ class ContextManager {
       return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
         title: options.title || `[快照] ${this.generateStoryTitle(storyState)}`,
         isAutoSave: false,
-        customId: snapshotId
+        customId: snapshotId,
+        summaryState: options.summaryState
       });
     } else {
       // 更新主存档（升级为手动保存）
       return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
         title: options.title || this.generateStoryTitle(storyState),
         isAutoSave: false,
-        customId: primarySaveId
+        customId: primarySaveId,
+        summaryState: options.summaryState
       });
     }
   }
@@ -282,7 +301,12 @@ class ContextManager {
   autoSave(
     storyState: StoryState,
     conversationHistory: ConversationMessage[],
-    modelConfig: ModelConfig
+    modelConfig: ModelConfig,
+    summaryState?: {
+      historySummary: string;
+      summaryTriggerCount: number;
+      lastSummaryIndex: number;
+    }
   ): string | null {
     try {
       // 使用统一的故事主存档ID
@@ -311,7 +335,8 @@ class ContextManager {
       return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
         title,
         isAutoSave,
-        customId: primarySaveId
+        customId: primarySaveId,
+        summaryState
       });
       
     } catch (error) {
