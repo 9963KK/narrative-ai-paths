@@ -337,8 +337,8 @@ const StoryManager: React.FC = () => {
           difficulty: 3
         };
         
-        // 调用AI生成下一章节
-        const response = await storyAI.generateNextChapter(
+        // 调用AI生成下一章节 - 带重试机制
+        const response = await generateNextChapterWithRetry(
           {
             ...currentStory,
             mood: currentStory.mood || '神秘',
@@ -348,50 +348,62 @@ const StoryManager: React.FC = () => {
           currentStory.choices_made
         );
         
-        if (response.success && response.content) {
-          // 确保最小显示时间（用户体验）- 与StoryReader的加载动画时间匹配
-          const elapsedTime = Date.now() - startTime;
-          const minDisplayTime = 1800; // 至少显示1.8秒加载，留出余量
-          
-          console.log('🎭 StoryManager 确保最小显示时间:', {
-            elapsedTime,
-            minDisplayTime,
-            willWait: elapsedTime < minDisplayTime
-          });
-          
-          if (elapsedTime < minDisplayTime) {
-            const waitTime = minDisplayTime - elapsedTime;
-            console.log('⏱️ StoryManager 等待:', waitTime + 'ms');
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            console.log('✅ StoryManager 等待完成，现在更新故事');
-          }
-          
-          // 更新故事目标状态
-          const updatedGoals = updateStoryGoals(currentStory.story_goals, choiceText, currentStory.chapter + 1);
-          
-          // 创建更新后的故事状态
-          const updatedStory = {
-            ...currentStory,
-            current_scene: response.content?.scene || '故事继续发展...',
-            chapter: currentStory.chapter + 1,
-            choices_made: [...(currentStory.choices_made || []), choiceText],
-            characters: (response.content?.new_characters && Array.isArray(response.content.new_characters))
-              ? [...(currentStory?.characters || []), ...response.content.new_characters]
-              : (currentStory?.characters || []),
-            achievements: (response.content?.achievements && Array.isArray(response.content.achievements))
-              ? [...(currentStory?.achievements || []), ...response.content.achievements]
-              : (currentStory?.achievements || []),
-            mood: response.content?.mood || currentStory.mood || '神秘',
-            tension_level: response.content?.tension_level || currentStory.tension_level || 5,
-            story_progress: calculateStoryProgress(currentStory.chapter + 1, currentStory.achievements?.length || 0),
-            main_goal_status: updateGoalStatus(currentStory.choices_made || [], choiceText),
-            story_goals: updatedGoals
-          };
+        try {
+          if (response.success && response.content) {
+            // 确保最小显示时间（用户体验）- 与StoryReader的加载动画时间匹配
+            const elapsedTime = Date.now() - startTime;
+            const minDisplayTime = 1800; // 至少显示1.8秒加载，留出余量
+            
+            console.log('🎭 StoryManager 确保最小显示时间:', {
+              elapsedTime,
+              minDisplayTime,
+              willWait: elapsedTime < minDisplayTime
+            });
+            
+            if (elapsedTime < minDisplayTime) {
+              const waitTime = minDisplayTime - elapsedTime;
+              console.log('⏱️ StoryManager 等待:', waitTime + 'ms');
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              console.log('✅ StoryManager 等待完成，现在更新故事');
+            }
+            
+            // 更新故事目标状态
+            const updatedGoals = updateStoryGoals(currentStory.story_goals, choiceText, currentStory.chapter + 1);
+            
+            // 处理新角色添加 - 使用content.new_characters
+            const processedCharacters = processNewCharacters(
+              currentStory?.characters || [],
+              response.content?.new_characters
+            );
 
-          // 正常故事流程 - 不再强制结束
-          setNormalStoryFlow(updatedStory, response.content.scene);
-        } else {
-          // AI失败时的简单处理
+            // 创建更新后的故事状态
+            const updatedStory = {
+              ...currentStory,
+              current_scene: response.content?.scene || '故事继续发展...',
+              chapter: currentStory.chapter + 1,
+              choices_made: [...(currentStory.choices_made || []), choiceText],
+              characters: processedCharacters,
+              achievements: (response.content?.achievements && Array.isArray(response.content.achievements))
+                ? [...(currentStory?.achievements || []), ...response.content.achievements]
+                : (currentStory?.achievements || []),
+              mood: response.content?.mood || currentStory.mood || '神秘',
+              tension_level: response.content?.tension_level || currentStory.tension_level || 5,
+              story_progress: calculateStoryProgress(currentStory.chapter + 1, currentStory.achievements?.length || 0),
+              main_goal_status: updateGoalStatus(currentStory.choices_made || [], choiceText),
+              story_goals: updatedGoals
+            };
+
+            // 正常故事流程 - 不再强制结束
+            setNormalStoryFlow(updatedStory, response.content.scene);
+          } else {
+            // AI返回成功但内容为空的情况
+            console.warn('⚠️ AI返回成功但内容为空，使用回退方案');
+            await generateSimpleNextScene(choiceText, startTime);
+          }
+        } catch (retryError) {
+          // 所有重试都失败了，使用回退方案
+          console.error('❌ 经过3次重试后仍然失败，使用回退方案:', retryError);
+          setAiError(retryError instanceof Error ? retryError.message : '章节生成失败，已使用备用方案');
           await generateSimpleNextScene(choiceText, startTime);
         }
       }
@@ -423,6 +435,103 @@ const StoryManager: React.FC = () => {
     if (updatedStory.chapter > (currentStory?.chapter || 0)) {
       setTimeout(() => performAutoSave(), 500); // 延迟执行确保状态已更新
     }
+  };
+
+  // 带重试机制的章节生成函数
+  const generateNextChapterWithRetry = async (
+    storyState: StoryState,
+    selectedChoice: { id: number; text: string; description: string; difficulty: number },
+    previousChoices: string[],
+    maxRetries: number = 3
+  ) => {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 第${attempt}次尝试生成章节...`);
+        
+        const response = await storyAI.generateNextChapter(
+          storyState,
+          selectedChoice,
+          previousChoices
+        );
+        
+        if (response.success && response.content) {
+          console.log(`✅ 第${attempt}次尝试成功生成章节`);
+          return response;
+        } else {
+          const error = new Error(response.error || `第${attempt}次尝试失败：AI返回内容不完整`);
+          console.warn(`⚠️ 第${attempt}次尝试失败:`, error.message);
+          lastError = error;
+          
+          if (attempt < maxRetries) {
+            // 在重试之前等待一小段时间
+            const waitTime = attempt * 500; // 0.5s, 1s, 1.5s
+            console.log(`⏱️ 等待${waitTime}ms后进行第${attempt + 1}次尝试...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(`第${attempt}次尝试失败: ${error}`);
+        console.warn(`❌ 第${attempt}次尝试出现异常:`, err.message);
+        lastError = err;
+        
+        if (attempt < maxRetries) {
+          // 在重试之前等待一小段时间
+          const waitTime = attempt * 500;
+          console.log(`⏱️ 等待${waitTime}ms后进行第${attempt + 1}次尝试...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    
+    // 所有重试都失败了
+    console.error(`❌ 经过${maxRetries}次尝试后仍然失败，最后错误:`, lastError?.message);
+    throw lastError || new Error(`章节生成失败：经过${maxRetries}次尝试后仍未成功`);
+  };
+
+  // 处理新角色添加的专用函数
+  const processNewCharacters = (
+    existingCharacters: Array<{ name: string; role: string; traits: string; appearance?: string; backstory?: string }>,
+    newCharacters?: Array<{ name: string; role: string; traits: string; appearance?: string; backstory?: string }>
+  ): Array<{ name: string; role: string; traits: string; appearance?: string; backstory?: string }> => {
+    if (!newCharacters || !Array.isArray(newCharacters) || newCharacters.length === 0) {
+      return existingCharacters;
+    }
+
+    // 过滤重复角色（基于姓名）- 添加安全检查
+    const existingNames = new Set(
+      existingCharacters
+        .filter(char => char && char.name && typeof char.name === 'string')
+        .map(char => char.name.toLowerCase())
+    );
+    
+    const validNewCharacters = newCharacters.filter(newChar => {
+      // 检查必要字段和类型安全
+      if (!newChar || 
+          !newChar.name || typeof newChar.name !== 'string' || newChar.name.trim() === '' ||
+          !newChar.role || typeof newChar.role !== 'string' || newChar.role.trim() === '' ||
+          !newChar.traits || typeof newChar.traits !== 'string' || newChar.traits.trim() === '') {
+        console.warn('⚠️ 发现不完整的新角色，已跳过:', newChar);
+        return false;
+      }
+      
+      // 检查重复名称
+      if (existingNames.has(newChar.name.toLowerCase())) {
+        console.warn(`⚠️ 角色 "${newChar.name}" 已存在，已跳过`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (validNewCharacters.length > 0) {
+      console.log(`🎭 添加了 ${validNewCharacters.length} 个新角色:`, 
+        validNewCharacters.map(char => `${char.name}(${char.role})`).join('、')
+      );
+    }
+
+    return [...existingCharacters, ...validNewCharacters];
   };
 
   // 计算故事进度

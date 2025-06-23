@@ -617,12 +617,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           setIsTyping(false);
           // 打字完成后根据需要显示选择项
           setTimeout(async () => {
-            // 检查是否需要显示选择项 - 修复逻辑，默认显示选择
-            const shouldShowChoices = story.needs_choice !== false && !story.is_completed;
+            // 检查是否需要显示选择项 - 增强逻辑，明确检查故事状态
+            const shouldShowChoices = story.needs_choice !== false && 
+                                    !story.is_completed && 
+                                    !initialStory.is_completed;
             
             console.log('🎯 检查是否需要显示选择项:', {
               needs_choice: story.needs_choice,
               is_completed: story.is_completed,
+              initialStory_is_completed: initialStory.is_completed,
               shouldShowChoices,
               scene_length: story.current_scene?.length,
               chapter: story.chapter
@@ -1075,23 +1078,31 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </CardHeader>
         </Card>
 
-        {/* 角色信息 */}
-        <Card className="bg-white shadow-lg border-slate-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {story.characters.map((character, index) => (
-                <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <h4 className="font-semibold text-slate-800">{character.name}</h4>
-                  <p className="text-sm text-slate-600 mb-1">{character.role}</p>
-                  <p className="text-xs text-slate-500">{character.traits}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* 角色信息 - 只在有角色时显示 */}
+        {story.characters && story.characters.length > 0 && (
+          <Card className="bg-white shadow-lg border-slate-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {story.characters.filter(character => character.name && character.name.trim() !== '').map((character, index) => (
+                  <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <h4 className="font-semibold text-slate-800">{character.name}</h4>
+                    <p className="text-sm text-slate-600 mb-1">{character.role || '未知角色'}</p>
+                    <p className="text-xs text-slate-500">{character.traits || '神秘的角色'}</p>
+                    {character.appearance && (
+                      <p className="text-xs text-slate-400 mt-1">外貌：{character.appearance}</p>
+                    )}
+                    {character.backstory && (
+                      <p className="text-xs text-slate-400 mt-1">背景：{character.backstory}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 故事目标状态 - 在故事进行中显示 */}
         {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (

@@ -55,7 +55,8 @@ export interface StoryGenerationResponse {
   content?: {
     scene: string;
     choices: Choice[];
-    characters?: Character[];
+    characters?: Character[]; // 初始故事生成时的全部角色
+    new_characters?: Character[]; // 故事进行中新增的角色
     mood?: string;
     achievements?: string[];
     tension_level?: number;
@@ -668,6 +669,7 @@ ${advConfig.character_details.map((char, i) =>
 - 氛围：${currentStory.mood}
 - 紧张程度：${currentStory.tension_level}/10
 - 已做选择：${previousChoices.join(', ')}
+- 现有角色：${currentStory.characters.map(c => `${c.name}(${c.role})`).join('、')}
 
 创作要求：
 1. 场景描述（400-700字）：
@@ -682,13 +684,20 @@ ${advConfig.character_details.map((char, i) =>
    - 体现角色性格在选择后的反应和成长
    - 通过对话展现角色个性和关系发展
 
-3. 故事推进技巧：
+3. 新角色引入策略（重要）：
+   - 仅当故事发展自然需要时才引入新角色
+   - 新角色应该有明确的故事功能：推动情节、制造冲突、提供帮助、揭示信息等
+   - 避免无意义地添加角色，确保每个新角色都有存在价值
+   - 新角色应该与当前场景和选择逻辑相关
+   - 常见引入时机：进入新环境、遇到障碍需要帮助、情节转折点、重要信息披露
+
+4. 故事推进技巧：
    - 制造适当的冲突和转折
    - 埋下伏笔和悬念
    - 保持节奏感，张弛有度
    - 让每个场景都有明确的戏剧目标
 
-4. 文学性表达：
+5. 文学性表达：
    - 使用比喻、象征等修辞手法
    - 营造独特的氛围和意境
    - 语言富有节奏感和美感
@@ -700,7 +709,7 @@ ${advConfig.character_details.map((char, i) =>
   "choices": [选择项数组],
   "mood": "新的故事氛围",
   "tension_level": 数字,
-  "new_characters": [新角色数组，如果有的话],
+  "new_characters": [只有在故事自然需要时才包含新角色，格式：{"name": "角色名", "role": "角色定位", "traits": "性格特征", "appearance": "外貌描述", "backstory": "简要背景"}],
   "achievements": [新解锁的成就，如果有的话]
 }`;
 

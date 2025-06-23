@@ -81,6 +81,182 @@
   - 智能内容截取处理长文档
   - 温度控制保证分析准确性
 
+## 🚀 **新增：下一代功能开发计划**
+
+### 📊 **计划1：流式输出系统** 
+
+**可行性：高 ⭐⭐⭐⭐⭐**
+
+- **目标**：对 `generateNextChapter` 实现流式输出，提升用户体验
+- **技术方案**：
+  ```typescript
+  // 分阶段流式输出
+  interface StreamResponse {
+    type: 'scene_chunk' | 'scene_complete' | 'choices';
+    content: string | Choice[];
+    isComplete: boolean;
+  }
+  
+  async function* generateNextChapterStream(storyState, choice) {
+    // 第一阶段：流式输出故事场景
+    for await (const chunk of streamStoryScene(storyState, choice)) {
+      yield { type: 'scene_chunk', content: chunk, isComplete: false };
+    }
+    
+    // 第二阶段：生成选择项JSON（保持现有解析逻辑）
+    const choices = await this.generateChoices(...);
+    yield { type: 'choices', content: choices, isComplete: true };
+  }
+  ```
+
+- **实现计划**：
+  - 🥇 **第一步**：修改 `callAI` 方法支持 `stream: true` 参数
+  - 🥈 **第二步**：创建流式输出组件（前端 EventSource 处理）
+  - 🥉 **第三步**：保持现有JSON解析逻辑不变，仅对scene部分使用流式输出
+
+- **预期收益**：
+  - ⚡ 减少用户等待时间的心理感受
+  - 📝 实时看到故事生成过程，提升代入感
+  - 🎬 更流畅的阅读体验
+
+- **工期估算**：3-5天
+- **风险评估**：中等（需要前后端配合，但技术成熟）
+
+### 🔄 **计划2：上下文裁剪系统**
+
+**可行性：中高 ⭐⭐⭐⭐**
+
+#### **2.1 滑动窗口实现（优先级：高）**
+
+- **目标**：维持最近N轮对话，立即控制token消耗
+- **技术方案**：
+  ```typescript
+  class ContextManager {
+    private maxContextLength = 10; // 保持最近10轮对话
+    
+    trimContext(history: ConversationHistory[]): ConversationHistory[] {
+      if (history.length <= this.maxContextLength) return history;
+      
+      // 策略：保留系统消息 + 最新对话
+      const systemMessages = history.filter(h => h.role === 'system');
+      const recentMessages = history.slice(-this.maxContextLength);
+      
+      return [...systemMessages.slice(0, 2), ...recentMessages];
+    }
+  }
+  ```
+
+- **实现细节**：
+  - 基于现有 `conversationHistory` 扩展
+  - 智能保留重要系统消息
+  - 可配置窗口大小
+  - 实时token计算和显示
+
+- **预期收益**：
+  - 💰 立即降低API调用成本
+  - ⚡ 提升响应速度
+  - 📊 更可控的上下文管理
+
+- **工期估算**：1-2天
+- **风险评估**：低
+
+#### **2.2 智能摘要维护（优先级：中）**
+
+- **目标**：后台维护历史对话摘要，保留关键信息
+- **技术架构**：
+  ```typescript
+  interface ContextStrategy {
+    summary: string;           // 历史摘要
+    recentHistory: Message[];  // 最近对话窗口  
+    keyEvents: string[];       // 关键事件记录
+    characters: Character[];   // 角色状态
+  }
+  
+  class SummaryManager {
+    // 触发条件：每5-8轮对话
+    async maintainSummary() {
+      if (this.shouldGenerateSummary()) {
+        const summary = await this.generateSummary(this.getOldContext());
+        this.contextSummary = this.mergeSummaries(this.contextSummary, summary);
+      }
+    }
+    
+    // 摘要质量控制
+    private async generateSummary(history: ConversationHistory[]): Promise<string> {
+      const prompt = `请总结以下对话的核心信息，重点保留：
+      1. 关键剧情发展和重要事件
+      2. 角色关系变化和成长
+      3. 重要选择及其后果
+      4. 故事氛围和情感转折`;
+      
+      return await this.callAI(prompt, '摘要专用系统提示');
+    }
+  }
+  ```
+
+- **技术挑战**：
+  - 🎯 **摘要触发时机**：何时生成？如何平衡频率？
+  - 📊 **信息损失控制**：确保关键信息不丢失
+  - 💾 **持久化策略**：摘要如何存储和更新？
+  - 🔄 **异步处理**：后台摘要不影响主流程
+
+- **实现策略**：
+  - 渐进式实现：先完成基础摘要，再优化质量
+  - 多层摘要：近期详细摘要 + 远期概括摘要
+  - 关键事件标记：重要选择和转折点单独记录
+
+- **工期估算**：1-2周
+- **风险评估**：中高（摘要质量控制有挑战）
+
+### 📋 **实施路线图**
+
+#### **🥇 第一阶段：立即实施（1-2天）**
+- ✅ 实现滑动窗口上下文裁剪
+- ✅ 添加token计数显示
+- ✅ 基础性能优化
+
+#### **🥈 第二阶段：用户体验提升（3-5天）**
+- 🔄 实现流式输出（scene部分）
+- 🔄 优化前端流式数据处理
+- 🔄 保持JSON解析系统稳定
+
+#### **🥉 第三阶段：深度优化（1-2周）**
+- 🔮 智能摘要系统
+- 🔮 多层上下文管理
+- 🔮 性能监控和优化
+
+### 🎯 **技术要点**
+
+**流式输出关键点：**
+- 保持现有JSON解析逻辑不变（符合用户要求）
+- 仅对story scene使用流式输出
+- 前端使用EventSource或fetch stream接收
+- 后端支持SSE (Server-Sent Events)
+
+**上下文管理关键点：**
+- 滑动窗口优先实现（低风险高收益）
+- 摘要系统逐步完善（质量控制是重点）
+- 与现有conversationHistory无缝集成
+- 支持配置化管理（窗口大小、摘要频率等）
+
+### 📊 **预期效果评估**
+
+| 功能 | 用户体验提升 | 性能优化 | 开发复杂度 | 推荐优先级 |
+|------|------------|----------|------------|------------|
+| 滑动窗口 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | 🥇 高 |
+| 流式输出 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | 🥈 中高 |
+| 智能摘要 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🥉 中 |
+
+### ⚠️ **注意事项**
+
+1. **JSON解析系统**：严格遵循"不随便修改"原则，保持系统稳定性
+2. **渐进式开发**：优先实现低风险高收益功能
+3. **向后兼容**：确保新功能不影响现有用户体验
+4. **性能监控**：添加必要的性能指标和监控
+5. **测试策略**：每个阶段都需要充分测试
+
+---
+
 ## 📅 基于小说上传功能的开发计划
 
 ### ✅ 阶段一：文件处理基础设施 (已完成)
@@ -142,6 +318,7 @@
 1. 所有临时测试文件需在测试完成后删除（用户规则）
 2. 优先保证现有功能的稳定性
 3. 新功能开发需通过单元测试
+4. **JSON解析系统不要随便修改** - 保持系统稳定性
 
 ## 📌 版本规划
 
@@ -149,6 +326,7 @@
 - ✅ v1.2: 基础小说上传功能 (已完成)
 - ✅ v1.3: 完整小说分析能力 (已完成)
 - 🔄 v1.4: 用户体验优化和高级功能扩展 (进行中)
+- 🚀 v1.5: 流式输出和智能上下文管理 (规划中)
 
 ---
 
