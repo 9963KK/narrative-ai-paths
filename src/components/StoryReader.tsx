@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface StoryState {
@@ -13,7 +13,7 @@ interface StoryState {
   setting: string;
   chapter: number;
   choices_made: string[];
-  achievements: string[];
+
   mood?: string;
   tension_level?: number;
   needs_choice?: boolean; // 是否需要显示选择项
@@ -83,7 +83,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
-  const [isMoodExpanded, setIsMoodExpanded] = useState(false); // 氛围是否展开
   
   // 调试：监控isProcessingChoice状态变化
   useEffect(() => {
@@ -794,16 +793,16 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   };
 
   // 获取结局提示
-  const getEndingHint = (chapter: number, achievements: number, progress: number) => {
+  const getEndingHint = (chapter: number, progress: number) => {
     if (chapter >= 10) {
       return '故事已经充分发展，可能很快就会迎来结局';
     } else if (chapter >= 8) {
-      if (achievements >= 6) {
-        return '成就丰富，故事正朝着成功结局发展';
-      } else if (achievements >= 3) {
+      if (progress >= 70) {
+        return '故事进度良好，正朝着成功结局发展';
+      } else if (progress >= 50) {
         return '取得一些进展，故事可能会有不错的结局';
       } else {
-        return '还需要更多努力来达成理想的结局';
+        return '还需要更多发展来达成理想的结局';
       }
     } else if (chapter >= 6) {
       return '故事进入中期，重要的转折点可能即将到来';
@@ -816,7 +815,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const shouldSuggestEnding = (story: StoryState): { suggest: boolean; reason: string; confidence: number } => {
     const { 
       chapter, 
-      achievements, 
       story_progress = 0, 
       choices_made = [], 
       tension_level = 5, 
@@ -839,10 +837,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       confidenceScore += 30;
     }
 
-    // 3. 成就密度分析
-    const achievementDensity = achievements.length / chapter;
-    if (achievementDensity >= 0.7 && achievements.length >= 4) {
-      reasons.push('获得了丰富的成就');
+    // 3. 故事发展质量分析
+    if (story_progress >= 60 && chapter >= 6) {
+      reasons.push('故事发展充实有意义');
       confidenceScore += 25;
     }
 
@@ -894,12 +891,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     }
 
     // 7. 故事结构完整性 - 检查角色发展
-    const hasCharacterDevelopment = achievements.some(ach => 
-      ach.includes('成长') || 
-      ach.includes('理解') || 
-      ach.includes('友谊') ||
-      ach.includes('领悟')
-    );
+    const hasCharacterDevelopment = current_scene.includes('成长') || 
+      current_scene.includes('理解') || 
+      current_scene.includes('友谊') ||
+      current_scene.includes('领悟') ||
+      choices_made.some(choice => 
+        choice.includes('帮助') || 
+        choice.includes('合作') || 
+        choice.includes('理解')
+      );
     
     if (hasCharacterDevelopment) {
       reasons.push('角色已有明显成长');
@@ -946,7 +946,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     // 根据故事状态推荐结局类型
     let recommendedTypes: { type: 'natural' | 'satisfying' | 'open' | 'dramatic', label: string, description: string }[] = [];
     
-    if (story.story_progress >= 80 && story.achievements.length >= 6) {
+    if (story.story_progress >= 80) {
       recommendedTypes.push({
         type: 'satisfying',
         label: '🎉 圆满结局',
@@ -993,71 +993,32 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     };
   };
 
-  // 限制氛围文本长度的工具函数
-  const truncateMood = (mood: string, maxLength: number = 6): string => {
-    if (!mood) return '';
-    
-    // 如果文本长度小于等于限制，直接返回
-    if (mood.length <= maxLength) {
-      return mood;
-    }
-    
-    // 截断并添加省略号
-    return mood.substring(0, maxLength) + '...';
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* 头部信息 */}
+        {/* 头部信息 - 重新设计的布局 */}
         <Card className="bg-white shadow-lg border-slate-200">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl text-slate-800">
-                第 {story.chapter} 章
+            {/* 第一行：主要信息和操作按钮 */}
+            <div className="flex items-center justify-between mb-3">
+              <CardTitle className="text-xl text-slate-800 flex items-center gap-3">
+                <span>第 {story.chapter} 章</span>
+                {/* 故事进度显示 */}
+                <div className="flex items-center gap-2">
+                  <Progress 
+                    value={story.story_progress || (story.chapter / 12) * 100} 
+                    className="w-24 h-2" 
+                  />
+                  <span className="text-xs text-slate-500 font-normal">
+                    {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
+                  </span>
+                </div>
               </CardTitle>
-              <div className="flex items-center space-x-3">
-                {/* 自动保存切换按钮 */}
-                {onToggleAutoSave && (
-                  <Button
-                    onClick={() => onToggleAutoSave(!autoSaveEnabled)}
-                    variant="outline"
-                    size="sm"
-                    className={`flex items-center gap-1 ${
-                      autoSaveEnabled 
-                        ? 'border-green-300 text-green-600 hover:bg-green-50' 
-                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                    }`}
-                    title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
-                  >
-                    {autoSaveEnabled ? (
-                      <ToggleRight className="h-3 w-3" />
-                    ) : (
-                      <ToggleLeft className="h-3 w-3" />
-                    )}
-                    自动保存
-                  </Button>
-                )}
-                
-                {/* 返回主页按钮 */}
-                {onReturnHome && (
-                  <Button
-                    onClick={onReturnHome}
-                    variant="outline"
-                    size="sm"
-                    disabled={!hasSavedProgress}
-                    className={`flex items-center gap-1 ${
-                      !hasSavedProgress 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:bg-blue-50 border-blue-300'
-                    }`}
-                    title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
-                  >
-                    <Home className="h-3 w-3" />
-                    返回主页
-                  </Button>
-                )}
-                
+              
+              {/* 主要操作按钮组 */}
+              <div className="flex items-center space-x-2">
                 {/* 保存进度按钮 */}
                 {onSaveStory && (
                   <Button
@@ -1080,36 +1041,69 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   </Button>
                 )}
                 
-                {/* 氛围显示 */}
+                {/* 返回主页按钮 */}
+                {onReturnHome && (
+                  <Button
+                    onClick={onReturnHome}
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasSavedProgress}
+                    className={`flex items-center gap-1 ${
+                      !hasSavedProgress 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:bg-blue-50 border-blue-300'
+                    }`}
+                    title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
+                  >
+                    <Home className="h-3 w-3" />
+                    返回主页
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* 第二行：状态信息和设置 - 混合布局 */}
+            <div className="flex justify-between items-center w-full pt-2 border-t border-slate-100">
+              {/* 左侧标签组: 用于显示各项数据 */}
+              <div className="flex items-center space-x-3">
+                {/* 氛围标签 */}
                 {story.mood && (
-                  <div className="relative">
-                    <Badge 
-                      variant="outline" 
-                      className="border-blue-300 text-blue-600 cursor-pointer hover:bg-blue-50 transition-colors"
-                      onClick={() => setIsMoodExpanded(!isMoodExpanded)}
-                    >
-                      氛围: {isMoodExpanded ? story.mood : truncateMood(story.mood, 6)}
-                      {story.mood.length > 6 && (
-                        <span className="ml-1 text-xs">
-                          {isMoodExpanded ? '▲' : '▼'}
-                        </span>
-                      )}
-                    </Badge>
-                  </div>
+                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-blue-100 text-blue-800">
+                    氛围: {story.mood}
+                  </span>
                 )}
                 
-                {/* 进度显示 */}
-                <div className="flex items-center gap-2">
-                  <Progress 
-                    value={story.story_progress || (story.chapter / 12) * 100} 
-                    className="w-32" 
-                  />
-                  {story.story_progress && (
-                    <span className="text-xs text-slate-500">
-                      {Math.round(story.story_progress)}%
+                {/* 紧张度标签 */}
+                {story.tension_level && (
+                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-purple-100 text-purple-800">
+                    紧张度: {story.tension_level}/10
+                  </span>
+                )}
+                
+
+              </div>
+              
+              {/* 右侧状态: 用于显示存档状态 */}
+              <div className="flex items-center space-x-2 text-gray-500">
+                {/* 自动保存状态显示 */}
+                {onToggleAutoSave && (
+                  <div 
+                    className="flex items-center space-x-2 cursor-pointer hover:text-gray-700 transition-colors"
+                    onClick={() => onToggleAutoSave(!autoSaveEnabled)}
+                    title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
+                  >
+                    {/* 存档图标 (SVG) */}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                      <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                    
+                    {/* 状态文字 */}
+                    <span className="font-medium text-sm">
+                      {autoSaveEnabled ? '自动保存' : '手动保存'}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -1257,7 +1251,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 {/* 预计结局提示 */}
                 {story.chapter >= 5 && (
                   <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-3 py-2 border border-slate-200">
-                    💡 {getEndingHint(story.chapter, story.achievements?.length || 0, story.story_progress || 0)}
+                    💡 {getEndingHint(story.chapter, story.story_progress || 0)}
                   </div>
                 )}
               </div>
@@ -1417,7 +1411,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   总章节: {story.chapter}
                 </Badge>
                 <Badge variant="outline" className="border-purple-300 text-purple-600">
-                  获得成就: {story.achievements.length}
+                  故事进度: {story.story_progress || 0}%
                 </Badge>
               </div>
             </CardContent>
@@ -1615,23 +1609,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           </Card>
         )}
 
-        {/* 成就系统 */}
-        {story.achievements.length > 0 && (
-          <Card className="bg-white shadow-lg border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-800">已解锁成就</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {story.achievements.map((achievement, index) => (
-                  <Badge key={index} className="bg-blue-600 text-white">
-                    {achievement}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* AI状态信息 */}
         {(modelConfig || aiError) && (

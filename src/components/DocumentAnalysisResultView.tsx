@@ -26,7 +26,8 @@ import {
   Save,
   X,
   Plus,
-  Trash2
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 
@@ -709,8 +710,8 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                 )}
               </CardTitle>
               {!isEditing && (
-                <p className="text-xs text-gray-500 mt-1">
-                  点击选择一个创意种子作为故事起点
+                <p className="text-xs text-red-600 mt-1 font-medium">
+                  ⚠️ 必须选择一个创意种子作为故事起点才能开始创作
                 </p>
               )}
             </CardHeader>
@@ -828,9 +829,9 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
       {!isEditing && (
         <div className="mt-8 border-t border-gray-200 pt-6">
           <div className="flex flex-col items-center space-y-4">
-            {selectedSeedIndex !== null && (
+            {selectedSeedIndex !== null ? (
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">已选择创意种子</p>
+                <p className="text-sm text-gray-600 mb-2">✅ 已选择创意种子</p>
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
                   <CheckCircle2 className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-800">
@@ -838,20 +839,35 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                   </span>
                 </div>
               </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-orange-600 mb-2 font-medium">⚠️ 请先选择一个创意种子</p>
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-2">
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm text-orange-700">
+                    必须选择创意种子才能开始创作
+                  </span>
+                </div>
+              </div>
             )}
             
-                         <Button
-               size="lg"
-               onClick={() => onCreateStory(selectedSeedIndex !== null ? data.suggestedStorySeeds[selectedSeedIndex] : undefined)}
-               className="flex items-center gap-3 px-8 py-4 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-             >
-               <Play className="h-5 w-5" />
-               开始创作
-             </Button>
+            <Button
+              size="lg"
+              disabled={selectedSeedIndex === null}
+              onClick={() => onCreateStory(selectedSeedIndex !== null ? data.suggestedStorySeeds[selectedSeedIndex] : undefined)}
+              className={`flex items-center gap-3 px-8 py-4 text-base font-medium transition-all duration-200 shadow-lg ${
+                selectedSeedIndex !== null 
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl cursor-pointer' 
+                  : 'bg-gray-400 cursor-not-allowed opacity-60'
+              }`}
+            >
+              <Play className="h-5 w-5" />
+              开始创作
+            </Button>
             
             {selectedSeedIndex === null && (
-              <p className="text-xs text-gray-500 text-center max-w-md">
-                提示：选择一个创意种子可以获得更个性化的故事创作体验
+              <p className="text-xs text-red-500 text-center max-w-md font-medium">
+                📌 请从上方的创意种子中选择一个作为您的故事起点，然后即可开始创作
               </p>
             )}
           </div>

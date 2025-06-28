@@ -227,8 +227,63 @@ ${analysisContent}
         cleanedResponse = cleanedResponse.replace(/\s*```$/, '');
       }
 
-      // 尝试解析JSON
-      const parsed = JSON.parse(cleanedResponse);
+      // 🔧 增强的JSON清理逻辑
+      // 移除BOM和其他不可见字符
+      cleanedResponse = cleanedResponse.replace(/^\uFEFF/, ''); // BOM
+      cleanedResponse = cleanedResponse.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ''); // 控制字符
+      
+      // 移除可能的前后缀说明文字
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      console.log('📄 清理后的JSON字符串长度:', cleanedResponse.length);
+      console.log('📄 清理后的JSON前100字符:', cleanedResponse.substring(0, 100));
+
+      // 尝试直接解析
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        console.warn('📄 直接解析失败，尝试修复JSON格式:', parseError);
+        
+        // 尝试修复常见的JSON格式问题
+        let fixedJson = cleanedResponse;
+        
+        // 修复可能的尾逗号问题
+        fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+        
+        // 修复可能的引号问题
+        fixedJson = fixedJson.replace(/[\u201C\u201D]/g, '"'); // 中文引号
+        fixedJson = fixedJson.replace(/[\u2018\u2019]/g, "'"); // 中文单引号
+        
+        // 修复可能的换行问题
+        fixedJson = fixedJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        
+        // 再次尝试解析
+        try {
+          parsed = JSON.parse(fixedJson);
+          console.log('📄 JSON修复成功');
+        } catch (fixError) {
+          console.error('📄 JSON修复也失败:', fixError);
+          console.error('📄 问题JSON内容:', cleanedResponse);
+          
+          // 尝试使用更宽松的解析方式
+          try {
+            // 使用eval (仅在安全环境下)
+            parsed = (function() { 
+              return eval('(' + cleanedResponse + ')'); 
+            })();
+            console.log('📄 使用eval解析成功');
+          } catch (evalError) {
+            console.error('📄 eval解析也失败:', evalError);
+            throw new Error(`JSON解析失败: ${parseError.message}`);
+          }
+        }
+      }
       
       // 验证必需字段
       if (!parsed.characters || !Array.isArray(parsed.characters)) {
@@ -301,6 +356,7 @@ ${analysisContent}
         parsed.suggestedStorySeeds = [];
       }
 
+      console.log('📄 JSON解析和验证完成');
       return parsed;
     } catch (error) {
       console.error('📄 JSON解析失败:', error);

@@ -24,7 +24,7 @@ interface StoryState {
   setting: string;
   chapter: number;
   choices_made: string[];
-  achievements: string[];
+
   mood?: string;
   tension_level?: number;
   needs_choice?: boolean; // 是否需要显示选择项
@@ -88,7 +88,7 @@ const StoryManager: React.FC = () => {
           setting: config.setting,
           chapter: 1,
           choices_made: [],
-          achievements: response.content.achievements || [],
+
           mood: response.content.mood || '神秘',
           tension_level: response.content.tension_level || 5,
           needs_choice: true, // 初始场景总是需要选择
@@ -277,7 +277,7 @@ const StoryManager: React.FC = () => {
             needs_choice: false,
             chapter: currentStory.chapter + 1, // 结局算作新的一章
             story_progress: 100, // 故事完成时进度设置为100%
-            achievements: [...(currentStory.achievements || []), `获得了${endingType === 'satisfying' ? '圆满' : endingType === 'open' ? '开放式' : endingType === 'dramatic' ? '戏剧性' : '自然'}结局`]
+  
           };
           
           setCurrentStory(finalStory);
@@ -299,10 +299,8 @@ const StoryManager: React.FC = () => {
           // 根据选择的结局类型生成不同的备用结局
           let fallbackEnding = '';
           const protagonist = currentStory.characters[0]?.name || '主角';
-          const achievements = currentStory.achievements || [];
-          
           if (choiceText.includes('圆满') || choiceText.includes('satisfying')) {
-            fallbackEnding = `最终，所有的努力都得到了回报。${protagonist}和伙伴们成功地克服了所有挑战，${achievements.length > 0 ? '他们取得的成就' : '他们的坚持不懈'}为这段冒险画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，这是一个值得纪念的圆满结局。`;
+            fallbackEnding = `最终，所有的努力都得到了回报。${protagonist}和伙伴们成功地克服了所有挑战，他们的坚持不懈为这段冒险画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，这是一个值得纪念的圆满结局。`;
           } else if (choiceText.includes('开放') || choiceText.includes('open')) {
             fallbackEnding = `当这段旅程告一段落时，${protagonist}望向远方，心中满怀期待。虽然当前的冒险结束了，但更大的世界还在等待探索。这次经历只是漫长人生中的一个篇章，未来还有无数可能性等待着他们去发现...`;
           } else if (choiceText.includes('戏剧') || choiceText.includes('dramatic')) {
@@ -321,7 +319,7 @@ const StoryManager: React.FC = () => {
             needs_choice: false,
             chapter: currentStory.chapter + 1, // 结局算作新的一章
             story_progress: 100, // 故事完成时进度设置为100%
-            achievements: [...achievements, `获得了${choiceText.includes('圆满') ? '圆满' : choiceText.includes('开放') ? '开放式' : choiceText.includes('戏剧') ? '戏剧性' : '温馨'}结局`]
+
           };
           
           setCurrentStory(finalStory);
@@ -397,12 +395,10 @@ const StoryManager: React.FC = () => {
               chapter: currentStory.chapter + 1,
               choices_made: [...(currentStory.choices_made || []), choiceText],
               characters: processedCharacters,
-              achievements: (response.content?.achievements && Array.isArray(response.content.achievements))
-                ? [...(currentStory?.achievements || []), ...response.content.achievements]
-                : (currentStory?.achievements || []),
+
               mood: response.content?.mood || currentStory.mood || '神秘',
               tension_level: response.content?.tension_level || currentStory.tension_level || 5,
-              story_progress: calculateStoryProgress(currentStory.chapter + 1, currentStory.achievements?.length || 0),
+              story_progress: calculateStoryProgress(currentStory.chapter + 1),
               main_goal_status: updateGoalStatus(currentStory.choices_made || [], choiceText),
               story_goals: updatedGoals
             };
@@ -549,18 +545,15 @@ const StoryManager: React.FC = () => {
   };
 
   // 计算故事进度
-  const calculateStoryProgress = (chapter: number, achievementCount: number): number => {
+  const calculateStoryProgress = (chapter: number): number => {
     // 调整进度计算，让进度更符合实际发展
-    // 使用更平滑的曲线，让第17章约为90%
-    const baseProgress = Math.min((chapter / 18) * 85, 85); // 18章达到85%基础进度
-    const achievementBonus = Math.min((achievementCount / 8) * 15, 15); // 8个成就达到15%奖励进度
-    const totalProgress = Math.min(baseProgress + achievementBonus, 100);
+    // 使用更平滑的曲线，让第15章约为90%
+    const baseProgress = Math.min((chapter / 15) * 90, 90); // 15章达到90%基础进度
+    const totalProgress = Math.min(baseProgress + 10, 100); // 预留10%给结局
     
     console.log('📊 计算故事进度:', {
       chapter,
-      achievementCount,
       baseProgress: Math.round(baseProgress),
-      achievementBonus: Math.round(achievementBonus),
       totalProgress: Math.round(totalProgress)
     });
     
@@ -1076,7 +1069,7 @@ const StoryManager: React.FC = () => {
         setting: currentStory.setting, // 保留原设定
         chapter: 1, // 重置章节
         choices_made: [`基于前作：${currentStory.story_id}`], // 记录来源
-        achievements: [], // 重置成就
+ // 重置成就
         mood: currentStory.mood || '神秘',
         tension_level: 3, // 重置紧张度
         needs_choice: true,

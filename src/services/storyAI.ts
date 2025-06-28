@@ -30,7 +30,6 @@ export interface StoryState {
   setting: string;
   chapter: number;
   choices_made: string[];
-  achievements: string[];
   mood: string; // 故事氛围
   tension_level: number; // 紧张程度 1-10
   is_completed?: boolean; // 故事是否已完成
@@ -58,7 +57,6 @@ export interface StoryGenerationResponse {
     characters?: Character[]; // 初始故事生成时的全部角色
     new_characters?: Character[]; // 故事进行中新增的角色
     mood?: string;
-    achievements?: string[];
     tension_level?: number;
     story_length_target?: string;
     preferred_ending_type?: string;
@@ -93,8 +91,8 @@ class StoryAI {
   private readonly SUMMARY_TRIGGER_INTERVAL = 6; // 每6轮对话触发一次摘要
   private readonly MAX_SUMMARY_LENGTH = 2000; // 摘要最大长度阈值
 
-  // 工具函数：限制氛围文本长度
-  private truncateMood(mood: string, maxLength: number = 8): string {
+  // 工具函数：限制氛围文本长度（适合界面直接显示）
+  private truncateMood(mood: string, maxLength: number = 12): string {
     if (!mood) return '神秘';
     
     // 如果文本长度小于等于限制，直接返回
@@ -102,8 +100,8 @@ class StoryAI {
       return mood;
     }
     
-    // 截断并添加省略号
-    return mood.substring(0, maxLength) + '...';
+    // 截断但不添加省略号，因为界面会直接显示完整内容
+    return mood.substring(0, maxLength);
   }
 
   // 设置AI模型配置
@@ -304,7 +302,7 @@ JSON格式模板（必须严格遵循）：
   "plot_developments": ["完整的剧情进展描述1", "完整的剧情进展描述2"],
   "character_changes": [{"name": "具体角色名", "change": "完整的变化描述"}],
   "key_decisions": [{"decision": "完整的决策描述", "consequence": "完整的后果描述"}],
-  "atmosphere": {"mood": "具体的情感基调", "tension_level": 7},
+  "atmosphere": {"mood": "具体的情感基调(8-12字)", "tension_level": 7},
   "important_clues": ["完整的线索描述1", "完整的线索描述2"],
   "timestamp": "${timestamp}",
   "summary_version": ${currentVersion}
@@ -314,7 +312,7 @@ JSON格式模板（必须严格遵循）：
 - plot_developments: 2-3个最重要的剧情发展
 - character_changes: 主要角色的重要变化
 - key_decisions: 影响故事走向的关键选择
-- atmosphere.mood: 当前故事的情感氛围
+- atmosphere.mood: 当前故事的情感氛围(8-12字)
 - atmosphere.tension_level: 1-10的紧张程度数值
 - important_clues: 对后续剧情重要的线索信息
 
@@ -944,9 +942,9 @@ ${newSummary}`;
 {
   "scene": "精心雕琢的开场场景，包含丰富的环境描写、深度的角色塑造、巧妙的情节设置和优美的文学表达",
   "characters": [用户提供的角色，大幅增强appearance和backstory字段的深度和生动性],
-  "mood": "与故事基调${advConfig.tone}深度契合的具体氛围",
+          "mood": "与故事基调${advConfig.tone}深度契合的简洁氛围(8-12字)",
   "tension_level": 1-10的整数(根据基调和类型精确调整),
-  "achievements": ["符合故事类型和世界观的有意义初始成就"],
+  
   "story_length_target": "${advConfig.story_length}",
   "preferred_ending_type": "${advConfig.preferred_ending}"
 }`;
@@ -1017,9 +1015,9 @@ ${advConfig.character_details.map((char, i) =>
     }
   ],
   "setting_details": "精心构建的详细背景设定，包含历史、文化、物理环境等多个层面",
-  "mood": "深度契合故事类型的复合氛围",
+          "mood": "深度契合故事类型的简洁氛围(8-12字)",
   "tension_level": 1-10的整数,
-  "achievements": ["有深度意义的初始成就，体现故事主题"]
+  
 }`;
 
       prompt = `请基于以下想法创作一个完整的${config.genre}互动故事开场：
@@ -1187,7 +1185,6 @@ ${advConfig.character_details.map((char, i) =>
           characters: userCharacters,
           mood: this.truncateMood(mood),
           tension_level: tensionLevel,
-          achievements: ['开始冒险'],
           story_length_target: advConfig.story_length,
           preferred_ending_type: advConfig.preferred_ending,
           choices: this.getDefaultChoices()
@@ -1292,7 +1289,6 @@ ${advConfig.character_details.map((char, i) =>
         characters: template.characters,
         mood: this.truncateMood(template.mood),
         tension_level: template.tension_level,
-        achievements: ['开始冒险'],
         choices: this.getDefaultChoices()
       }
     };
@@ -1349,10 +1345,10 @@ ${advConfig.character_details.map((char, i) =>
 {
   "scene": "丰富详细的新场景描述，包含环境、人物、情感、动作的立体展现",
   "choices": [选择项数组],
-  "mood": "新的故事氛围",
+          "mood": "新的故事氛围(8-12字)",
   "tension_level": 数字,
   "new_characters": [只有在故事自然需要时才包含新角色，格式：{"name": "角色名", "role": "角色定位", "traits": "性格特征", "appearance": "外貌描述", "backstory": "简要背景"}],
-  "achievements": [新解锁的成就，如果有的话]
+
 }`;
 
     const prompt = `用户选择了："${selectedChoice.text}" - ${selectedChoice.description}
@@ -1517,7 +1513,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         scene: sceneContent,
         mood: newMood,
         tension_level: newTensionLevel,
-        achievements: (difficulty >= 4 && Math.random() > 0.5) ? [`勇敢者 - 选择了难度${difficulty}的行动`] : [],
+        
         choices: this.getDefaultChoices()
       }
     };
@@ -1657,7 +1653,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         while (attempts < maxAttempts) {
           try {
             attempts++;
-            console.log(`尝试第${attempts}次生成选择项...`);
+            console.log(`🎯 尝试第${attempts}次生成选择项...`);
             
             // 根据重试次数调整提示词
             let currentPrompt = prompt;
@@ -1672,8 +1668,12 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             }
             
             const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录和摘要
-      const content = this.extractContent(response);
-      const choices = JSON.parse(content);
+            console.log(`📥 AI响应接收完成 (尝试${attempts})`);
+            
+            const content = this.extractContent(response);
+            console.log(`📄 提取内容完成 (尝试${attempts}):`, content.substring(0, 100) + '...');
+            
+            const choices = JSON.parse(content);
             
             // 验证选择项格式
             if (!Array.isArray(choices) || choices.length === 0) {
@@ -1687,12 +1687,12 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
             }
             
-            console.log(`第${attempts}次尝试成功生成选择项`);
-      return choices;
+            console.log(`✅ 第${attempts}次尝试成功生成选择项`, choices.length, '个选择');
+            return choices;
           } catch (error) {
-            console.warn(`第${attempts}次尝试生成选择项失败:`, error);
+            console.warn(`❌ 第${attempts}次尝试生成选择项失败:`, error.message);
             if (attempts >= maxAttempts) {
-              console.warn('达到最大重试次数，使用默认选择项');
+              console.warn('⚠️ 达到最大重试次数，使用默认选择项');
               return this.getDefaultChoices();
             }
             // 继续下一次循环尝试
@@ -1791,14 +1791,18 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     // 清理内容，移除可能导致JSON解析失败的字符
     content = content.trim();
     
+    console.log('🔍 AI原始响应内容:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+    
     // 如果内容包含代码块标记，提取其中的JSON
     const jsonObjectMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
     const jsonArrayMatch = content.match(/```(?:json)?\s*(\[[\s\S]*\])\s*```/);
     
     if (jsonObjectMatch) {
       content = jsonObjectMatch[1];
+      console.log('📄 从代码块提取JSON对象');
     } else if (jsonArrayMatch) {
       content = jsonArrayMatch[1];
+      console.log('📄 从代码块提取JSON数组');
     } else {
       // 如果没有代码块，尝试直接提取JSON对象或数组
       // 优先匹配数组，因为选择项应该是数组格式
@@ -1807,31 +1811,69 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       
       if (directArrayMatch) {
         content = directArrayMatch[0];
+        console.log('📄 直接提取JSON数组');
       } else if (directObjectMatch) {
         content = directObjectMatch[0];
+        console.log('📄 直接提取JSON对象');
+      } else {
+        console.warn('📄 未找到JSON格式，使用原始内容');
       }
+    }
+    
+    console.log('🔧 提取后的内容:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+    
+    // 先尝试直接解析，避免不必要的修复
+    try {
+      JSON.parse(content);
+      console.log('✅ JSON格式正确，无需修复');
+      return content;
+    } catch (directParseError) {
+      console.log('🔧 JSON格式有问题，尝试修复:', directParseError.message);
     }
     
     // 尝试修复JSON格式
     try {
-    content = this.fixJsonFormat(content);
+      content = this.fixJsonFormat(content);
+      console.log('✅ JSON修复成功');
     } catch (fixError) {
+      console.error('❌ JSON修复失败:', fixError.message);
       // JSON修复失败，抛出错误让上层重新生成
       throw new Error('JSON格式修复失败: ' + fixError.message);
     }
     
-    // 验证JSON格式
+    // 验证修复后的JSON格式
     try {
-      JSON.parse(content);
+      const parsed = JSON.parse(content);
+      
+      // 特殊处理：检查是否是包含choices字符串数组的对象格式
+      if (parsed && typeof parsed === 'object' && parsed.choices && Array.isArray(parsed.choices)) {
+        console.log('🔄 检测到choices对象格式，转换为标准选择项数组');
+        
+        // 检查choices数组中的元素类型
+        if (parsed.choices.length > 0 && typeof parsed.choices[0] === 'string') {
+          console.log('🔄 将字符串数组转换为选择项对象数组');
+          
+          const convertedChoices = parsed.choices.map((choiceText: string, index: number) => ({
+            id: index + 1,
+            text: choiceText.length > 50 ? choiceText.substring(0, 50) : choiceText,
+            description: choiceText.length > 50 ? choiceText.substring(50) : `选择${index + 1}的详细描述`,
+            difficulty: Math.floor(Math.random() * 5) + 1 // 随机难度1-5
+          }));
+          
+          console.log('✅ 转换成功，生成了', convertedChoices.length, '个选择项');
+          return JSON.stringify(convertedChoices);
+        }
+      }
+      
       return content;
     } catch (parseError) {
-      console.warn('JSON解析失败，原始内容:', content);
+      console.warn('❌ 修复后仍无法解析JSON，原始内容:', content);
       // 检查原始内容是否包含有用信息
       if (content.length > 50 && !content.includes('"scene"') && !content.includes('"choices"')) {
         // 如果原始内容看起来是纯文本结局内容，包装成JSON
-        console.warn('将纯文本内容包装为JSON格式');
+        console.warn('📦 将纯文本内容包装为JSON格式');
         const escapedContent = content.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-        return `{"scene": "${escapedContent}", "mood": "神秘", "achievements": []}`;
+        return `{"scene": "${escapedContent}", "mood": "神秘"}`;
       }
       
       // 抛出错误让上层重新生成
@@ -1842,71 +1884,200 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
   // 修复JSON格式的辅助方法
   private fixJsonFormat(content: string): string {
     try {
+      console.log('🔧 开始修复JSON格式...');
+      
       // 1. 基础清理
       let fixed = content.trim();
       
-      // 2. 移除尾随逗号
+      // 移除可能的前后缀文字说明
+      if (fixed.includes('{') || fixed.includes('[')) {
+        const firstBrace = fixed.indexOf('{');
+        const firstBracket = fixed.indexOf('[');
+        let startIndex = -1;
+        
+        if (firstBrace !== -1 && firstBracket !== -1) {
+          startIndex = Math.min(firstBrace, firstBracket);
+        } else if (firstBrace !== -1) {
+          startIndex = firstBrace;
+        } else if (firstBracket !== -1) {
+          startIndex = firstBracket;
+        }
+        
+        if (startIndex > 0) {
+          fixed = fixed.substring(startIndex);
+          console.log('🔧 移除前缀文字');
+        }
+      }
+      
+      // 2. 清理特殊字符和控制字符
+      fixed = fixed.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ''); // 控制字符
+      fixed = fixed.replace(/[\u201C\u201D]/g, '"'); // 智能引号替换为标准引号
+      fixed = fixed.replace(/[\u2018\u2019]/g, "'"); // 智能单引号
+      
+      // 3. 移除尾随逗号
       fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
       
-      // 3. 移除省略符号
+      // 4. 移除省略符号和多余的点
       fixed = fixed.replace(/\.{3,}/g, '');
       
-      // 4. 修复未完成的JSON结构
+      // 修复 }... 或 ],... 这样的格式
+      fixed = fixed.replace(/([}\]])\s*,\s*\.{3,}/g, '$1');
+      console.log('🔧 修复省略号格式');
+      
+      // 5. 修复常见的JSON格式问题
+      // 修复未引用的属性名
+      fixed = fixed.replace(/(\s|^)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+      
+      // 修复 +数字 格式（如 "tension_change": +2 应该是 "tension_change": 2）
+      fixed = fixed.replace(/:\s*\+(\d+)/g, ': $1');
+      console.log('🔧 修复 +数字 格式');
+      
+      // 修复字符串中的未转义引号（简单处理）
+      fixed = fixed.replace(/"([^"]*)"([^"]*)"([^"]*)"/g, (match, p1, p2, p3) => {
+        if (p2.includes(':') || p2.includes(',') || p2.includes('{') || p2.includes('}')) {
+          return match; // 这可能是正确的JSON结构，不修改
+        }
+        return `"${p1}\\"${p2}\\"${p3}"`;
+      });
+      
+      // 6. 修复未完成的JSON结构
       const openBraces = (fixed.match(/{/g) || []).length;
       const closeBraces = (fixed.match(/}/g) || []).length;
       const openBrackets = (fixed.match(/\[/g) || []).length;
       const closeBrackets = (fixed.match(/\]/g) || []).length;
       
+      console.log('🔧 结构检查:', { openBraces, closeBraces, openBrackets, closeBrackets });
+      
       // 补充缺失的大括号
       for (let i = 0; i < openBraces - closeBraces; i++) {
         fixed += '}';
+        console.log('🔧 补充大括号}');
       }
       
       // 补充缺失的中括号
       for (let i = 0; i < openBrackets - closeBrackets; i++) {
         fixed += ']';
+        console.log('🔧 补充中括号]');
       }
       
-      // 5. 处理不完整的字符串
-      // 确保最后一个字符串被正确闭合
-      const lastQuoteIndex = fixed.lastIndexOf('"');
-      if (lastQuoteIndex > 0) {
-        const beforeLastQuote = fixed.substring(0, lastQuoteIndex);
-        const quotesCount = (beforeLastQuote.match(/"/g) || []).length;
-        // 如果引号数量是奇数，说明有未闭合的字符串
-        if (quotesCount % 2 === 0) {
-          // 在JSON结构结束前添加闭合引号
-          const afterLastQuote = fixed.substring(lastQuoteIndex + 1);
-          if (!afterLastQuote.includes('"') && (afterLastQuote.includes('}') || afterLastQuote.includes(']'))) {
-            fixed = beforeLastQuote + '""' + afterLastQuote;
-          }
+      // 7. 处理不完整的字符串
+      let quoteCount = 0;
+      let lastQuoteIndex = -1;
+      for (let i = 0; i < fixed.length; i++) {
+        if (fixed[i] === '"' && (i === 0 || fixed[i-1] !== '\\')) {
+          quoteCount++;
+          lastQuoteIndex = i;
         }
       }
       
-      // 6. 尝试解析修复后的JSON
+      // 如果引号数量是奇数，在适当位置添加闭合引号
+      if (quoteCount % 2 === 1) {
+        console.log('🔧 修复未闭合的字符串');
+        // 找到最后一个有意义的字符位置
+        let insertIndex = fixed.length;
+        for (let i = fixed.length - 1; i >= 0; i--) {
+          if (fixed[i] === '}' || fixed[i] === ']') {
+            insertIndex = i;
+            break;
+          }
+        }
+        fixed = fixed.substring(0, insertIndex) + '"' + fixed.substring(insertIndex);
+      }
+      
+      // 8. 尝试解析修复后的JSON
       try {
         JSON.parse(fixed);
+        console.log('✅ JSON修复成功');
         return fixed;
       } catch (e) {
-        // 如果仍然失败，尝试提取有效的JSON部分
-        const jsonMatch = fixed.match(/{[^{}]*"scene"[^{}]*}/);
-        if (jsonMatch) {
-          try {
-            JSON.parse(jsonMatch[0]);
-            return jsonMatch[0];
-          } catch (nestedError) {
-            // 如果提取的部分也无法解析，则抛出错误
-            throw new Error('无法修复JSON格式');
+        console.log('🔧 基础修复失败，尝试高级修复:', e.message);
+        
+        // 9. 高级修复：尝试提取有效的JSON部分
+        if (fixed.startsWith('[')) {
+          // 处理数组格式（选择项）
+          const arrayMatch = fixed.match(/\[[^\[\]]*(?:\{[^{}]*\}[^\[\]]*)*\]/);
+          if (arrayMatch) {
+            try {
+              JSON.parse(arrayMatch[0]);
+              console.log('✅ 提取有效数组部分成功');
+              return arrayMatch[0];
+            } catch (arrayError) {
+              console.log('🔧 数组部分修复失败');
+            }
+          }
+        } else if (fixed.startsWith('{')) {
+          // 处理对象格式
+          const objectMatch = fixed.match(/\{[^{}]*(?:"[^"]*"[^{}]*)*\}/);
+          if (objectMatch) {
+            try {
+              JSON.parse(objectMatch[0]);
+              console.log('✅ 提取有效对象部分成功');
+              return objectMatch[0];
+            } catch (objectError) {
+              console.log('🔧 对象部分修复失败');
+            }
           }
         }
         
-        // 最后的回退 - 抛出错误而不是返回占位符
+        // 10. 最终回退：如果内容看起来像选择项但格式有问题，尝试重构
+        if (content.includes('text') && content.includes('description') && content.includes('difficulty')) {
+          console.log('🔧 尝试重构选择项格式');
+          try {
+            // 尝试提取文本内容并重新构造JSON
+            return this.reconstructChoicesFromText(content);
+          } catch (reconstructError) {
+            console.log('🔧 重构失败');
+          }
+        }
+        
+        // 最后的回退 - 抛出错误
         throw new Error('无法修复JSON格式');
       }
     } catch (error) {
-      console.warn('JSON修复失败:', error);
+      console.warn('❌ JSON修复过程失败:', error);
       throw new Error('JSON修复失败: ' + error);
     }
+  }
+  
+  // 从文本重构选择项的辅助方法
+  private reconstructChoicesFromText(content: string): string {
+    console.log('🔧 尝试从文本重构选择项...');
+    
+    // 简单的文本解析重构（可以根据需要扩展）
+    const lines = content.split('\n');
+    const choices: any[] = [];
+    let currentChoice: any = {};
+    let idCounter = 1;
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.includes('text') && trimmed.includes(':')) {
+        currentChoice.id = idCounter++;
+        const textMatch = trimmed.match(/"text":\s*"([^"]+)"/);
+        if (textMatch) currentChoice.text = textMatch[1];
+      } else if (trimmed.includes('description') && trimmed.includes(':')) {
+        const descMatch = trimmed.match(/"description":\s*"([^"]+)"/);
+        if (descMatch) currentChoice.description = descMatch[1];
+      } else if (trimmed.includes('difficulty') && trimmed.includes(':')) {
+        const diffMatch = trimmed.match(/"difficulty":\s*(\d+)/);
+        if (diffMatch) {
+          currentChoice.difficulty = parseInt(diffMatch[1]);
+          // 当获得完整选择项时，添加到数组
+          if (currentChoice.text && currentChoice.description) {
+            choices.push({ ...currentChoice });
+            currentChoice = {};
+          }
+        }
+      }
+    }
+    
+    if (choices.length > 0) {
+      const result = JSON.stringify(choices);
+      console.log('✅ 重构成功，生成了', choices.length, '个选择项');
+      return result;
+    }
+    
+    throw new Error('无法从文本重构选择项');
   }
 
   // 默认选择项（当AI生成失败时使用）
@@ -1940,7 +2111,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 
   // 5. 检查故事是否应该结束
   shouldStoryEnd(storyState: StoryState): { shouldEnd: boolean; reason: string; suggestedType: 'success' | 'failure' | 'neutral' | 'cliffhanger' } {
-    const { chapter, choices_made, achievements, tension_level, mood, story_progress = 0 } = storyState;
+    const { chapter, choices_made, tension_level, mood, story_progress = 0 } = storyState;
     
     // 1. 强制结局限制（防止故事过长）
     if (chapter >= 20) {
@@ -1962,14 +2133,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         };
       }
       
-      // 2.2 成就数量检查 - 降低要求
-      if (achievements.length >= 8) {
-        return {
-          shouldEnd: true,
-          reason: "已经完成了足够多的重要成就",
-          suggestedType: 'success'
-        };
-      }
+
       
       // 2.3 检查最近的选择是否暗示结局
       const recentChoices = choices_made.slice(-3);
@@ -2006,7 +2170,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       }
       
       // 3.2 和谐结局检查
-      if (tension_level <= 3 && mood === '平静' && achievements.length >= 4) {
+      if (tension_level <= 3 && mood === '平静') {
         return {
           shouldEnd: true,
           reason: "故事达到了和谐的解决状态",
@@ -2015,7 +2179,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       }
       
       // 3.3 高潮悬崖结局
-      if (tension_level >= 8 && achievements.length >= 5) {
+      if (tension_level >= 8) {
         return {
           shouldEnd: Math.random() > 0.6, // 40% 概率触发
           reason: "在激烈的高潮时刻结束，留下悬念",
@@ -2027,10 +2191,10 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     // 4. 早期结局触发（故事紧凑化）
     if (chapter >= 5) {
       // 4.1 快速成功结局
-      if (achievements.length >= 6 && story_progress >= 70) {
+      if (story_progress >= 70) {
         return {
           shouldEnd: true,
-          reason: "短时间内取得显著成就，可以创造一个紧凑的成功结局",
+          reason: "短时间内取得显著进展，可以创造一个紧凑的成功结局",
           suggestedType: 'success'
         };
       }
@@ -2041,7 +2205,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         finalChoiceKeywords.some(keyword => choice.includes(keyword))
       );
       
-      if (hasKeyChoice && achievements.length >= 3) {
+      if (hasKeyChoice) {
         return {
           shouldEnd: true,
           reason: "做出了关键性选择，故事应该朝向结局发展",
@@ -2053,7 +2217,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     // 5. 自然发展检查（避免故事过短）
     if (chapter >= 12) {
       // 12章后开始更积极地寻找结局
-      if (achievements.length >= 4 || story_progress >= 60) {
+      if (story_progress >= 60) {
         return {
           shouldEnd: Math.random() > 0.5, // 50% 概率触发
           reason: "故事已有足够的发展，可以寻找合适的结局时机",
@@ -2095,8 +2259,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
   "scene": "详细的结局场景描述，要有情感深度和视觉感",
   "completion_summary": "故事完成总结",
   "character_outcomes": "主要角色的最终结局",
-  "achievements": ["最终获得的成就"],
-  "mood": "结局氛围"
+  
+        "mood": "结局氛围(8-12字)"
 }`;
 
     const prompt = `请为以下故事创作结局：
@@ -2105,7 +2269,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 故事设定：${storyState.setting}
 主要角色：${storyState.characters.map(c => `${c.name}(${c.role})`).join(', ')}
 已做选择：${storyState.choices_made.slice(-5).join(', ')}
-已获成就：${storyState.achievements.join(', ')}
+当前进度：${storyState.story_progress || 0}%
 当前氛围：${storyState.mood}
 结局类型：${endingType}
 
@@ -2155,7 +2319,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             content: {
               scene: parsedContent.scene,
                   choices: [], // 结局不需要选择项
-              achievements: parsedContent.achievements || [],
+
               mood: truncatedMood
             }
           };
@@ -2213,19 +2377,14 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 新的谜团浮现，新的挑战在前方等待。这个结局，同时也是下一个开始...`
     };
 
-    const finalAchievements = {
-      success: ['完美结局 - 实现了所有主要目标', '英雄之路 - 成功完成了史诗级冒险'],
-      failure: ['悲剧英雄 - 即使失败也展现了不屈精神', '牺牲精神 - 为了正义而勇敢战斗'],
-      neutral: ['智者之选 - 学会了人生的平衡艺术', '成长之路 - 在旅程中获得了宝贵经验'],
-      cliffhanger: ['待续... - 故事还没有结束', '新的开始 - 为未来的冒险做好了准备']
-    };
+
 
     return {
       success: true,
       content: {
         scene: endingScenes[endingType],
         choices: [], // 结局不需要选择项
-        achievements: finalAchievements[endingType],
+
         mood: this.truncateMood(endingType === 'success' ? '胜利' : endingType === 'failure' ? '悲壮' : endingType === 'neutral' ? '平静' : '悬疑')
       }
     };
@@ -2238,7 +2397,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     const prompt = `故事ID: ${storyState.story_id}
 章节: ${storyState.chapter}
 做出的选择: ${storyState.choices_made.join(', ')}
-获得成就: ${storyState.achievements.join(', ')}
+当前进度: ${storyState.story_progress || 0}%
 
 请生成一个故事总结。`;
 
@@ -2264,9 +2423,9 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 输出格式：
 {
   "current_scene": "新的故事场景描述，要包含转折和发展",
-  "mood": "当前氛围",
+        "mood": "当前氛围(8-12字)",
   "tension_level": 1-10的紧张度,
-  "achievements": ["如果有新成就的话"],
+
   "scene_type": "场景类型：action/dialogue/exploration/reflection/climax"
 }`;
 
@@ -2278,7 +2437,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 氛围：${storyState.mood}
 紧张度：${storyState.tension_level}
 已做选择：${storyState.choices_made.slice(-3).join(', ')}
-已获成就：${storyState.achievements.join(', ')}
+当前进度：${storyState.story_progress || 0}%
 
 故事似乎停滞了，请创造一个新的转折来推动剧情发展。要考虑角色的成长、未解决的冲突，或者引入新的元素来增加趣味性。`;
 
@@ -2296,10 +2455,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             chapter: storyState.chapter + 1,
             mood: this.truncateMood(parsed.mood || storyState.mood),
             tension_level: parsed.tension_level || storyState.tension_level,
-            achievements: [
-              ...storyState.achievements,
-              ...(parsed.achievements || [])
-            ],
+
 
           };
         } catch (parseError) {
@@ -2323,7 +2479,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       setting, 
       chapter, 
       choices_made, 
-      achievements, 
+ 
       story_progress = 0,
       mood = '神秘',
       tension_level = 5,
@@ -2363,7 +2519,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         goalCompletionRate: completedGoals / totalGoals,
         hasUnresolvedConflicts: tension_level > 6,
         storyMaturity: story_progress / 100,
-        characterDevelopment: achievements.length >= 3
+        characterDevelopment: story_progress >= 50
       };
     };
 
@@ -2394,7 +2550,7 @@ ${characters.map(char => `**${char.name}** (${char.role}): ${char.traits}`).join
 
 ## 故事发展历程
 **重要选择**: ${choices_made.slice(-3).join(' → ')}
-**获得成就**: ${achievements.slice(-3).join(', ')}
+**故事进度**: ${story_progress}%
 
 ## 用户行为分析
 - 英雄倾向: ${(playerTendency.heroic * 100).toFixed(0)}%
@@ -2424,8 +2580,8 @@ ${endingPrompts[endingType]}
 **输出格式要求：必须返回有效的JSON格式**
 {
   "scene": "这里填写500-800字的完整结局内容",
-  "mood": "结局的情感氛围",
-  "achievements": ["本次结局获得的成就"],
+        "mood": "结局的情感氛围(8-12字)",
+
   "ending_type": "${endingType}",
   "completion_summary": "简短的故事完成总结"
 }
@@ -2476,7 +2632,7 @@ ${endingPrompts[endingType]}
       const fallbackEndings = {
         natural: `经历了这段奇妙的旅程，${characters[0]?.name || '主角'}深深地感受到了成长的力量。${current_scene}的经历让所有人都有了新的认识。虽然还有许多未知等待探索，但此刻的收获已经足够珍贵。故事在这里暂告一段落，但新的冒险或许正在不远处等待着。`,
         
-        satisfying: `最终，所有的努力都得到了回报。${characters[0]?.name || '主角'}和伙伴们成功地克服了挑战，${achievements.length > 0 ? '他们的成就' : '他们的努力'}为这个故事画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，而${setting}也因为他们的努力变得更加美好。这是一个值得纪念的结局。`,
+        satisfying: `最终，所有的努力都得到了回报。${characters[0]?.name || '主角'}和伙伴们成功地克服了挑战，他们的努力为这个故事画下了完美的句号。每个人都找到了自己的归宿，友谊得到了升华，而${setting}也因为他们的努力变得更加美好。这是一个值得纪念的结局。`,
         
         open: `当这一段旅程结束时，${characters[0]?.name || '主角'}望向远方，心中满怀期待。${current_scene}只是众多冒险中的一站，更大的世界还在等待探索。虽然当前的故事告一段落，但谁知道明天又会遇到什么样的奇遇呢？也许，这仅仅是一个更宏大故事的开始...`,
         
