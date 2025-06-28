@@ -29,6 +29,7 @@ export interface StoryState {
   characters: Character[];
   setting: string;
   chapter: number;
+  chapter_title?: string; // 章节标题
   choices_made: string[];
   mood: string; // 故事氛围
   tension_level: number; // 紧张程度 1-10
@@ -56,6 +57,7 @@ export interface StoryGenerationResponse {
     choices: Choice[];
     characters?: Character[]; // 初始故事生成时的全部角色
     new_characters?: Character[]; // 故事进行中新增的角色
+    chapter_title?: string; // 章节标题
     mood?: string;
     tension_level?: number;
     story_length_target?: string;
@@ -942,9 +944,9 @@ ${newSummary}`;
 {
   "scene": "精心雕琢的开场场景，包含丰富的环境描写、深度的角色塑造、巧妙的情节设置和优美的文学表达",
   "characters": [用户提供的角色，大幅增强appearance和backstory字段的深度和生动性],
-          "mood": "与故事基调${advConfig.tone}深度契合的简洁氛围(8-12字)",
+  "chapter_title": "第一章的引人入胜标题，体现章节核心内容和氛围(8-15字)",
+  "mood": "与故事基调${advConfig.tone}深度契合的简洁氛围(8-12字)",
   "tension_level": 1-10的整数(根据基调和类型精确调整),
-  
   "story_length_target": "${advConfig.story_length}",
   "preferred_ending_type": "${advConfig.preferred_ending}"
 }`;
@@ -1015,9 +1017,9 @@ ${advConfig.character_details.map((char, i) =>
     }
   ],
   "setting_details": "精心构建的详细背景设定，包含历史、文化、物理环境等多个层面",
-          "mood": "深度契合故事类型的简洁氛围(8-12字)",
-  "tension_level": 1-10的整数,
-  
+  "chapter_title": "第一章的引人入胜标题，体现章节核心内容和氛围(8-15字)",
+  "mood": "深度契合故事类型的简洁氛围(8-12字)",
+  "tension_level": 1-10的整数
 }`;
 
       prompt = `请基于以下想法创作一个完整的${config.genre}互动故事开场：
@@ -1345,10 +1347,10 @@ ${advConfig.character_details.map((char, i) =>
 {
   "scene": "丰富详细的新场景描述，包含环境、人物、情感、动作的立体展现",
   "choices": [选择项数组],
-          "mood": "新的故事氛围(8-12字)",
+  "chapter_title": "新章节的引人入胜标题，体现章节核心内容和氛围(8-15字)",
+  "mood": "新的故事氛围(8-12字)",
   "tension_level": 数字,
-  "new_characters": [只有在故事自然需要时才包含新角色，格式：{"name": "角色名", "role": "角色定位", "traits": "性格特征", "appearance": "外貌描述", "backstory": "简要背景"}],
-
+  "new_characters": [只有在故事自然需要时才包含新角色，格式：{"name": "角色名", "role": "角色定位", "traits": "性格特征", "appearance": "外貌描述", "backstory": "简要背景"}]
 }`;
 
     const prompt = `用户选择了："${selectedChoice.text}" - ${selectedChoice.description}
@@ -1513,10 +1515,44 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
         scene: sceneContent,
         mood: newMood,
         tension_level: newTensionLevel,
-        
+        chapter_title: this.generateFallbackChapterTitle(currentStory.chapter + 1, newMood, selectedChoice.text),
         choices: this.getDefaultChoices()
       }
     };
+  }
+
+  // 生成回退章节标题的方法
+  private generateFallbackChapterTitle(chapter: number, mood: string, choiceText: string): string {
+    // 根据氛围和选择内容生成合适的章节标题
+    const moodTitles = {
+      '神秘': ['未知的征兆', '阴影中的秘密', '迷雾的深处', '隐藏的真相', '神秘的指引'],
+      '紧张': ['危机时刻', '生死抉择', '千钧一发', '绝境逢生', '关键转折'],
+      '激烈': ['激战正酣', '风暴之眼', '血战到底', '决战时刻', '最后一搏'],
+      '史诗': ['英雄的试炼', '命运的召唤', '传奇的诞生', '光明与黑暗', '伟大的征程'],
+      '冒险': ['新的启程', '未知的旅途', '探索之路', '勇敢的选择', '冒险的代价'],
+      '浪漫': ['心动时刻', '爱的邂逅', '情感的纠葛', '心灵的共鸣', '温柔的承诺'],
+      '恐怖': ['恶梦降临', '黑暗觉醒', '恐惧的源头', '诅咒之夜', '死亡的气息'],
+      '平静': ['宁静的思考', '内心的声音', '平和的时光', '心灵的港湾', '静谧的瞬间']
+    };
+
+    // 根据选择内容的关键词调整标题
+    const choiceLower = choiceText.toLowerCase();
+    const titleCandidates = moodTitles[mood as keyof typeof moodTitles] || moodTitles['神秘'];
+    
+    // 根据选择内容中的关键词选择更合适的标题
+    if (choiceLower.includes('战斗') || choiceLower.includes('攻击') || choiceLower.includes('战')) {
+      return titleCandidates[Math.random() > 0.5 ? 3 : 4] || '激战时刻';
+    } else if (choiceLower.includes('逃') || choiceLower.includes('躲') || choiceLower.includes('避')) {
+      return titleCandidates[Math.random() > 0.5 ? 1 : 2] || '逃亡之路';
+    } else if (choiceLower.includes('探索') || choiceLower.includes('寻找') || choiceLower.includes('调查')) {
+      return titleCandidates[Math.random() > 0.5 ? 0 : 2] || '探索未知';
+    } else if (choiceLower.includes('帮助') || choiceLower.includes('救') || choiceLower.includes('保护')) {
+      return titleCandidates[Math.random() > 0.5 ? 3 : 4] || '救援行动';
+    }
+    
+    // 默认随机选择一个标题
+    const randomIndex = Math.floor(Math.random() * titleCandidates.length);
+    return titleCandidates[randomIndex];
   }
 
   // 根据选择生成相应的场景内容 - 增强版
@@ -1847,11 +1883,11 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       
       // 特殊处理：检查是否是包含choices字符串数组的对象格式
       if (parsed && typeof parsed === 'object' && parsed.choices && Array.isArray(parsed.choices)) {
-        console.log('🔄 检测到choices对象格式，转换为标准选择项数组');
+        console.log('🔄 检测到包含choices的对象格式');
         
         // 检查choices数组中的元素类型
         if (parsed.choices.length > 0 && typeof parsed.choices[0] === 'string') {
-          console.log('🔄 将字符串数组转换为选择项对象数组');
+          console.log('🔄 将字符串数组转换为选择项对象数组，保留其他字段');
           
           const convertedChoices = parsed.choices.map((choiceText: string, index: number) => ({
             id: index + 1,
@@ -1860,8 +1896,14 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             difficulty: Math.floor(Math.random() * 5) + 1 // 随机难度1-5
           }));
           
-          console.log('✅ 转换成功，生成了', convertedChoices.length, '个选择项');
-          return JSON.stringify(convertedChoices);
+          // 保留原对象的其他字段，只替换choices字段
+          const updatedParsed = {
+            ...parsed,
+            choices: convertedChoices
+          };
+          
+          console.log('✅ 转换成功，生成了', convertedChoices.length, '个选择项，保留了其他字段:', Object.keys(updatedParsed).filter(k => k !== 'choices'));
+          return JSON.stringify(updatedParsed);
         }
       }
       
@@ -2455,8 +2497,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             chapter: storyState.chapter + 1,
             mood: this.truncateMood(parsed.mood || storyState.mood),
             tension_level: parsed.tension_level || storyState.tension_level,
-
-
+            story_progress: Math.min((storyState.story_progress || 0) + 10, 100)
           };
         } catch (parseError) {
           console.warn('继续故事JSON解析失败，使用回退方案:', parseError);
@@ -2478,8 +2519,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       characters, 
       setting, 
       chapter, 
-      choices_made, 
- 
+      choices_made,
       story_progress = 0,
       mood = '神秘',
       tension_level = 5,
@@ -2587,45 +2627,45 @@ ${endingPrompts[endingType]}
 }
 `;
 
-         try {
-       // 使用JSON格式获取结局
-       const response = await this.callAI(prompt);
-       const content = this.extractContent(response);
-       
-       console.log('🎬 AI原始响应内容:', content.substring(0, 200) + '...');
-       
-       // 解析JSON响应
-       let parsedResponse;
-       try {
-         parsedResponse = JSON.parse(content);
-       } catch (parseError) {
-         console.error('❌ JSON解析失败:', parseError);
-         throw new Error('AI返回的不是有效的JSON格式');
-       }
-       
-       // 验证返回的结局内容
-       if (!parsedResponse.scene || typeof parsedResponse.scene !== 'string') {
-         throw new Error('AI响应中缺少有效的scene字段');
-       }
-       
-       const sceneContent = parsedResponse.scene.trim();
-       
-       // 检查是否是无效的占位符内容
-       if (sceneContent === "故事继续发展..." || 
-           sceneContent.length < 100 ||
-           sceneContent.includes('这里填写') ||
-           sceneContent.includes('请填写')) {
-         throw new Error('AI返回的结局内容无效或为占位符');
-       }
-       
-       console.log('🎬 AI生成定制结局成功');
-       console.log('🎬 结局类型:', parsedResponse.ending_type || endingType);
-       console.log('🎬 结局长度:', sceneContent.length);
-       console.log('🎬 结局预览:', sceneContent.substring(0, 150) + '...');
-       
-       // 返回结局文本内容
-       return sceneContent;
-     } catch (error) {
+    try {
+      // 使用JSON格式获取结局
+      const response = await this.callAI(prompt);
+      const content = this.extractContent(response);
+      
+      console.log('🎬 AI原始响应内容:', content.substring(0, 200) + '...');
+      
+      // 解析JSON响应
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(content);
+      } catch (parseError) {
+        console.error('❌ JSON解析失败:', parseError);
+        throw new Error('AI返回的不是有效的JSON格式');
+      }
+      
+      // 验证返回的结局内容
+      if (!parsedResponse.scene || typeof parsedResponse.scene !== 'string') {
+        throw new Error('AI响应中缺少有效的scene字段');
+      }
+      
+      const sceneContent = parsedResponse.scene.trim();
+      
+      // 检查是否是无效的占位符内容
+      if (sceneContent === "故事继续发展..." || 
+          sceneContent.length < 100 ||
+          sceneContent.includes('这里填写') ||
+          sceneContent.includes('请填写')) {
+        throw new Error('AI返回的结局内容无效或为占位符');
+      }
+      
+      console.log('🎬 AI生成定制结局成功');
+      console.log('🎬 结局类型:', parsedResponse.ending_type || endingType);
+      console.log('🎬 结局长度:', sceneContent.length);
+      console.log('🎬 结局预览:', sceneContent.substring(0, 150) + '...');
+      
+      // 返回结局文本内容
+      return sceneContent;
+    } catch (error) {
       console.error('❌ AI生成结局失败:', error);
       
       // 备用结局模板

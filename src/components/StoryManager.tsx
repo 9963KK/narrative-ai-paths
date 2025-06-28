@@ -23,6 +23,7 @@ interface StoryState {
   characters: Array<{ name: string; role: string; traits: string; appearance?: string; backstory?: string }>;
   setting: string;
   chapter: number;
+  chapter_title?: string; // 章节标题
   choices_made: string[];
 
   mood?: string;
@@ -87,8 +88,8 @@ const StoryManager: React.FC = () => {
           characters: response.content.characters || [],
           setting: config.setting,
           chapter: 1,
+          chapter_title: response.content.chapter_title || '序章',
           choices_made: [],
-
           mood: response.content.mood || '神秘',
           tension_level: response.content.tension_level || 5,
           needs_choice: true, // 初始场景总是需要选择
@@ -393,9 +394,9 @@ const StoryManager: React.FC = () => {
               ...currentStory,
               current_scene: response.content?.scene || '故事继续发展...',
               chapter: currentStory.chapter + 1,
+              chapter_title: response.content?.chapter_title || `第${currentStory.chapter + 1}章`,
               choices_made: [...(currentStory.choices_made || []), choiceText],
               characters: processedCharacters,
-
               mood: response.content?.mood || currentStory.mood || '神秘',
               tension_level: response.content?.tension_level || currentStory.tension_level || 5,
               story_progress: calculateStoryProgress(currentStory.chapter + 1),

@@ -12,6 +12,7 @@ interface StoryState {
   characters: Array<{ name: string; role: string; traits: string; appearance?: string; backstory?: string }>;
   setting: string;
   chapter: number;
+  chapter_title?: string; // 章节标题
   choices_made: string[];
 
   mood?: string;
@@ -1001,21 +1002,37 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         {/* 头部信息 - 重新设计的布局 */}
         <Card className="bg-white shadow-lg border-slate-200">
           <CardHeader className="pb-3">
-            {/* 第一行：主要信息和操作按钮 */}
+            {/* 第一行：章节信息布局 */}
             <div className="flex items-center justify-between mb-3">
-              <CardTitle className="text-xl text-slate-800 flex items-center gap-3">
-                <span>第 {story.chapter} 章</span>
+              <div className="flex flex-col space-y-1">
+                {/* 章节编号和标题 */}
+                <CardTitle className="text-xl text-slate-800 flex items-center gap-3">
+                  {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') ? (
+                    // 如果有真正的AI生成标题（不包含"第"和"章"），显示完整格式
+                    <>
+                      <span>第 {story.chapter} 章</span>
+                      <span className="text-lg text-slate-600 font-medium">
+                        {story.chapter_title}
+                      </span>
+                    </>
+                  ) : (
+                    // 否则只显示章节号
+                    <span>第 {story.chapter} 章</span>
+                  )}
+
+                </CardTitle>
+                
                 {/* 故事进度显示 */}
                 <div className="flex items-center gap-2">
                   <Progress 
                     value={story.story_progress || (story.chapter / 12) * 100} 
-                    className="w-24 h-2" 
+                    className="w-32 h-2" 
                   />
                   <span className="text-xs text-slate-500 font-normal">
-                    {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
+                    进度: {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
                   </span>
                 </div>
-              </CardTitle>
+              </div>
               
               {/* 主要操作按钮组 */}
               <div className="flex items-center space-x-2">
@@ -1062,47 +1079,113 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </div>
             </div>
             
-            {/* 第二行：状态信息和设置 - 混合布局 */}
-            <div className="flex justify-between items-center w-full pt-2 border-t border-slate-100">
-              {/* 左侧标签组: 用于显示各项数据 */}
+            {/* 第二行：状态信息栏 - 重新设计的三列布局 */}
+            <div className="grid grid-cols-3 gap-4 items-center w-full pt-3 border-t border-slate-100">
+              {/* 左列：保存控制 */}
               <div className="flex items-center space-x-3">
+                {/* 滑动开关 */}
+                {onToggleAutoSave && (
+                  <div className="flex items-center space-x-2">
+                    {/* 滑动开关组件 */}
+                    <div 
+                      className={`relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        autoSaveEnabled 
+                          ? 'bg-green-500 focus:ring-green-500' 
+                          : 'bg-gray-300 focus:ring-gray-400'
+                      }`}
+                      onClick={() => onToggleAutoSave(!autoSaveEnabled)}
+                      title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
+                      role="switch"
+                      aria-checked={autoSaveEnabled}
+                    >
+                      {/* 滑动圆点 */}
+                      <span 
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${
+                          autoSaveEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      >
+                        {/* 圆点内的图标 */}
+                        <span className="flex h-full w-full items-center justify-center">
+                          {autoSaveEnabled ? (
+                            // 自动保存图标 - 云端上传图标（缩小版）
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5.5 17a4.5 4.5 0 01-1.44-8.765 4.5 4.5 0 018.302-3.046 3.5 3.5 0 014.504 4.272A4 4 0 0115 17H5.5zm3.75-2.75a.75.75 0 001.5 0V9.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0l-3.25 3.5a.75.75 0 101.1 1.02l1.95-2.1v4.59z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            // 手动保存图标 - 传统的软盘保存图标（缩小版）
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                              <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </span>
+                      </span>
+                    </div>
+                    
+                    {/* 保存状态文字和指示 */}
+                    <div className="flex items-center space-x-1.5">
+                      <span className={`text-sm font-medium ${
+                        autoSaveEnabled ? 'text-green-700' : 'text-gray-700'
+                      }`}>
+                        {autoSaveEnabled ? '自动保存' : '手动保存'}
+                      </span>
+                      
+                      {/* 状态指示器 */}
+                      <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                        autoSaveEnabled ? 'bg-green-400 shadow-sm' : 'bg-gray-400'
+                      }`} />
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* 中列：故事状态标签 */}
+              <div className="flex items-center justify-center space-x-2">
                 {/* 氛围标签 */}
                 {story.mood && (
-                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-800">
                     氛围: {story.mood}
                   </span>
                 )}
                 
                 {/* 紧张度标签 */}
                 {story.tension_level && (
-                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-purple-100 text-purple-800">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-purple-100 text-purple-800">
                     紧张度: {story.tension_level}/10
                   </span>
                 )}
-                
-
               </div>
               
-              {/* 右侧状态: 用于显示存档状态 */}
-              <div className="flex items-center space-x-2 text-gray-500">
-                {/* 自动保存状态显示 */}
-                {onToggleAutoSave && (
-                  <div 
-                    className="flex items-center space-x-2 cursor-pointer hover:text-gray-700 transition-colors"
-                    onClick={() => onToggleAutoSave(!autoSaveEnabled)}
-                    title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
-                  >
-                    {/* 存档图标 (SVG) */}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-                      <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
-                    </svg>
-                    
-                    {/* 状态文字 */}
-                    <span className="font-medium text-sm">
-                      {autoSaveEnabled ? '自动保存' : '手动保存'}
-                    </span>
-                  </div>
+              {/* 右列：故事统计信息 */}
+              <div className="flex items-center justify-end space-x-3 text-xs text-gray-500">
+                {/* 选择数量 */}
+                <span>
+                  已选择: {story.choices_made?.length || 0}
+                </span>
+                
+                {/* 角色数量 */}
+                {story.characters && story.characters.length > 0 && (
+                  <span>
+                    角色: {story.characters.length}
+                  </span>
+                )}
+                
+                {/* 故事场景类型 */}
+                {story.scene_type && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    story.scene_type === 'action' ? 'bg-red-100 text-red-700' :
+                    story.scene_type === 'dialogue' ? 'bg-green-100 text-green-700' :
+                    story.scene_type === 'exploration' ? 'bg-blue-100 text-blue-700' :
+                    story.scene_type === 'reflection' ? 'bg-yellow-100 text-yellow-700' :
+                    story.scene_type === 'climax' ? 'bg-purple-100 text-purple-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {story.scene_type === 'action' ? '动作' :
+                     story.scene_type === 'dialogue' ? '对话' :
+                     story.scene_type === 'exploration' ? '探索' :
+                     story.scene_type === 'reflection' ? '反思' :
+                     story.scene_type === 'climax' ? '高潮' : '未知'}
+                  </span>
                 )}
               </div>
             </div>
