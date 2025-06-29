@@ -709,7 +709,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                   </Button>
                 )}
               </CardTitle>
-              {!isEditing && (
+              {!isEditing && selectedSeedIndex === null && (
                 <p className="text-xs text-red-600 mt-1 font-medium">
                   ⚠️ 必须选择一个创意种子作为故事起点才能开始创作
                 </p>
@@ -831,7 +831,6 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
           <div className="flex flex-col items-center space-y-4">
             {selectedSeedIndex !== null ? (
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">✅ 已选择创意种子</p>
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
                   <CheckCircle2 className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-800">

@@ -414,31 +414,24 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">文档智能分析</h2>
-          <p className="text-slate-600">上传小说文档，AI将自动分析人物、背景、主题等元素，为您的创作提供灵感</p>
-        </div>
-        {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        )}
+    <div className="max-w-5xl mx-auto p-6">
+      {/* 标题区域 */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-3">文档智能分析</h1>
+        <p className="text-slate-600 text-lg">上传小说文档，AI将为您提供创作灵感</p>
       </div>
 
       {/* 文件上传区域 */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              selectedFile 
-                ? 'border-green-300 bg-green-50' 
-                : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
-            }`}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
+      <div className="mb-8">
+        <div
+          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+            selectedFile 
+              ? 'border-green-400 bg-green-50/50' 
+              : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
             <input
               ref={fileInputRef}
               type="file"
@@ -448,164 +441,162 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             />
             
             {selectedFile ? (
-              <div className="space-y-4">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+              <div className="space-y-6">
+                <div className="flex items-center justify-center">
+                  <CheckCircle className="w-16 h-16 text-green-500" />
+                </div>
                 <div>
-                  <p className="font-semibold text-slate-800">{selectedFile.name}</p>
-                  <p className="text-sm text-slate-600">
-                    文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
-                  </p>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-1">上传成功</h3>
+                </div>
+                
+                {/* 文件信息 */}
+                <div className="bg-slate-100 rounded-lg p-4 flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-blue-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-800">{selectedFile.name}</p>
+                    <p className="text-sm text-slate-600">
+                      文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
                 </div>
                 
                 {/* 文档统计信息 */}
                 {wordCount > 0 && (
-                  <div className="bg-slate-50 rounded-lg p-4 text-left">
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      文档统计
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <span className="text-slate-500">总字符数：</span>
-                        <span className="font-medium text-slate-700">{charCount.toLocaleString()}</span>
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-slate-800">分析预览</h4>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="text-center">
+                        <div className="text-slate-600 text-sm mb-1">总字符数</div>
+                        <div className="text-2xl font-bold text-slate-900">{charCount.toLocaleString()}</div>
                       </div>
-                      <div>
-                        <span className="text-slate-500">总词数：</span>
-                        <span className="font-medium text-slate-700">{wordCount.toLocaleString()}</span>
+                      <div className="text-center">
+                        <div className="text-slate-600 text-sm mb-1">总词数</div>
+                        <div className="text-2xl font-bold text-slate-900">{wordCount.toLocaleString()}</div>
                       </div>
                     </div>
                     
                     {/* AI处理建议 */}
                     {(() => {
                       const sizeCheck = checkFileSizeForAI(wordCount, charCount);
-                      const bgColor = {
-                        'success': 'bg-green-50 border-green-200',
-                        'info': 'bg-blue-50 border-blue-200',
-                        'warning': 'bg-yellow-50 border-yellow-200',
-                        'error': 'bg-red-50 border-red-200'
-                      }[sizeCheck.level];
-                      
-                      const textColor = {
-                        'success': 'text-green-700',
-                        'info': 'text-blue-700',
-                        'warning': 'text-yellow-700',
-                        'error': 'text-red-700'
-                      }[sizeCheck.level];
-                      
-                      const icon = {
-                        'success': <CheckCircle className="w-3 h-3" />,
-                        'info': <AlertCircle className="w-3 h-3" />,
-                        'warning': <AlertCircle className="w-3 h-3" />,
-                        'error': <AlertCircle className="w-3 h-3" />
-                      }[sizeCheck.level];
-                      
-                      return (
-                        <div className={`mt-3 p-2 rounded border ${bgColor} ${textColor}`}>
-                          <div className="flex items-center gap-2 text-xs">
-                            {icon}
-                            <span>{sizeCheck.message}</span>
+                      if (sizeCheck.level === 'warning' || sizeCheck.level === 'error') {
+                        return (
+                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                            <div className="flex items-center gap-3">
+                              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-yellow-800">文档篇幅较长</p>
+                                <p className="text-sm text-yellow-700 mt-1">{sizeCheck.message}</p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      }
+                      return null;
                     })()}
                   </div>
                 )}
-                
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setFileContent('');
-                      setWordCount(0);
-                      setCharCount(0);
-                      setIsFileTooBig(false);
-                      setAnalysisResult(null);
-                      setError(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                      }
-                    }}
-                  >
-                    重新选择
-                  </Button>
-                  <Button 
-                    onClick={handleAnalyze}
-                    disabled={uploading || analyzing || !fileContent || (isFileTooBig && wordCount > 20000)}
-                    size="sm"
-                  >
-                    {(uploading || analyzing) ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {uploading ? '读取中...' : '分析中...'}
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-4 h-4 mr-2" />
-                        开始分析
-                      </>
-                    )}
-                  </Button>
-                </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <Upload className="w-12 h-12 text-slate-400 mx-auto" />
+              <div className="space-y-6">
+                <Upload className="w-16 h-16 text-slate-400 mx-auto" />
                 <div>
-                  <p className="text-lg font-semibold text-slate-700">
-                    拖拽文件到此处或点击上传
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    {documentAnalyzer.getSupportedFileTypesDescription()}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    文件大小限制：10MB
-                  </p>
+                  <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                    拖拽文件到此处
+                  </h3>
+                  <p className="text-slate-600 mb-1">或</p>
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="default" 
+                  size="lg"
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-3"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-base font-medium"
                 >
-                  <FileText className="w-4 h-4 mr-2" />
                   选择文件
                 </Button>
+                <div className="text-sm text-slate-500 space-y-1">
+                  <p>{documentAnalyzer.getSupportedFileTypesDescription()}</p>
+                  <p className="text-xs">(10MB以内)</p>
+                </div>
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* 进度条 */}
-      {(uploading || analyzing) && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="space-y-2">
+        {/* 按钮区域 - 只在有文件时显示 */}
+        {selectedFile && (
+          <div className="flex gap-4 justify-center mt-8">
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-8 py-3 text-base font-medium border-slate-300 text-slate-700 hover:bg-slate-50"
+              onClick={() => {
+                setSelectedFile(null);
+                setFileContent('');
+                setWordCount(0);
+                setCharCount(0);
+                setIsFileTooBig(false);
+                setAnalysisResult(null);
+                setError(null);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
+              }}
+            >
+              重新选择
+            </Button>
+            <Button 
+              onClick={handleAnalyze}
+              disabled={uploading || analyzing || !fileContent || (isFileTooBig && wordCount > 20000)}
+              size="lg"
+              className="px-8 py-3 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {(uploading || analyzing) ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {uploading ? '读取中...' : '分析中...'}
+                </>
+              ) : (
+                <>
+                  <Eye className="w-5 h-5 mr-2" />
+                  开始分析
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* 进度条 */}
+        {(uploading || analyzing) && (
+          <div className="mt-8 bg-white rounded-lg border border-slate-200 p-6">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">
+                <span className="text-slate-600 font-medium">
                   {uploading ? '正在读取文件...' : '正在分析内容...'}
                 </span>
                 <span className="text-slate-500">{progress}%</span>
               </div>
-              <Progress value={progress} className="w-full" />
+              <Progress value={progress} className="w-full h-2" />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* 错误信息 */}
-      {error && (
-        <Alert className="mb-6 border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-500" />
-          <AlertDescription className="text-red-700">
-            {error}
-          </AlertDescription>
-        </Alert>
-      )}
+        {/* 错误信息 */}
+        {error && (
+          <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <p className="text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
 
-      {/* 分析结果 */}
-      {analysisResult && renderAnalysisResult()}
+        {/* 分析结果 */}
+        {analysisResult && (
+          <div className="mt-8">
+            {renderAnalysisResult()}
+          </div>
+        )}
+
     </div>
   );
 };
