@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface StoryState {
@@ -1201,17 +1202,51 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {story.characters.filter(character => character.name && character.name.trim() !== '').map((character, index) => (
-                  <div key={index} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <h4 className="font-semibold text-slate-800">{character.name}</h4>
-                    <p className="text-sm text-slate-600 mb-1">{character.role || '未知角色'}</p>
-                    <p className="text-xs text-slate-500">{character.traits || '神秘的角色'}</p>
-                    {character.appearance && (
-                      <p className="text-xs text-slate-400 mt-1">外貌：{character.appearance}</p>
-                    )}
-                    {character.backstory && (
-                      <p className="text-xs text-slate-400 mt-1">背景：{character.backstory}</p>
-                    )}
-                  </div>
+                  <Dialog key={index}>
+                    <DialogTrigger asChild>
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <User className="w-4 h-4 text-slate-500 group-hover:text-slate-600" />
+                          <h4 className="font-semibold text-slate-800 group-hover:text-slate-900">{character.name}</h4>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-1">{character.role || '未知角色'}</p>
+                        <p className="text-xs text-slate-500 line-clamp-2">{character.traits || '神秘的角色'}</p>
+                        <div className="mt-2 text-xs text-blue-500 group-hover:text-blue-600">
+                          点击查看详细信息 →
+                        </div>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center space-x-2">
+                          <User className="w-5 h-5" />
+                          <span>{character.name}</span>
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-slate-700 mb-1">角色类型</h5>
+                          <p className="text-sm text-slate-600">{character.role || '未知角色'}</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-slate-700 mb-1">性格特征</h5>
+                          <p className="text-sm text-slate-600">{character.traits || '神秘的角色'}</p>
+                        </div>
+                        {character.appearance && (
+                          <div>
+                            <h5 className="font-medium text-slate-700 mb-1">外貌描述</h5>
+                            <p className="text-sm text-slate-600">{character.appearance}</p>
+                          </div>
+                        )}
+                        {character.backstory && (
+                          <div>
+                            <h5 className="font-medium text-slate-700 mb-1">背景故事</h5>
+                            <p className="text-sm text-slate-600">{character.backstory}</p>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 ))}
               </div>
             </CardContent>
@@ -1672,18 +1707,16 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                           </Badge>
                         )}
                       </div>
-                      <div className={`text-sm ${
+                      <div className={`text-sm mb-2 ${
                         choice.id === -999 ? "text-orange-700" : "text-slate-600"
                       }`}>
                         {choice.description}
                       </div>
-                      {choice.consequences && (
-                        <div className={`text-xs mt-1 italic ${
-                          choice.id === -999 ? "text-orange-600" : "text-slate-500"
-                        }`}>
-                          可能后果: {choice.consequences}
-                        </div>
-                      )}
+                      <div className={`text-xs italic ${
+                        choice.id === -999 ? "text-orange-600" : "text-slate-500"
+                      }`}>
+                        可能后果: {choice.consequences || "未知的影响，需要谨慎考虑"}
+                      </div>
                     </div>
                   </Button>
                 ))}
