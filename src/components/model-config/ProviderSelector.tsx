@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Check } from 'lucide-react';
 import { providers } from './constants';
 import { getConfiguredProviders } from '@/services/configStorage';
 
@@ -50,7 +49,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ value, onChange }) 
                 <div className="flex items-center justify-between w-full">
                   <span>{provider.label}</span>
                   {isConfigured && (
-                    <Check className="w-4 h-4 text-green-600 ml-2" />
+                    <div className="w-2 h-2 bg-green-500 rounded-full ml-2"></div>
                   )}
                 </div>
               </SelectItem>
