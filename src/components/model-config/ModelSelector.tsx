@@ -31,8 +31,23 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   // 自动获取模型列表
   useEffect(() => {
-    if (supportsDynamicModels && apiKey && !useDynamicModels) {
-      fetchModels();
+    if (supportsDynamicModels && apiKey) {
+      // 当供应商或API Key改变时，重置状态并获取模型
+      setUseDynamicModels(false);
+      setDynamicModels([]);
+      setError(null);
+      
+      // 延迟一下再获取，确保状态更新完成
+      const timer = setTimeout(() => {
+        fetchModels();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else if (!apiKey) {
+      // 如果没有API Key，重置到静态模型列表
+      setUseDynamicModels(false);
+      setDynamicModels([]);
+      setError(null);
     }
   }, [provider, apiKey]);
 
@@ -140,7 +155,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               <div className="flex flex-col">
                 <span>{model.label}</span>
                 {model.description && (
-                  <span className="text-xs text-slate-500">{model.description}</span>
+                  <span className="text-xs text-slate-500 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                    {model.description.length > 60 ? `${model.description.substring(0, 60)}...` : model.description}
+                  </span>
                 )}
               </div>
             </SelectItem>

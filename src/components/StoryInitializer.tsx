@@ -850,104 +850,184 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
   // 简单配置界面
   if (configMode === 'simple') {
+    // 新增的分步向导状态
+    const [currentStep, setCurrentStep] = useState(1);
+    const totalSteps = 3;
+    const stepTitles = ["选择类型", "描述想法", "设定目标"];
+
+    // 故事类型的图标映射
+    const genreIcons = {
+      'sci-fi': '🚀',
+      'fantasy': '🐉', 
+      'mystery': '🔍',
+      'romance': '💕',
+      'thriller': '⚡',
+      'historical': '🏛️',
+      'slice-of-life': '🌸',
+      'adventure': '🗺️'
+    };
+
+    // 步骤导航函数
+    const nextStep = () => {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+      }
+    };
+
+    const prevStep = () => {
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1);
+      }
+    };
+
+    // 检查当前步骤是否可以继续
+    const canProceedFromStep = (step: number) => {
+      switch (step) {
+        case 1:
+          return simpleConfig.genre !== '';
+        case 2:
+          return simpleConfig.story_idea.trim() !== '';
+        case 3:
+          return simpleConfig.main_goal?.trim() !== '';
+        default:
+          return false;
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                onClick={() => setConfigMode('select')}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowModelConfig(true)}
-                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto w-full">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => setConfigMode('select')}
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              返回
+            </Button>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-800">开启您的故事之旅</h1>
+              <p className="text-gray-500 mt-2">跟随向导，一步步构建您的世界</p>
             </div>
-            <div className="text-center pt-4">
-              <CardTitle className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-2">
-                <Wand2 className="h-6 w-6 text-blue-600" />
-                简单配置
-              </CardTitle>
-              <p className="text-slate-600 mt-2">描述您的想法，AI将为您创造完整的故事世界</p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowModelConfig(true)}
+              className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              <Settings className="h-4 w-4" />
+              模型配置
+            </Button>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-10">
+            <div className="flex justify-between mb-1 text-sm font-medium text-gray-600">
+              <span>第 {currentStep} / {totalSteps} 步</span>
+              <span>{stepTitles[currentStep - 1]}</span>
             </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSimpleSubmit} className="space-y-6">
-              {!modelConfig.apiKey && !hasValidConfig && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-amber-800 text-sm">
-                  ⚠️ 请先配置AI模型才能开始创作故事
-                </p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* API Key Warning */}
+          {!modelConfig.apiKey && !hasValidConfig && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <p className="text-amber-800 text-sm text-center">
+                ⚠️ 请先配置AI模型才能开始创作故事
+              </p>
+            </div>
+          )}
+
+          {/* Step 1: Genre Selection */}
+          {currentStep === 1 && (
+            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+              <label className="text-xl font-semibold text-gray-700 mb-4 block">您想创作什么类型的故事？</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+                {genres.map((genre) => (
+                  <div
+                    key={genre.value}
+                    onClick={() => setSimpleConfig(prev => ({ ...prev, genre: genre.value }))}
+                    className={`border-2 p-4 rounded-lg text-center cursor-pointer transition-all duration-300 hover:border-indigo-500 hover:shadow-lg ${
+                      simpleConfig.genre === genre.value
+                        ? 'border-indigo-500 bg-indigo-50 transform scale-105 shadow-lg'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
+                    <span className="font-medium">{genre.label.replace(/^[🚀🐉🔍💕⚡🏛️🌸🗺️]\s*/, '')}</span>
+                    <p className="text-xs text-gray-500 mt-1">{genre.desc}</p>
+                  </div>
+                ))}
               </div>
-            )}
-
-            <div>
-              <Label htmlFor="genre" className="text-slate-700 font-medium">故事类型</Label>
-                <Select value={simpleConfig.genre} onValueChange={(value) => setSimpleConfig(prev => ({ ...prev, genre: value }))}>
-                <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                    <SelectValue placeholder="选择您喜欢的故事类型" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-slate-200">
-                  {genres.map((genre) => (
-                    <SelectItem key={genre.value} value={genre.value} className="text-slate-800 hover:bg-blue-50">
-                        <div>
-                          <div className="font-medium">{genre.label}</div>
-                          <div className="text-xs text-slate-500">{genre.desc}</div>
-                        </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-                <Label htmlFor="story-idea" className="text-slate-700 font-medium">故事想法</Label>
-                <Textarea
-                  id="story-idea"
-                  value={simpleConfig.story_idea}
-                  onChange={(e) => setSimpleConfig(prev => ({ ...prev, story_idea: e.target.value }))}
-                  placeholder="描述您希望的故事发展，例如：
-• 一个失去记忆的人在未来城市中寻找自己的身份
-• 平凡学生获得魔法能力后的校园生活
-• 侦探调查一起神秘失踪案件
-• 两个来自不同世界的人相遇并相爱
-
-AI将根据您的描述自动创建角色、背景和情节..."
-                  className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                  rows={6}
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  💡 提示：越详细的描述，AI生成的故事越符合您的期望
-                </p>
+              <div className="text-right">
+                <Button
+                  onClick={nextStep}
+                  disabled={!canProceedFromStep(1)}
+                  className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  下一步
+                </Button>
               </div>
+            </div>
+          )}
 
-              <div>
-                <Label htmlFor="main-goal" className="text-slate-700 font-medium">主要目标 <span className="text-red-500">*</span></Label>
-              <Input
-                  id="main-goal"
-                  value={simpleConfig.main_goal}
-                  onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
-                  placeholder="例如：找回失去的记忆、拯救世界、找到真爱、解决谋杀案..."
-                className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400"
+          {/* Step 2: Story Idea */}
+          {currentStep === 2 && (
+            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+              <label className="text-xl font-semibold text-gray-700 mb-4 block">您的故事核心想法是什么？</label>
+              <p className="text-sm text-gray-500 mb-4">
+                一句话即可，例如："一个失忆的赏金猎人在霓虹闪烁的未来都市里，寻找自己被盗走的记忆。"
+              </p>
+              <Textarea
+                value={simpleConfig.story_idea}
+                onChange={(e) => setSimpleConfig(prev => ({ ...prev, story_idea: e.target.value }))}
+                rows={5}
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition mb-8"
+                placeholder="请在此输入您的故事想法..."
               />
-                <p className="text-xs text-slate-500 mt-1">
-                  🎯 这个目标将决定故事何时结束 - 当目标达成或失败时，故事将自然收尾
-                </p>
+              <div className="flex justify-between">
+                <Button
+                  onClick={prevStep}
+                  className="bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-all"
+                >
+                  上一步
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  disabled={!canProceedFromStep(2)}
+                  className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  下一步
+                </Button>
               </div>
+            </div>
+          )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          {/* Step 3: Main Goal */}
+          {currentStep === 3 && (
+            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+              <label className="text-xl font-semibold text-gray-700 mb-4 block">这个故事的主要目标是什么？</label>
+              <p className="text-sm text-gray-500 mb-4">
+                这将决定故事的结局。例如："找回记忆并复仇"、"拯救被邪恶公司控制的城市"、"找到真爱"...
+              </p>
+              <Input
+                value={simpleConfig.main_goal || ''}
+                onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition mb-4"
+                placeholder="请在此输入故事的主要目标..."
+              />
+              
+              {/* AI Features Preview */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
                 <h4 className="font-semibold text-blue-800 mb-2">AI将自动为您创建：</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                <div className="grid grid-cols-2 gap-3 text-sm text-blue-700">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     <span>3-5个个性鲜明的角色</span>
@@ -967,23 +1047,44 @@ AI将根据您的描述自动创建角色、背景和情节..."
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                disabled={!simpleConfig.genre || !simpleConfig.story_idea || !simpleConfig.main_goal || (!modelConfig.apiKey && !hasValidConfig) || isGeneratingOutlines}
-              >
-                {isGeneratingOutlines ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    🎨 正在生成故事梗概...
-                  </div>
-                ) : (
-                  '🎭 生成故事梗概'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              <div className="flex justify-between">
+                <Button
+                  onClick={prevStep}
+                  className="bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-all"
+                >
+                  上一步
+                </Button>
+                <Button
+                  onClick={handleSimpleSubmit}
+                  disabled={!canProceedFromStep(3) || (!modelConfig.apiKey && !hasValidConfig) || isGeneratingOutlines}
+                  className="bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-600 transition-transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isGeneratingOutlines ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      生成中...
+                    </div>
+                  ) : (
+                    '完成配置，生成梗概'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <style jsx>{`
+          @keyframes fadeIn {
+            from { 
+              opacity: 0; 
+              transform: translateY(10px); 
+            }
+            to { 
+              opacity: 1; 
+              transform: translateY(0); 
+            }
+          }
+        `}</style>
       </div>
     );
   }
