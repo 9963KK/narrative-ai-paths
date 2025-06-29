@@ -1226,10 +1226,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-lg shadow-2xl">
-                      {/* 关闭按钮 */}
-                      <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
-                        <X className="w-6 h-6" />
-                      </button>
+                      <DialogHeader className="sr-only">
+                        <DialogTitle>{character.name} - 角色详情</DialogTitle>
+                      </DialogHeader>
 
                       <div className="p-8">
                         {/* 头部区域 */}
