@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, CheckCircle, XCircle, Loader2, Save, Trash2 } from 'lucide-react';
-import { ModelConfig, defaultBaseUrls, models } from './model-config/constants';
+import { Settings, CheckCircle, XCircle, Loader2, Save, Trash2, Check } from 'lucide-react';
+import { ModelConfig, defaultBaseUrls, models, providers } from './model-config/constants';
 import ProviderSelector from './model-config/ProviderSelector';
 import ModelSelector from './model-config/ModelSelector';
 import ApiConfiguration from './model-config/ApiConfiguration';
 import AdvancedSettings from './model-config/AdvancedSettings';
-import { saveModelConfig, loadModelConfig, hasSavedConfig, clearSavedConfig, getConfigSaveTime } from '@/services/configStorage';
+import { saveModelConfig, loadModelConfig, hasSavedConfig, clearSavedConfig, getConfigSaveTime, loadProviderConfig, saveProviderConfig, hasProviderConfig } from '@/services/configStorage';
 
 interface ModelConfigProps {
   config: ModelConfig;
@@ -45,11 +45,18 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
     const newModel = models[value as keyof typeof models]?.[0]?.value || '';
     const defaultBaseUrl = defaultBaseUrls[value as keyof typeof defaultBaseUrls] || '';
     
+    // 尝试加载该供应商的已保存配置
+    const savedProviderConfig = loadProviderConfig(value);
+    
     setLocalConfig(prev => ({ 
       ...prev, 
       provider: value,
-      model: newModel,
-      baseUrl: defaultBaseUrl
+      model: savedProviderConfig?.model || newModel,
+      baseUrl: savedProviderConfig?.baseUrl || defaultBaseUrl,
+      apiKey: savedProviderConfig?.apiKey || '',
+      temperature: savedProviderConfig?.temperature ?? prev.temperature,
+      maxTokens: savedProviderConfig?.maxTokens ?? prev.maxTokens,
+      customPrompt: savedProviderConfig?.customPrompt || prev.customPrompt
     }));
     
     // Clear test result when provider changes
@@ -58,8 +65,10 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
 
   const handleSave = () => {
     onConfigChange(localConfig);
-    // 自动保存配置到本地存储
+    // 保存到传统的单一配置存储
     saveModelConfig(localConfig);
+    // 同时保存到多供应商配置存储
+    saveProviderConfig(localConfig.provider, localConfig);
     setHasStoredConfig(true);
     setConfigSaveTime(new Date());
     onClose();
@@ -225,14 +234,34 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
           />
         </div>
 
-        <ApiConfiguration
-          apiKey={localConfig.apiKey}
-          baseUrl={localConfig.baseUrl}
-          needsBaseUrl={needsBaseUrl}
-          placeholder={getBaseUrlPlaceholder()}
-          onApiKeyChange={(value) => setLocalConfig(prev => ({ ...prev, apiKey: value }))}
-          onBaseUrlChange={(value) => setLocalConfig(prev => ({ ...prev, baseUrl: value }))}
-        />
+        {/* 只在有API Key或用户手动要求显示时显示API配置 */}
+        {(localConfig.apiKey || !hasProviderConfig(localConfig.provider)) && (
+          <ApiConfiguration
+            apiKey={localConfig.apiKey}
+            baseUrl={localConfig.baseUrl}
+            needsBaseUrl={needsBaseUrl}
+            placeholder={getBaseUrlPlaceholder()}
+            onApiKeyChange={(value) => setLocalConfig(prev => ({ ...prev, apiKey: value }))}
+            onBaseUrlChange={(value) => setLocalConfig(prev => ({ ...prev, baseUrl: value }))}
+          />
+        )}
+
+        {/* 如果供应商已配置但当前没有显示API Key，显示提示信息 */}
+        {!localConfig.apiKey && hasProviderConfig(localConfig.provider) && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-green-600" />
+              <div>
+                <span className="text-sm font-medium text-green-800">
+                  {providers.find(p => p.value === localConfig.provider)?.label} 已配置
+                </span>
+                <p className="text-xs text-green-600 mt-1">
+                  该供应商已保存API密钥，可直接使用
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 配置存储状态显示 */}
         {hasStoredConfig && (

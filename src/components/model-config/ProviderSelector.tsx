@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Check } from 'lucide-react';
 import { providers } from './constants';
+import { getConfiguredProviders } from '@/services/configStorage';
 
 interface ProviderSelectorProps {
   value: string;
@@ -9,6 +11,18 @@ interface ProviderSelectorProps {
 }
 
 const ProviderSelector: React.FC<ProviderSelectorProps> = ({ value, onChange }) => {
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    // 加载已配置的供应商列表
+    setConfiguredProviders(getConfiguredProviders());
+  }, []);
+
+  // 当配置更新时刷新列表（通过props触发）
+  useEffect(() => {
+    setConfiguredProviders(getConfiguredProviders());
+  }, [value]); // 当选择的供应商改变时刷新
+
   return (
     <div className="h-full flex flex-col">
       {/* 标签区域 - 固定高度 */}
@@ -25,11 +39,23 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ value, onChange }) 
           <SelectValue placeholder="选择服务提供商" />
         </SelectTrigger>
         <SelectContent className="bg-white border-slate-200">
-          {providers.map((provider) => (
-            <SelectItem key={provider.value} value={provider.value} className="text-slate-800 hover:bg-blue-50">
-              {provider.label}
-            </SelectItem>
-          ))}
+          {providers.map((provider) => {
+            const isConfigured = configuredProviders.includes(provider.value);
+            return (
+              <SelectItem 
+                key={provider.value} 
+                value={provider.value} 
+                className="text-slate-800 hover:bg-blue-50"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span>{provider.label}</span>
+                  {isConfigured && (
+                    <Check className="w-4 h-4 text-green-600 ml-2" />
+                  )}
+                </div>
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
       
