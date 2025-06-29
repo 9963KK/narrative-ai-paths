@@ -1679,22 +1679,25 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
   {
     "id": 1,
     "text": "选择的具体行动描述",
-    "description": "选择的详细说明和可能后果",
+    "description": "选择的详细说明，解释这个行动的具体内容",
+    "consequences": "可能产生的后果和影响",
     "difficulty": 3
   },
   {
     "id": 2,
     "text": "另一个选择的具体行动描述", 
-    "description": "另一个选择的详细说明和可能后果",
+    "description": "另一个选择的详细说明，解释这个行动的具体内容",
+    "consequences": "这个选择可能带来的后果和风险",
     "difficulty": 2
   }
 ]
 
 **严格格式要求：**
-- 每个选择项必须是包含4个字段的对象：id, text, description, difficulty
+- 每个选择项必须是包含5个字段的对象：id, text, description, consequences, difficulty
 - id：数字（1, 2, 3...）
-- text：选择的行动描述（字符串）
-- description：详细说明和可能后果（字符串）
+- text：选择的行动描述（字符串，简洁明了）
+- description：详细说明这个选择的具体内容（字符串）
+- consequences：可能产生的后果和影响（字符串，描述风险和收益）
 - difficulty：难度等级1-5（数字）
 - 绝对不能返回简单的字符串数组
 - 输出必须是纯JSON对象数组，不要包含任何解释文字
@@ -1732,7 +1735,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             let currentSystemPrompt = systemPrompt;
             
             if (attempts > 1) {
-              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON数组。每个选择项都必须包含id、text、description、difficulty字段。`;
+              currentSystemPrompt += `\n\n重要提醒：这是第${attempts}次生成尝试，请确保返回完整、正确格式的JSON数组。每个选择项都必须包含id、text、description、consequences、difficulty这5个字段。`;
               
               if (attempts === 3) {
                 currentSystemPrompt += '\n\n最后一次尝试：请特别注意JSON数组格式的正确性，确保所有选择项都完整且格式正确。';
@@ -1780,7 +1783,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
                 return {
                   id: index + 1,
                   text: text,
-                  description: `这个选择可能会产生重要影响，需要根据当前情况仔细考虑其后果。`,
+                  description: `这个选择需要根据当前情况仔细考虑。`,
+                  consequences: `可能会产生重要影响，需要谨慎行动。`,
                   difficulty: difficulty
                 };
               });
@@ -1794,8 +1798,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             
             // 验证每个选择项的必需字段
             for (const choice of choices) {
-              if (!choice.id || !choice.text || !choice.description || !choice.difficulty) {
-                throw new Error('选择项缺少必需字段');
+              if (!choice.id || !choice.text || !choice.description || !choice.consequences || !choice.difficulty) {
+                throw new Error(`选择项缺少必需字段: ${JSON.stringify(choice)}`);
               }
             }
             
