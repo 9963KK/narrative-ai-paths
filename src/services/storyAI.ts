@@ -43,10 +43,10 @@ export interface StoryState {
 // 选择项接口
 export interface Choice {
   id: number;
-  text: string;
-  description: string;
-  consequences?: string;
-  difficulty: number; // 1-5 难度等级
+  text: string;           // 标题
+  description: string;    // 行动描述
+  consequences: string;   // 可能后果
+  difficulty: number;     // 1-5 难度等级
 }
 
 // 故事生成响应接口
@@ -1367,7 +1367,7 @@ ${advConfig.character_details.map((char, i) =>
   "new_characters": [只有在故事自然需要时才包含新角色，格式：{"name": "角色名", "role": "角色定位", "traits": "性格特征", "appearance": "外貌描述", "backstory": "简要背景"}]
 }`;
 
-    const prompt = `用户选择了："${selectedChoice.text}" - ${selectedChoice.description}
+    const prompt = `用户选择了："${selectedChoice.text}" - ${selectedChoice.description} ${selectedChoice.consequences}
 
 【当前故事上下文】：
 ${currentStory.current_scene}
@@ -1668,16 +1668,13 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     
     const systemPrompt = `你是一个故事分支设计专家。根据当前场景和角色，生成有意义的选择项。
 
-**重要要求：必须使用中文创作，所有内容都必须是中文**
+**❌ 禁止格式：绝对不要返回字符串数组！**
+错误示例： ["选择1", "选择2", "选择3"] ❌
+错误示例： {"choices": ["选择1", "选择2"]} ❌
+这些格式会导致程序错误，绝对不能使用！
 
-要求：
-1. 每个选择都应该有不同的后果和难度
-2. 选择难度应该合理分布（1-5）
-3. 考虑角色的能力和特征
-4. 保持故事的紧张感和趣味性
-5. 选择数量应该根据情况灵活变化
-
-**严格要求：必须严格按照以下JSON格式输出，不允许使用其他字段名：**
+**✅ 必须格式：只能返回对象数组！**
+正确示例：
 [
   {
     "id": 1,
@@ -1693,14 +1690,23 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
   }
 ]
 
-**重要：**
-- 必须使用 "id", "text", "description", "difficulty" 这四个字段名，不能使用 "action", "implications", "tension_change" 等其他字段名
-- id 必须是数字（1, 2, 3...）
-- text 是选择的行动描述
-- description 是详细说明
-- difficulty 是 1-5 的数字
-- 不要添加任何其他字段
-- 输出必须是纯JSON数组，不要包含任何解释文字`;
+**严格格式要求：**
+- 每个选择项必须是包含4个字段的对象：id, text, description, difficulty
+- id：数字（1, 2, 3...）
+- text：选择的行动描述（字符串）
+- description：详细说明和可能后果（字符串）
+- difficulty：难度等级1-5（数字）
+- 绝对不能返回简单的字符串数组
+- 输出必须是纯JSON对象数组，不要包含任何解释文字
+
+**重要要求：必须使用中文创作，所有内容都必须是中文**
+
+要求：
+1. 每个选择都应该有不同的后果和难度
+2. 选择难度应该合理分布（1-5）
+3. 考虑角色的能力和特征
+4. 保持故事的紧张感和趣味性
+5. 选择数量应该根据情况灵活变化`;
 
     const prompt = `当前场景：${currentScene}
 
@@ -1742,7 +1748,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             const parsedContent = JSON.parse(content);
             let choices: any[] = [];
             
-            // 处理两种格式：直接数组或包含choices的对象
+            // 处理多种格式：直接数组、包含choices的对象、或字符串数组
             if (Array.isArray(parsedContent)) {
               choices = parsedContent;
               console.log('✅ 检测到直接数组格式');
@@ -1753,6 +1759,34 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               throw new Error('AI返回的格式不正确：既不是数组也不是包含choices的对象');
             }
             
+            // 检查是否返回了字符串数组而不是对象数组
+            if (choices.length > 0 && typeof choices[0] === 'string') {
+              console.warn('⚠️ AI返回了字符串数组，尝试转换为对象数组');
+              choices = choices.map((text: string, index: number) => {
+                // 根据选择内容生成简单的难度评估
+                let difficulty = 2; // 默认难度
+                if (text.includes('攻击') || text.includes('战斗') || text.includes('冲突')) {
+                  difficulty = 4;
+                } else if (text.includes('逃跑') || text.includes('逃离') || text.includes('避开')) {
+                  difficulty = 3;
+                } else if (text.includes('交流') || text.includes('对话') || text.includes('沟通')) {
+                  difficulty = 2;
+                } else if (text.includes('观察') || text.includes('等待') || text.includes('思考')) {
+                  difficulty = 1;
+                } else {
+                  difficulty = Math.floor(Math.random() * 3) + 2; // 随机难度2-4
+                }
+                
+                return {
+                  id: index + 1,
+                  text: text,
+                  description: `这个选择可能会产生重要影响，需要根据当前情况仔细考虑其后果。`,
+                  difficulty: difficulty
+                };
+              });
+              console.log('✅ 成功转换字符串数组为对象数组');
+            }
+            
             // 验证选择项格式
             if (!Array.isArray(choices) || choices.length === 0) {
               throw new Error('AI返回的选择项不是有效数组或为空');
@@ -1760,7 +1794,7 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             
             // 验证每个选择项的必需字段
             for (const choice of choices) {
-              if (!choice.id || !choice.text || !choice.description) {
+              if (!choice.id || !choice.text || !choice.description || !choice.difficulty) {
                 throw new Error('选择项缺少必需字段');
               }
             }
@@ -2329,19 +2363,22 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
       {
         id: 1,
         text: "继续前进",
-        description: "勇敢地面对未知",
+        description: "勇敢地面对未知，继续探索前方的道路。",
+        consequences: "可能会遇到新的挑战或发现重要线索。",
         difficulty: 3
       },
       {
         id: 2,
         text: "寻找线索",
-        description: "仔细观察周围环境",
+        description: "仔细观察周围环境，寻找有用的线索。",
+        consequences: "有机会获得关键情报，但也可能浪费时间。",
         difficulty: 2
       },
       {
         id: 3,
         text: "谨慎行动",
-        description: "采取保守策略",
+        description: "采取保守策略，避免冒险。",
+        consequences: "可以降低风险，但可能错失良机。",
         difficulty: 1
       }
     ];
