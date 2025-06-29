@@ -970,7 +970,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                     }`}
                   >
                     <div className="text-3xl mb-2">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
-                    <span className="font-medium">{genre.label.replace(/^[🚀🐉🔍💕⚡🏛️🌸🗺️]\s*/, '')}</span>
+                    <span className="font-medium">{genre.label.split(' ').slice(1).join(' ')}</span>
                     <p className="text-xs text-gray-500 mt-1">{genre.desc}</p>
                   </div>
                 ))}
