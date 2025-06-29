@@ -726,13 +726,13 @@ ${newSummary}`;
   }
 
   // 构建API请求 - 支持多轮对话
-  private async callAI(prompt: string, systemPrompt?: string, useHistory: boolean = false): Promise<any> {
+  private async callAI(prompt: string, systemPrompt?: string, useHistory: boolean = false, forceJsonOutput: boolean = false): Promise<any> {
     if (!this.modelConfig || !this.modelConfig.apiKey) {
       throw new Error('AI模型配置不完整');
     }
 
     const baseUrl = this.getApiBaseUrl();
-    const payload = this.createPayload(prompt, systemPrompt, useHistory);
+    const payload = this.createPayload(prompt, systemPrompt, useHistory, forceJsonOutput);
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -783,8 +783,8 @@ ${newSummary}`;
     }
   }
 
-  // 创建请求载荷 - 支持多轮对话
-  private createPayload(prompt: string, systemPrompt?: string, useHistory: boolean = false) {
+  // 创建请求载荷 - 支持多轮对话和JSON输出模式
+  private createPayload(prompt: string, systemPrompt?: string, useHistory: boolean = false, forceJsonOutput: boolean = false) {
     let messages = [];
     
     if (useHistory && this.conversationHistory.length > 0) {
@@ -830,16 +830,30 @@ ${newSummary}`;
       messages.push({ role: 'user', content: prompt });
     }
 
-    const basePayload = {
+    const basePayload: any = {
       model: this.modelConfig!.model,
       messages,
       temperature: this.modelConfig!.temperature || 0.8,
       max_tokens: this.modelConfig!.maxTokens || 2000
     };
 
+    // 添加JSON输出模式支持（仅对支持的提供商）
+    if (forceJsonOutput) {
+      const provider = this.modelConfig!.provider;
+      const supportsJsonMode = ['openai', 'deepseek', 'openrouter', 'moonshot', 'zhipu'].includes(provider);
+      
+      if (supportsJsonMode) {
+        basePayload.response_format = { type: "json_object" };
+        console.log(`🎯 启用JSON输出模式 (${provider})`);
+      } else {
+        console.log(`⚠️ 提供商 ${provider} 不支持JSON输出模式，使用提示词强制`);
+      }
+    }
+
     // 适配不同提供商的格式
     switch (this.modelConfig!.provider) {
       case 'anthropic':
+        // Anthropic不支持response_format，返回不包含该字段的载荷
         return {
           model: this.modelConfig!.model,
           max_tokens: this.modelConfig!.maxTokens || 2000,
@@ -1654,6 +1668,8 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     
     const systemPrompt = `你是一个故事分支设计专家。根据当前场景和角色，生成有意义的选择项。
 
+**重要要求：必须使用中文创作，所有内容都必须是中文**
+
 要求：
 1. 每个选择都应该有不同的后果和难度
 2. 选择难度应该合理分布（1-5）
@@ -1661,16 +1677,30 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
 4. 保持故事的紧张感和趣味性
 5. 选择数量应该根据情况灵活变化
 
-输出格式必须是有效的JSON数组：
+**严格要求：必须严格按照以下JSON格式输出，不允许使用其他字段名：**
 [
   {
     "id": 1,
-    "text": "选择描述",
-    "description": "详细说明",
-    "consequences": "可能的后果提示",
-    "difficulty": 1-5
+    "text": "选择的具体行动描述",
+    "description": "选择的详细说明和可能后果",
+    "difficulty": 3
+  },
+  {
+    "id": 2,
+    "text": "另一个选择的具体行动描述", 
+    "description": "另一个选择的详细说明和可能后果",
+    "difficulty": 2
   }
-]`;
+]
+
+**重要：**
+- 必须使用 "id", "text", "description", "difficulty" 这四个字段名，不能使用 "action", "implications", "tension_change" 等其他字段名
+- id 必须是数字（1, 2, 3...）
+- text 是选择的行动描述
+- description 是详细说明
+- difficulty 是 1-5 的数字
+- 不要添加任何其他字段
+- 输出必须是纯JSON数组，不要包含任何解释文字`;
 
     const prompt = `当前场景：${currentScene}
 
@@ -1703,13 +1733,25 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               }
             }
             
-            const response = await this.callAI(currentPrompt, currentSystemPrompt, true); // 启用历史记录和摘要
+            const response = await this.callAI(currentPrompt, currentSystemPrompt, true, true); // 启用历史记录、摘要和JSON输出模式
             console.log(`📥 AI响应接收完成 (尝试${attempts})`);
             
             const content = this.extractContent(response);
             console.log(`📄 提取内容完成 (尝试${attempts}):`, content.substring(0, 100) + '...');
             
-            const choices = JSON.parse(content);
+            const parsedContent = JSON.parse(content);
+            let choices: any[] = [];
+            
+            // 处理两种格式：直接数组或包含choices的对象
+            if (Array.isArray(parsedContent)) {
+              choices = parsedContent;
+              console.log('✅ 检测到直接数组格式');
+            } else if (parsedContent && typeof parsedContent === 'object' && parsedContent.choices && Array.isArray(parsedContent.choices)) {
+              choices = parsedContent.choices;
+              console.log('✅ 检测到包含choices的对象格式，提取choices数组');
+            } else {
+              throw new Error('AI返回的格式不正确：既不是数组也不是包含choices的对象');
+            }
             
             // 验证选择项格式
             if (!Array.isArray(choices) || choices.length === 0) {
@@ -1804,6 +1846,165 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     });
     
     return baseCount;
+  }
+
+  // 生成故事梗概选项（用于简单配置）
+  async generateStoryOutlines(userIdea: string, genre: string, mainGoal?: string): Promise<Array<{
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }>> {
+    const systemPrompt = `你是一个专业的故事策划师。根据用户的灵感碎片，生成3-4个不同风格和发展方向的故事梗概供用户选择。
+
+要求：
+1. 每个梗概应该有不同的发展方向和风格调性
+2. 保持用户原始灵感的核心元素
+3. 提供多样化的角色配置和背景设定
+4. 每个梗概都要有吸引人的开场钩子
+
+**重要要求：必须使用中文创作，所有内容都必须是中文**
+
+输出格式必须是有效的JSON数组：
+[
+  {
+    "id": 1,
+    "title": "简洁有力的标题",
+    "premise": "核心故事概念，1-2句话",
+    "genre": "具体的子分类",
+    "tone": "故事基调",
+    "characters": ["主要角色1", "关键角色2", "重要角色3"],
+    "setting": "背景设定描述",
+    "hook": "吸引人的开场设定"
+  }
+]`;
+
+    const goalText = mainGoal ? `\n用户希望达成的目标：${mainGoal}` : '';
+    
+    const prompt = `用户的故事灵感：${userIdea}
+选择的大致类型：${genre}${goalText}
+
+请基于这些信息，生成3-4个不同发展方向的故事梗概。每个梗概应该：
+1. 保留用户原始灵感的核心要素
+2. 在${genre}类型基础上探索不同的子分类和风格
+3. 提供不同的角色配置方案（如：独行侠vs团队合作、师徒关系vs同辈友谊等）
+4. 设计不同的背景环境和时代设定
+5. 创造不同的故事开场和冲突设置
+
+确保每个梗概都有独特的魅力和发展潜力。`;
+
+    try {
+      if (this.modelConfig && this.modelConfig.apiKey) {
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            console.log(`🎯 尝试第${attempts}次生成故事梗概...`);
+            
+            const response = await this.callAI(prompt, systemPrompt, false);
+            console.log(`📥 故事梗概响应接收完成 (尝试${attempts})`);
+            
+            const content = this.extractContent(response);
+            console.log(`📄 提取故事梗概内容完成:`, content.substring(0, 200) + '...');
+            
+            const outlines = JSON.parse(content);
+            
+            // 验证梗概格式
+            if (!Array.isArray(outlines) || outlines.length === 0) {
+              throw new Error('AI返回的故事梗概不是有效数组或为空');
+            }
+            
+            // 验证每个梗概的必需字段
+            for (const outline of outlines) {
+              if (!outline.title || !outline.premise || !outline.setting || !outline.hook) {
+                throw new Error('故事梗概缺少必需字段');
+              }
+            }
+            
+            console.log(`✅ 第${attempts}次尝试成功生成故事梗概`, outlines.length, '个选项');
+            return outlines;
+          } catch (error) {
+            console.warn(`❌ 第${attempts}次尝试生成故事梗概失败:`, error.message);
+            if (attempts >= maxAttempts) {
+              console.warn('⚠️ 达到最大重试次数，使用默认梗概');
+              return this.getDefaultOutlines(userIdea, genre);
+            }
+            continue;
+          }
+        }
+        
+        return this.getDefaultOutlines(userIdea, genre);
+      } else {
+        return this.getDefaultOutlines(userIdea, genre);
+      }
+    } catch (error) {
+      console.error('生成故事梗概失败:', error);
+      return this.getDefaultOutlines(userIdea, genre);
+    }
+  }
+
+  // 默认故事梗概（当AI生成失败时使用）
+  private getDefaultOutlines(userIdea: string, genre: string): Array<{
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }> {
+    const genreMap: { [key: string]: string } = {
+      'sci-fi': '科幻',
+      'fantasy': '奇幻',
+      'mystery': '推理',
+      'romance': '浪漫',
+      'thriller': '惊悚',
+      'historical': '历史',
+      'slice-of-life': '日常',
+      'adventure': '冒险'
+    };
+
+    const chineseGenre = genreMap[genre] || '冒险';
+    
+    return [
+      {
+        id: 1,
+        title: `${chineseGenre}之旅：英雄的觉醒`,
+        premise: `基于您的想法"${userIdea}"，一个平凡的主角意外卷入非凡的事件中`,
+        genre: `经典${chineseGenre}`,
+        tone: '激励向上',
+        characters: ['觉醒的主角', '智慧导师', '忠诚伙伴'],
+        setting: '一个充满机遇与挑战的世界',
+        hook: '平静的日常突然被一个神秘事件打破'
+      },
+      {
+        id: 2,
+        title: `${chineseGenre}传说：团队的力量`,
+        premise: `围绕"${userIdea}"，一群性格迥异的伙伴共同面对巨大挑战`,
+        genre: `团队${chineseGenre}`,
+        tone: '友谊温暖',
+        characters: ['坚强领袖', '机智策略家', '勇敢战士', '神秘法师'],
+        setting: '需要团队合作才能解决问题的复杂环境',
+        hook: '一次意外的相遇将陌生人聚集在一起'
+      },
+      {
+        id: 3,
+        title: `${chineseGenre}秘密：真相的追寻`,
+        premise: `基于"${userIdea}"的灵感，主角发现了一个改变一切的秘密`,
+        genre: `悬疑${chineseGenre}`,
+        tone: '紧张神秘',
+        characters: ['寻真的主角', '神秘知情者', '暗中对手'],
+        setting: '表面平静实则暗流涌动的环境',
+        hook: '一个看似无关的线索揭开了惊人真相的一角'
+      }
+    ];
   }
 
   // 生成内容的通用方法

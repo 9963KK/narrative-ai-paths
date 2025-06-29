@@ -15,6 +15,7 @@ import { ModelConfig as ModelConfigType } from './model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { getSavedContexts } from '@/services/contextManager';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
+import { storyAI } from '@/services/storyAI';
 
 // 基础故事配置
 interface BaseStoryConfig {
@@ -60,7 +61,7 @@ interface StoryInitializerProps {
 }
 
 const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory }) => {
-  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document' | 'analysis-result'>('select');
+  const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document' | 'analysis-result' | 'outline-selection'>('select');
   
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
@@ -103,6 +104,20 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [savedContextsCount, setSavedContextsCount] = useState(0);
   const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
+  
+  // 故事梗概选择相关状态
+  const [storyOutlines, setStoryOutlines] = useState<Array<{
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }>>([]);
+  const [isGeneratingOutlines, setIsGeneratingOutlines] = useState(false);
+  const [originalSimpleConfig, setOriginalSimpleConfig] = useState<BaseStoryConfig | null>(null);
 
   // 组件加载时检查本地配置和存档
   useEffect(() => {
@@ -194,23 +209,106 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     });
   };
 
-  // 处理简单配置提交
-  const handleSimpleSubmit = (e: React.FormEvent) => {
+  // 处理简单配置提交 - 生成故事梗概
+  const handleSimpleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // 检查当前配置或本地保存的配置
     const hasApiKey = modelConfig.apiKey || hasValidConfig;
     if (simpleConfig.genre && simpleConfig.story_idea && hasApiKey) {
-      // 如果当前没有配置但有保存的配置，先加载它
-      let configToUse = modelConfig;
-      if (!modelConfig.apiKey && hasValidConfig) {
-        const savedConfig = loadModelConfig();
-        if (savedConfig) {
-          configToUse = savedConfig;
-          setModelConfig(savedConfig);
+      // 保存原始配置
+      setOriginalSimpleConfig(simpleConfig);
+      setIsGeneratingOutlines(true);
+      
+      try {
+        // 如果当前没有配置但有保存的配置，先加载它
+        let configToUse = modelConfig;
+        if (!modelConfig.apiKey && hasValidConfig) {
+          const savedConfig = loadModelConfig();
+          if (savedConfig) {
+            configToUse = savedConfig;
+            setModelConfig(savedConfig);
+          }
         }
+        
+        // 设置AI配置
+        storyAI.setModelConfig(configToUse);
+        
+        // 生成故事梗概
+        console.log('🎨 开始生成故事梗概...');
+        const outlines = await storyAI.generateStoryOutlines(
+          simpleConfig.story_idea,
+          simpleConfig.genre,
+          simpleConfig.main_goal
+        );
+        
+        console.log('✅ 故事梗概生成完成:', outlines);
+        setStoryOutlines(outlines);
+        setConfigMode('outline-selection');
+      } catch (error) {
+        console.error('❌ 生成故事梗概失败:', error);
+        alert('生成故事梗概失败，请检查网络连接或API配置');
+      } finally {
+        setIsGeneratingOutlines(false);
       }
-      onInitializeStory(simpleConfig, configToUse, false);
     }
+  };
+  
+  // 处理梗概选择
+  const handleOutlineSelection = (selectedOutline: {
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }) => {
+    if (!originalSimpleConfig) return;
+    
+    // 根据选择的梗概创建增强的配置
+    const enhancedConfig: AdvancedStoryConfig = {
+      ...originalSimpleConfig,
+      protagonist: selectedOutline.characters[0] || '主角',
+      setting: selectedOutline.setting,
+      special_requirements: `故事风格：${selectedOutline.tone}。开场设定：${selectedOutline.hook}`,
+      character_count: Math.min(selectedOutline.characters.length, 6),
+      character_details: selectedOutline.characters.map((char, index) => ({
+        name: char,
+        role: index === 0 ? '主角' : '重要角色',
+        traits: '待发展的角色特征',
+        appearance: '',
+        backstory: ''
+      })),
+      environment_details: selectedOutline.setting,
+      preferred_ending: 'open',
+      story_length: 'medium',
+      tone: selectedOutline.tone.includes('轻松') ? 'light' : 
+            selectedOutline.tone.includes('幽默') ? 'humorous' :
+            selectedOutline.tone.includes('浪漫') ? 'romantic' :
+            selectedOutline.tone.includes('黑暗') || selectedOutline.tone.includes('神秘') ? 'dark' : 'serious',
+      story_goals: [
+        {
+          id: '1',
+          description: originalSimpleConfig.main_goal || '完成主要任务',
+          type: 'main',
+          priority: 'high'
+        }
+      ]
+    };
+    
+    // 使用增强配置创建故事
+    let configToUse = modelConfig;
+    if (!modelConfig.apiKey && hasValidConfig) {
+      const savedConfig = loadModelConfig();
+      if (savedConfig) {
+        configToUse = savedConfig;
+        setModelConfig(savedConfig);
+      }
+    }
+    
+    console.log('🚀 基于选择的梗概创建故事:', selectedOutline.title);
+    onInitializeStory(enhancedConfig, configToUse, true);
   };
 
   // 处理高级配置提交
@@ -774,11 +872,157 @@ AI将根据您的描述自动创建角色、背景和情节..."
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-                disabled={!simpleConfig.genre || !simpleConfig.story_idea || !simpleConfig.main_goal || !modelConfig.apiKey}
+                disabled={!simpleConfig.genre || !simpleConfig.story_idea || !simpleConfig.main_goal || (!modelConfig.apiKey && !hasValidConfig) || isGeneratingOutlines}
               >
-                🎭 开始创作我的故事
+                {isGeneratingOutlines ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    🎨 正在生成故事梗概...
+                  </div>
+                ) : (
+                  '🎭 生成故事梗概'
+                )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // 故事梗概选择界面
+  if (configMode === 'outline-selection') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+        <Card className="w-full max-w-6xl mx-auto bg-white shadow-xl border-slate-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                onClick={() => setConfigMode('simple')}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回修改
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModelConfig(true)}
+                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
+            </div>
+            <div className="text-center pt-4">
+              <CardTitle className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-2">
+                <BookOpen className="h-8 w-8 text-blue-600" />
+                选择您的故事方向
+              </CardTitle>
+              <p className="text-slate-600 mt-2">
+                基于您的灵感，AI为您生成了 {storyOutlines.length} 个不同风格的故事梗概
+              </p>
+              {originalSimpleConfig && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>您的原始想法：</strong>{originalSimpleConfig.story_idea}
+                  </p>
+                  {originalSimpleConfig.main_goal && (
+                    <p className="text-sm text-blue-700 mt-1">
+                      <strong>期望目标：</strong>{originalSimpleConfig.main_goal}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              {storyOutlines.map((outline) => (
+                <Card
+                  key={outline.id}
+                  className="border-2 border-slate-200 hover:border-blue-300 cursor-pointer transition-all duration-300 group hover:shadow-lg"
+                  onClick={() => handleOutlineSelection(outline)}
+                >
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-slate-800 group-hover:text-blue-700 transition-colors">
+                      {outline.title}
+                    </CardTitle>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        {outline.genre}
+                      </Badge>
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                        {outline.tone}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-700 mb-2">📖 故事概念</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        {outline.premise}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-slate-700 mb-2">🎭 主要角色</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {outline.characters.map((character, index) => (
+                          <Badge 
+                            key={index}
+                            variant="outline" 
+                            className="text-xs border-slate-300 text-slate-600"
+                          >
+                            {character}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-slate-700 mb-2">🏛️ 背景设定</h4>
+                      <p className="text-slate-600 text-sm">
+                        {outline.setting}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-slate-700 mb-2">🎣 故事钩子</h4>
+                      <p className="text-slate-600 text-sm italic">
+                        "{outline.hook}"
+                      </p>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-slate-200">
+                      <Button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOutlineSelection(outline);
+                        }}
+                      >
+                        选择这个故事方向 ✨
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="mt-8 text-center">
+              <p className="text-slate-500 text-sm mb-4">
+                💡 选择一个梗概后，AI将基于您的选择创建完整的故事开篇
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setConfigMode('simple')}
+                className="text-slate-600 border-slate-300 hover:bg-slate-50"
+              >
+                不满意？重新生成梗概
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
