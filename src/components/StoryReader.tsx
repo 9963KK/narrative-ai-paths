@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User } from 'lucide-react';
+import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface StoryState {
@@ -82,6 +82,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [selectedChoiceText, setSelectedChoiceText] = useState<string>('');
   const [choiceStartTime, setChoiceStartTime] = useState<number>(0);
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
+
+  // 解析性格特征为标签数组
+  const parseTraitsToTags = (traits: string): string[] => {
+    if (!traits) return [];
+    return traits
+      .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
+      .map(trait => trait.trim()) // 去除空格
+      .filter(trait => trait.length > 0); // 过滤空字符串
+  };
   const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
@@ -1216,34 +1225,54 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                         </div>
                       </div>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center space-x-2">
-                          <User className="w-5 h-5" />
-                          <span>{character.name}</span>
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-slate-700 mb-1">角色类型</h5>
-                          <p className="text-sm text-slate-600">{character.role || '未知角色'}</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-slate-700 mb-1">性格特征</h5>
-                          <p className="text-sm text-slate-600">{character.traits || '神秘的角色'}</p>
-                        </div>
-                        {character.appearance && (
-                          <div>
-                            <h5 className="font-medium text-slate-700 mb-1">外貌描述</h5>
-                            <p className="text-sm text-slate-600">{character.appearance}</p>
+                    <DialogContent className="max-w-lg shadow-2xl">
+                      {/* 关闭按钮 */}
+                      <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
+                        <X className="w-6 h-6" />
+                      </button>
+
+                      <div className="p-8">
+                        {/* 头部区域 */}
+                        <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
+                          <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <User className="w-10 h-10 text-indigo-500" />
                           </div>
-                        )}
-                        {character.backstory && (
                           <div>
-                            <h5 className="font-medium text-slate-700 mb-1">背景故事</h5>
-                            <p className="text-sm text-slate-600">{character.backstory}</p>
+                            <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
+                            <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
                           </div>
-                        )}
+                        </header>
+
+                        {/* 内容区域 */}
+                        <div className="space-y-6">
+                          {/* 性格特征 */}
+                          <div>
+                            <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
+                            <div className="flex flex-wrap gap-2">
+                              {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
+                                <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                  {trait}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 外貌描述 */}
+                          {character.appearance && (
+                            <div>
+                              <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
+                              <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
+                            </div>
+                          )}
+
+                          {/* 背景故事 */}
+                          {character.backstory && (
+                            <div>
+                              <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
+                              <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
