@@ -63,6 +63,9 @@ interface StoryInitializerProps {
 const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory }) => {
   const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document' | 'analysis-result' | 'outline-selection'>('select');
   
+  // 分步向导状态 - 必须在组件顶层定义
+  const [currentStep, setCurrentStep] = useState(1);
+  
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
     genre: '',
@@ -188,6 +191,13 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   useEffect(() => {
     if (configMode === 'select') {
       updateSavedContextsCount();
+    }
+  }, [configMode]);
+
+  // 当切换模式时重置步骤
+  useEffect(() => {
+    if (configMode !== 'simple') {
+      setCurrentStep(1); // 重置到第一步
     }
   }, [configMode]);
 
@@ -850,8 +860,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
   // 简单配置界面
   if (configMode === 'simple') {
-    // 新增的分步向导状态
-    const [currentStep, setCurrentStep] = useState(1);
+    // 分步向导配置 - 使用组件顶层的state
     const totalSteps = 3;
     const stepTitles = ["选择类型", "描述想法", "设定目标"];
 
