@@ -13,7 +13,7 @@ import DocumentAnalyzer from './DocumentAnalyzer';
 import DocumentAnalysisResultView from './DocumentAnalysisResultView';
 import { ModelConfig as ModelConfigType } from './model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
-import { getSavedContexts } from '@/services/contextManager';
+import { getSavedContexts, SavedStoryContext } from '@/services/contextManager';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 import { storyAI } from '@/services/storyAI';
 
@@ -104,6 +104,13 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [savedContextsCount, setSavedContextsCount] = useState(0);
   const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
+  const [recentStories, setRecentStories] = useState<Array<{
+    id: string;
+    title: string;
+    lastPlayTime: Date;
+    progress: number;
+    genre: string;
+  }>>([]);
   
   // 故事梗概选择相关状态
   const [storyOutlines, setStoryOutlines] = useState<Array<{
@@ -134,10 +141,47 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     updateSavedContextsCount();
   }, []);
 
-  // 更新存档数量的函数
+  // 时间格式化函数
+  const formatLastPlayTime = (date: Date): string => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return '刚刚';
+    if (diffInHours < 24) return `${diffInHours}小时前`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return '昨天';
+    if (diffInDays < 7) return `${diffInDays}天前`;
+    
+    // 超过一周显示具体日期
+    return date.toLocaleDateString('zh-CN', { 
+      month: 'short', 
+      day: 'numeric'
+    }) + ' ' + date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // 更新存档数量和获取最近故事的函数
   const updateSavedContextsCount = () => {
     const savedContexts = getSavedContexts();
-    setSavedContextsCount(Object.keys(savedContexts).length);
+    const contextArray = Object.values(savedContexts);
+    setSavedContextsCount(contextArray.length);
+    
+    // 获取最近的两个故事
+    const recentStoriesData = contextArray
+      .sort((a, b) => new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime())
+      .slice(0, 2)
+      .map(context => ({
+        id: context.id,
+        title: context.title,
+        lastPlayTime: new Date(context.lastPlayTime),
+        progress: context.storyState.story_progress || Math.min(75, context.storyState.chapter * 12.5), // 根据章节估算进度
+        genre: context.genre || context.storyState.genre || '未知类型'
+      }));
+    
+    setRecentStories(recentStoriesData);
   };
 
   // 当切换到select模式时，重新更新存档数量
@@ -566,186 +610,176 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
   // 选择配置模式界面
   if (configMode === 'select') {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-4xl bg-white shadow-xl border-slate-200">
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-4xl font-bold text-slate-800 mb-4">
-              🎭 AI故事创作平台
-          </CardTitle>
-            <p className="text-slate-600 text-lg">选择您的创作方式，开始一段独特的故事之旅</p>
-        </CardHeader>
-        <CardContent>
-            <div className="flex justify-end mb-6">
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with Model Config Button */}
+          <div className="relative mb-12">
+            <header className="text-center">
+              <h1 className="text-4xl font-black text-gray-800">AI 故事创作平台</h1>
+              <p className="mt-3 text-lg text-gray-500">选择您的创作方式，开启一段独一无二的故事之旅</p>
+            </header>
+            <div className="absolute top-0 right-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowModelConfig(true)}
-                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors duration-200"
               >
-                <Settings className="h-4 w-4" />
-                模型配置
+                <Settings className="w-5 h-5" />
+                <span className="font-medium text-sm">模型配置</span>
               </Button>
             </div>
+          </div>
 
-            {!modelConfig.apiKey && !hasValidConfig && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-amber-800 text-sm text-center">
-                  ⚠️ 请先配置AI模型才能开始创作故事
-                </p>
+          {/* API Key Warning */}
+          {!modelConfig.apiKey && !hasValidConfig && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8 text-center">
+              <p className="text-amber-800 text-sm">
+                ⚠️ 请先配置AI模型才能开始创作故事
+              </p>
+            </div>
+          )}
+
+          {/* Continue Section */}
+          {savedContextsCount > 0 && (
+            <section className="mb-12">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-2xl font-bold text-gray-700">继续您的冒险</h2>
+                <Button
+                  onClick={() => setConfigMode('saves')}
+                  className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors duration-200"
+                >
+                  <FolderOpen className="w-5 h-5" />
+                  <span className="font-medium text-sm">管理所有存档</span>
+                </Button>
               </div>
-            )}
-
-            {/* 存档管理区域 - 置顶 */}
-            {savedContextsCount > 0 && (
-              <div className="mb-8">
-                <div className="border-2 border-green-200 rounded-lg bg-green-50 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-green-100 rounded-full">
-                        <FolderOpen className="h-6 w-6 text-green-600" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 显示最近的故事 */}
+                {recentStories && recentStories.slice(0, 2).map((story, index) => (
+                  <div 
+                    key={story.id}
+                    className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 flex items-center space-x-5 cursor-pointer"
+                    onClick={() => {
+                      if (onLoadStory) {
+                        onLoadStory(story.id);
+                      }
+                    }}
+                  >
+                    <div className={`p-3 rounded-lg ${index === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
+                      <BookOpen className={`w-6 h-6 ${index === 0 ? 'text-green-600' : 'text-blue-600'}`} />
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-bold text-gray-800">{story.title}</h3>
+                      <p className="text-sm text-gray-500 mt-1">上次编辑：{formatLastPlayTime(story.lastPlayTime)}</p>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
+                        <div 
+                          className={`h-2.5 rounded-full ${index === 0 ? 'bg-green-500' : 'bg-blue-500'}`} 
+                          style={{width: `${Math.min(100, Math.max(5, story.progress))}%`}}
+                        ></div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-800">继续之前的冒险</h3>
-                        <p className="text-sm text-slate-600">发现了 {savedContextsCount} 个已保存的故事</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">{story.genre}</span>
+                        <span className="text-xs font-medium text-gray-600">
+                          {Math.round(Math.min(100, Math.max(5, story.progress)))}%
+                        </span>
                       </div>
                     </div>
                     <Button
-                      onClick={() => setConfigMode('saves')}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onLoadStory) {
+                          onLoadStory(story.id);
+                        }
+                      }}
+                      className={`transition-all duration-200 p-3 rounded-full ${
+                        index === 0 
+                          ? 'bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700' 
+                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700'
+                      }`}
                     >
-                      查看所有存档
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
                     </Button>
                   </div>
-                  <div className="text-sm text-green-700">
-                    📚 点击上方按钮查看详细进度，一键继续您的故事之旅
+                ))}
+                
+                {/* 如果只有一个故事，显示占位符 */}
+                {recentStories && recentStories.length === 1 && (
+                  <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 flex items-center space-x-5">
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <Sparkles className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-bold text-gray-800">准备开始新的冒险</h3>
+                      <p className="text-sm text-gray-500 mt-1">选择下方创作方式</p>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
+                        <div className="bg-blue-500 h-2.5 rounded-full" style={{width: '0%'}}></div>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">新冒险</span>
+                        <span className="text-xs font-medium text-gray-600">0%</span>
+                      </div>
+                    </div>
+                    <div className="text-blue-600">
+                      <Sparkles className="w-8 h-8" />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </section>
+          )}
 
-            {/* 分隔线 */}
-            <div className="flex items-center gap-4 mb-8">
-              <div className="flex-1 h-px bg-slate-200"></div>
-              <span className="text-slate-500 font-medium px-4">
-                {savedContextsCount > 0 ? '或者开始新的故事' : '开始您的故事之旅'}
-              </span>
-              <div className="flex-1 h-px bg-slate-200"></div>
+          {/* Divider */}
+          <div className="text-center my-8">
+            <span className="text-sm text-gray-400 font-medium">
+              {savedContextsCount > 0 ? '或者，开启一段全新的故事' : '开启您的故事之旅'}
+            </span>
+          </div>
+
+          {/* New Story Section */}
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Card 1: Simple */}
+            <div 
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-500"
+              onClick={() => setConfigMode('simple')}
+            >
+              <div className="mx-auto w-20 h-20 flex items-center justify-center bg-indigo-100 rounded-full mb-6">
+                <Wand2 className="w-10 h-10 text-indigo-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800">快速开始</h3>
+              <p className="text-gray-500 mt-2 mb-6">提供一个想法，AI补全所有细节。最适合寻找灵感的你。</p>
+              <span className="inline-block bg-indigo-500 text-white font-semibold py-2 px-5 rounded-lg">推荐新手使用</span>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* 简单配置 */}
-              <Card className="border-2 border-blue-200 hover:border-blue-300 transition-all duration-300 cursor-pointer group"
-                    onClick={() => setConfigMode('simple')}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <Wand2 className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <CardTitle className="text-xl text-slate-800">✨ 简单配置</CardTitle>
-                  <p className="text-slate-600 text-sm">快速开始，AI自动补充细节</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-blue-500" />
-                      您只需要：
-                    </h4>
-                    <ul className="text-sm text-slate-600 space-y-1 ml-6">
-                      <li>• 选择故事类型</li>
-                      <li>• 描述故事想法</li>
-                      <li>• AI自动生成角色和背景</li>
-                    </ul>
-                  </div>
-                  <div className="pt-2">
-                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                      推荐新手使用
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 高级配置 */}
-              <Card className="border-2 border-purple-200 hover:border-purple-300 transition-all duration-300 cursor-pointer group"
-                    onClick={() => setConfigMode('advanced')}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                    <Wrench className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <CardTitle className="text-xl text-slate-800">⚙️ 高级配置</CardTitle>
-                  <p className="text-slate-600 text-sm">全面控制，打造完美故事</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                      <Target className="h-4 w-4 text-purple-500" />
-                      精细控制：
-                    </h4>
-                    <ul className="text-sm text-slate-600 space-y-1 ml-6">
-                      <li>• 自定义角色设定</li>
-                      <li>• 详细环境描述</li>
-                      <li>• 选择故事长度和结局类型</li>
-                      <li>• 调节故事基调和氛围</li>
-                    </ul>
-                  </div>
-                  <div className="pt-2">
-                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
-                      适合有经验的用户
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 文档分析 */}
-              <Card className="border-2 border-orange-200 hover:border-orange-300 transition-all duration-300 cursor-pointer group"
-                    onClick={() => setConfigMode('document')}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-orange-100 rounded-full w-16 h-16 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                    <Upload className="h-8 w-8 text-orange-600" />
-                  </div>
-                  <CardTitle className="text-xl text-slate-800">📄 文档分析</CardTitle>
-                  <p className="text-slate-600 text-sm">上传小说，AI提取创作元素</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-orange-500" />
-                      智能分析：
-                    </h4>
-                    <ul className="text-sm text-slate-600 space-y-1 ml-6">
-                      <li>• 自动识别人物角色</li>
-                      <li>• 提取故事背景设定</li>
-                      <li>• 分析写作风格和主题</li>
-                      <li>• 生成创作灵感种子</li>
-                    </ul>
-                  </div>
-                  <div className="pt-2">
-                    <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
-                      创新功能
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Card 2: Advanced */}
+            <div 
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-purple-500"
+              onClick={() => setConfigMode('advanced')}
+            >
+              <div className="mx-auto w-20 h-20 flex items-center justify-center bg-purple-100 rounded-full mb-6">
+                <Wrench className="w-10 h-10 text-purple-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800">专业模式</h3>
+              <p className="text-gray-500 mt-2 mb-6">全面掌控故事的每个细节，精雕细琢，打造完美篇章。</p>
+              <span className="inline-block bg-purple-500 text-white font-semibold py-2 px-5 rounded-lg">适合有经验的用户</span>
             </div>
 
-            {/* 如果没有存档，提供存档管理入口 */}
-            {savedContextsCount === 0 && (
-              <div className="mt-8 text-center">
-                <div className="inline-flex items-center gap-2 text-slate-500 text-sm">
-                  <FolderOpen className="h-4 w-4" />
-                  <span>还没有保存的故事？</span>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => setConfigMode('saves')}
-                    className="text-green-600 hover:text-green-700 p-0 h-auto"
-                  >
-                    查看存档管理
-                  </Button>
-                </div>
+            {/* Card 3: Document */}
+            <div 
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-teal-500"
+              onClick={() => setConfigMode('document')}
+            >
+              <div className="mx-auto w-20 h-20 flex items-center justify-center bg-teal-100 rounded-full mb-6">
+                <Upload className="w-10 h-10 text-teal-600" />
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <h3 className="text-2xl font-bold text-gray-800">文档分析</h3>
+              <p className="text-gray-500 mt-2 mb-6">上传您的小说草稿，AI 提取核心元素，激发续写灵感。</p>
+              <span className="inline-block bg-teal-500 text-white font-semibold py-2 px-5 rounded-lg">创新功能</span>
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
