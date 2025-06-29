@@ -707,25 +707,89 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                 
                 {/* 如果只有一个故事，显示占位符 */}
                 {recentStories && recentStories.length === 1 && (
-                  <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 flex items-center space-x-5">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <Sparkles className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div className="flex-grow">
-                      <h3 className="font-bold text-gray-800">准备开始新的冒险</h3>
-                      <p className="text-sm text-gray-500 mt-1">选择下方创作方式</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
-                        <div className="bg-blue-500 h-2.5 rounded-full" style={{width: '0%'}}></div>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                       onClick={() => setConfigMode('simple')}>
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Sparkles className="w-6 h-6 text-white" />
                       </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">新冒险</span>
-                        <span className="text-xs font-medium text-gray-600">0%</span>
+                      <div className="flex-grow">
+                        <h3 className="font-bold text-gray-800 text-lg mb-1">开启全新冒险</h3>
+                        <p className="text-sm text-gray-600 mb-3">无限可能等你探索</p>
+                        <div className="flex items-center space-x-2 text-blue-600">
+                          <span className="text-xs font-medium">点击开始创作</span>
+                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                          </svg>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-blue-600">
-                      <Sparkles className="w-8 h-8" />
+                    
+                    {/* 装饰性元素 */}
+                    <div className="mt-4 flex justify-between items-center opacity-60">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-indigo-300 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-2 h-2 bg-purple-300 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium">准备就绪</span>
                     </div>
                   </div>
+                )}
+
+                {/* 如果没有故事，显示两个引导卡片 */}
+                {(!recentStories || recentStories.length === 0) && (
+                  <>
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                         onClick={() => setConfigMode('simple')}>
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <Wand2 className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-grow">
+                          <h3 className="font-bold text-gray-800 text-lg mb-1">快速开始</h3>
+                          <p className="text-sm text-gray-600 mb-3">简单配置，即刻冒险</p>
+                          <div className="flex items-center space-x-2 text-emerald-600">
+                            <span className="text-xs font-medium">3分钟开始故事</span>
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 bg-white/50 rounded-lg p-2">
+                        <div className="text-xs text-gray-600 flex items-center space-x-2">
+                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                          <span>AI智能生成故事梗概</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-violet-50 to-purple-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                         onClick={() => setConfigMode('advanced')}>
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <Settings className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-grow">
+                          <h3 className="font-bold text-gray-800 text-lg mb-1">深度定制</h3>
+                          <p className="text-sm text-gray-600 mb-3">详细配置，精心雕琢</p>
+                          <div className="flex items-center space-x-2 text-violet-600">
+                            <span className="text-xs font-medium">高级设定模式</span>
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 bg-white/50 rounded-lg p-2">
+                        <div className="text-xs text-gray-600 flex items-center space-x-2">
+                          <div className="w-1.5 h-1.5 bg-violet-500 rounded-full"></div>
+                          <span>多角色复杂故事构建</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </section>
