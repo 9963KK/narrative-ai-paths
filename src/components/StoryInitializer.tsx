@@ -864,7 +864,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     const totalSteps = 3;
     const stepTitles = ["选择类型", "描述想法", "设定目标"];
 
-    // 故事类型的图标映射
+    // 故事类型的图标和标题映射
     const genreIcons = {
       'sci-fi': '🚀',
       'fantasy': '🐉', 
@@ -874,6 +874,17 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
       'historical': '🏛️',
       'slice-of-life': '🌸',
       'adventure': '🗺️'
+    };
+
+    const genreTitles = {
+      'sci-fi': '科幻小说',
+      'fantasy': '奇幻小说', 
+      'mystery': '推理悬疑',
+      'romance': '浪漫爱情',
+      'thriller': '惊悚恐怖',
+      'historical': '历史小说',
+      'slice-of-life': '日常生活',
+      'adventure': '冒险探索'
     };
 
     // 步骤导航函数
@@ -970,7 +981,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                     }`}
                   >
                     <div className="text-3xl mb-2">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
-                    <span className="font-medium">{genre.label.split(' ').slice(1).join(' ')}</span>
+                    <span className="font-medium">{genreTitles[genre.value as keyof typeof genreTitles]}</span>
                     <p className="text-xs text-gray-500 mt-1">{genre.desc}</p>
                   </div>
                 ))}
