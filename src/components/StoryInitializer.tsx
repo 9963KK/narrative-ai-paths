@@ -1300,7 +1300,8 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
             </div>
             <div className="text-center">
               <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3 mb-2">
-                ✍️ 高级配置
+                <Wrench className="h-8 w-8 text-purple-600" />
+                高级配置
               </h1>
               <p className="text-slate-600">精确控制故事的每一个细节，打造您的完美作品</p>
             </div>
