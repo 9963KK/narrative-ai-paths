@@ -1357,7 +1357,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <div className={`accordion-item ${activeAccordion === 'basic' ? 'active' : ''} ${checkSectionCompletion('basic') ? 'completed' : ''}`}>
                 <div className="accordion-header ui-text" onClick={() => toggleAccordion('basic')}>
                   <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                    <Sparkles className="h-6 w-6" />
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-indigo-600" />
+                    </div>
                     基础设定
                     <span className="accordion-status">✔</span>
                   </h3>
@@ -1459,7 +1461,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <div className={`accordion-item ${activeAccordion === 'character' ? 'active' : ''} ${checkSectionCompletion('character') ? 'completed' : ''}`}>
                 <div className="accordion-header ui-text" onClick={() => toggleAccordion('character')}>
                   <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                    <Users className="h-6 w-6" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-blue-600" />
+                    </div>
                     角色设定
                     <span className="accordion-status">✔</span>
                   </h3>
@@ -1538,7 +1542,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <div className={`accordion-item ${activeAccordion === 'goal' ? 'active' : ''} ${checkSectionCompletion('goal') ? 'completed' : ''}`}>
                 <div className="accordion-header ui-text" onClick={() => toggleAccordion('goal')}>
                   <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                    <Target className="h-6 w-6" />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Target className="h-5 w-5 text-emerald-600" />
+                    </div>
                     故事目标设定
                     <span className="accordion-status">✔</span>
                   </h3>
@@ -1565,7 +1571,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                                   const newGoals = advancedConfig.story_goals.filter(g => g.id !== goal.id);
                                   setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
                                 }}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                className="text-slate-400 hover:text-red-600 hover:bg-red-50 w-6 h-6 rounded-full flex items-center justify-center"
                               >
                                 ×
                               </Button>
@@ -1648,7 +1654,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                           story_goals: [...prev.story_goals, newGoal] 
                         }));
                       }}
-                      className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                      className="w-full border-2 border-dashed border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200 py-3 rounded-lg flex items-center justify-center gap-2 font-medium"
                     >
                       + 添加目标
                     </Button>
@@ -1660,7 +1666,9 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <div className={`accordion-item ${activeAccordion === 'environment' ? 'active' : ''} ${checkSectionCompletion('environment') ? 'completed' : ''}`}>
                 <div className="accordion-header ui-text" onClick={() => toggleAccordion('environment')}>
                   <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                    <MapPin className="h-6 w-6" />
+                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-orange-600" />
+                    </div>
                     环境与特殊要求
                     <span className="accordion-status">✔</span>
                   </h3>
@@ -1697,9 +1705,12 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
             <div className="mt-8">
               <Button
                 onClick={handleAdvancedSubmit}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 rounded-lg transition-all duration-300 text-lg"
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                 disabled={!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.story_goals.some(goal => goal.description.trim() !== '') || (!modelConfig.apiKey && !hasValidConfig)}
               >
+                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                  <Sparkles className="h-4 w-4" />
+                </div>
                 创建精心定制的故事
               </Button>
             </div>
