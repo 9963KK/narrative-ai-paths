@@ -112,13 +112,52 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 标题和切换开关 */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-center flex-1">
+          <h3 className="font-bold text-slate-700 text-lg ui-text">
+            {currentView === 'panel' ? '创作平衡面板' : '精细化调整'}
+          </h3>
+          <p className="text-sm text-slate-500 mt-2 ui-text">
+            {currentView === 'panel' 
+              ? '拖动控制点，找到最适合你的创作风格' 
+              : '精确控制AI的每一个参数'
+            }
+          </p>
+        </div>
+        
+        {/* 滑块开关 */}
+        <div className="flex-shrink-0">
+          <div className="relative inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={currentView === 'sliders'}
+              onChange={(e) => setCurrentView(e.target.checked ? 'sliders' : 'panel')}
+              className="sr-only"
+              id="view-toggle"
+            />
+            <label
+              htmlFor="view-toggle"
+              className={`relative inline-flex items-center h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                currentView === 'sliders' ? 'bg-indigo-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  currentView === 'sliders' ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </label>
+            <span className="ml-2 text-xs text-slate-600 ui-text">
+              {currentView === 'panel' ? '面板' : '滑块'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* 创作平衡面板视图 */}
       {currentView === 'panel' && (
         <div className="ui-text balance-panel-fade-in">
-          <div className="text-center mb-6">
-            <h3 className="font-bold text-slate-700 text-lg">创作平衡面板</h3>
-            <p className="text-sm text-slate-500 mt-2">拖动控制点，找到最适合你的创作风格</p>
-          </div>
           
           <div 
             ref={panelRef}
@@ -166,25 +205,12 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
               篇幅: <span className="font-mono text-indigo-600">{maxTokens}</span>
             </p>
           </div>
-          
-          <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-            <button 
-              onClick={() => setCurrentView('sliders')}
-              className="text-indigo-600 font-semibold text-sm hover:underline focus:outline-none transition-colors"
-            >
-              切换到精细化调整
-            </button>
-          </div>
         </div>
       )}
 
       {/* 精细化调整视图 */}
       {currentView === 'sliders' && (
         <div className="ui-text balance-panel-fade-in">
-          <div className="text-center mb-6">
-            <h3 className="font-bold text-slate-700 text-lg">精细化调整</h3>
-            <p className="text-sm text-slate-500 mt-2">精确控制AI的每一个参数</p>
-          </div>
           
           <div className="space-y-8">
             {/* 创造性滑块 */}
@@ -240,15 +266,6 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
                 <span>洋洋洒洒</span>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-            <button 
-              onClick={() => setCurrentView('panel')}
-              className="text-indigo-600 font-semibold text-sm hover:underline focus:outline-none transition-colors"
-            >
-              返回到平衡面板
-            </button>
           </div>
         </div>
       )}
