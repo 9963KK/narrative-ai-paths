@@ -39,8 +39,15 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     if (!panelRef.current || !handleRef.current) return;
     
     const rect = panelRef.current.getBoundingClientRect();
-    const x = ((maxTokens - 100) / 3900) * rect.width; // 映射到0-4000范围
-    const y = (1 - temperature) * rect.height; // 反转Y轴
+    if (rect.width === 0 || rect.height === 0) return;
+    
+    // 确保参数在有效范围内
+    const normalizedTemperature = Math.max(0, Math.min(1, temperature));
+    const normalizedTokens = Math.max(100, Math.min(4000, maxTokens));
+    
+    // 计算位置 - 需要考虑手柄自身的尺寸偏移
+    const x = ((normalizedTokens - 100) / (4000 - 100)) * rect.width;
+    const y = (1 - normalizedTemperature) * rect.height;
     
     handleRef.current.style.left = `${x}px`;
     handleRef.current.style.top = `${y}px`;
@@ -54,9 +61,11 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
     const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
     
+    // 计算新的参数值，确保范围正确
     const newTemperature = Math.max(0, Math.min(1, (rect.height - y) / rect.height));
-    const newTokens = Math.round(100 + (x / rect.width) * 3900);
+    const newTokens = Math.round(100 + (x / rect.width) * (4000 - 100)); // 正确的100-4000范围
     
+    // 四舍五入到合理精度
     onTemperatureChange(Number(newTemperature.toFixed(2)));
     onMaxTokensChange(newTokens);
   };
@@ -98,6 +107,14 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   useEffect(() => {
     updateHandlePosition();
   }, [temperature, maxTokens]);
+
+  // 确保组件挂载后正确初始化手柄位置
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateHandlePosition();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentView]);
 
   const getActiveZoneClass = (zone: string) => {
     const style = getStyleDescription();

@@ -184,4 +184,71 @@
       transform: translateY(0); 
     }
   }
+  
+  /* 手风琴样式 */
+  .accordion {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .accordion-item {
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .accordion-item:last-child {
+    border-bottom: none;
+  }
+  
+  .accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    cursor: pointer;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+  }
+  
+  .accordion-header:hover {
+    background-color: #f9fafb;
+  }
+  
+  .accordion-status {
+    font-size: 16px;
+    color: #10b981;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .accordion-item.completed .accordion-status {
+    opacity: 1;
+  }
+  
+  .accordion-icon {
+    font-size: 20px;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+    color: #4f46e5;
+  }
+  
+  .accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    background-color: #fafbff;
+  }
+  
+  .accordion-content-inner {
+    padding: 0 24px 24px 24px;
+  }
+  
+  .accordion-item.active .accordion-content {
+    max-height: 2000px;
+  }
+  
+  .accordion-item.active .accordion-icon {
+    transform: rotate(45deg);
+  }
 }
