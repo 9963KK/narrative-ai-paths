@@ -625,7 +625,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
         <div className="max-w-4xl mx-auto">
           {/* Header with Model Config Button */}
           <div className="relative mb-12">
-            <header className="text-center">
+            <header className="text-center ui-text">
               <h1 className="text-4xl font-black text-gray-800">AI 故事创作平台</h1>
               <p className="mt-3 text-lg text-gray-500">选择您的创作方式，开启一段独一无二的故事之旅</p>
             </header>
@@ -679,7 +679,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                     <div className={`p-3 rounded-lg ${index === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
                       <BookOpen className={`w-6 h-6 ${index === 0 ? 'text-green-600' : 'text-blue-600'}`} />
                     </div>
-                    <div className="flex-grow">
+                    <div className="flex-grow ui-text">
                       <h3 className="font-bold text-gray-800">{story.title}</h3>
                       <p className="text-sm text-gray-500 mt-1">上次编辑：{formatLastPlayTime(story.lastPlayTime)}</p>
                       <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
@@ -816,7 +816,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Card 1: Simple */}
             <div 
-              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-500"
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-500 ui-text"
               onClick={() => setConfigMode('simple')}
             >
               <div className="mx-auto w-20 h-20 flex items-center justify-center bg-indigo-100 rounded-full mb-6">
@@ -829,7 +829,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
             {/* Card 2: Advanced */}
             <div 
-              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-purple-500"
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-purple-500 ui-text"
               onClick={() => setConfigMode('advanced')}
             >
               <div className="mx-auto w-20 h-20 flex items-center justify-center bg-purple-100 rounded-full mb-6">
@@ -842,7 +842,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
             {/* Card 3: Document */}
             <div 
-              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-teal-500"
+              className="bg-white p-8 rounded-2xl shadow-lg text-center cursor-pointer transition-all duration-300 border border-transparent hover:transform hover:-translate-y-2 hover:shadow-2xl hover:border-teal-500 ui-text"
               onClick={() => setConfigMode('document')}
             >
               <div className="mx-auto w-20 h-20 flex items-center justify-center bg-teal-100 rounded-full mb-6">
@@ -927,7 +927,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <ArrowLeft className="h-4 w-4" />
               返回
             </Button>
-            <div className="text-center">
+            <div className="text-center ui-text">
               <h1 className="text-3xl font-bold text-gray-800">开启您的故事之旅</h1>
               <p className="text-gray-500 mt-2">跟随向导，一步步构建您的世界</p>
             </div>
@@ -943,7 +943,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           </div>
 
           {/* Progress Bar */}
-          <div className="mb-10">
+          <div className="mb-10 ui-text">
             <div className="flex justify-between mb-1 text-sm font-medium text-gray-600">
               <span>第 {currentStep} / {totalSteps} 步</span>
               <span>{stepTitles[currentStep - 1]}</span>
@@ -967,7 +967,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
           {/* Step 1: Genre Selection */}
           {currentStep === 1 && (
-            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+            <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
               <label className="text-xl font-semibold text-gray-700 mb-4 block">您想创作什么类型的故事？</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
                 {genres.map((genre) => (
@@ -1000,7 +1000,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
           {/* Step 2: Story Idea */}
           {currentStep === 2 && (
-            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+            <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
               <label className="text-xl font-semibold text-gray-700 mb-4 block">您的故事核心想法是什么？</label>
               <p className="text-sm text-gray-500 mb-4">
                 一句话即可，例如："一个失忆的赏金猎人在霓虹闪烁的未来都市里，寻找自己被盗走的记忆。"
@@ -1032,7 +1032,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
 
           {/* Step 3: Main Goal */}
           {currentStep === 3 && (
-            <div className="step-content" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+            <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
               <label className="text-xl font-semibold text-gray-700 mb-4 block">这个故事的主要目标是什么？</label>
               <p className="text-sm text-gray-500 mb-4">
                 这将决定故事的结局。例如："找回记忆并复仇"、"拯救被邪恶公司控制的城市"、"找到真爱"...

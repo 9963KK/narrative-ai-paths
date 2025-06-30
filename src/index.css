@@ -101,3 +101,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 防止意外选中页面文字，提升用户体验 */
+@layer utilities {
+  .select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* 为主要UI元素添加不可选中样式 */
+  .ui-text {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 确保输入框和文本区域仍然可选中 */
+  input, textarea, [contenteditable] {
+    -webkit-user-select: auto !important;
+    -moz-user-select: auto !important;
+    -ms-user-select: auto !important;
+    user-select: auto !important;
+  }
+}
