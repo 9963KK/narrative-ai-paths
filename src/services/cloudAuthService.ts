@@ -1,35 +1,5 @@
-// 注意：在浏览器环境中，我们暂时禁用Redis连接以避免兼容性问题
-// 实际的Redis连接应该通过服务端API来实现
-let redisClient: any = null;
-
-// 尝试初始化Redis连接（浏览器环境中暂时禁用）
-const initRedisClient = async () => {
-  try {
-    // 检查是否有Redis环境变量
-    const redisUrl = process.env.REDIS_URL || process.env.KV_REST_API_URL;
-    
-    if (redisUrl) {
-      console.log('🔑 检测到Redis URL环境变量');
-      console.warn('⚠️ 浏览器环境中暂时禁用Redis直连，使用本地存储');
-      console.warn('💡 生产环境建议通过服务端API实现Redis连接');
-      
-      // 暂时注释掉Redis直连代码，避免浏览器兼容性问题
-      // const { createClient } = await import('redis');
-      // redisClient = createClient({ url: redisUrl });
-      // await redisClient.connect();
-      // console.log('✅ Redis连接成功');
-      // return redisClient;
-    } else {
-      console.warn('⚠️ 未检测到Redis环境变量，将使用本地存储');
-      console.warn('💡 如果在生产环境，请在Vercel Dashboard配置REDIS_URL环境变量');
-    }
-  } catch (error) {
-    console.error('❌ Redis连接失败，将使用本地存储:', error);
-    console.error('💡 请检查Redis URL配置和网络连接');
-    redisClient = null;
-  }
-  return null;
-};
+// 使用新的Redis客户端API，解决浏览器兼容性问题
+import { redisClient, redisOperations } from './redisClient';
 
 export interface User {
   id: string;
@@ -53,33 +23,43 @@ const USERS_STORAGE_KEY = 'narrative_ai_users';
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 
 export class CloudAuthService {
-  private redisInitialized = false;
+  private redisAvailable: boolean | null = null;
 
-  // 初始化Redis连接
-  private async getRedisClient() {
-    if (this.redisInitialized) {
-      return redisClient;
+  // 检查Redis是否可用
+  private async checkRedisAvailability(): Promise<boolean> {
+    if (this.redisAvailable !== null) {
+      return this.redisAvailable;
     }
 
     try {
-      await initRedisClient();
-      this.redisInitialized = true;
-      return redisClient;
+      const status = await redisClient.getStatus();
+      this.redisAvailable = status.available && status.connection.connected;
+      
+      if (this.redisAvailable) {
+        console.log('✅ Redis服务可用，使用云端存储');
+      } else {
+        console.warn('⚠️ Redis服务不可用，使用本地存储作为后备方案');
+      }
+      
+      return this.redisAvailable;
     } catch (error) {
-      console.warn('⚠️ Redis客户端初始化失败:', error);
-      this.redisInitialized = true;
-      return null;
+      console.warn('⚠️ 检查Redis状态失败:', error);
+      this.redisAvailable = false;
+      return false;
     }
   }
 
   // 获取所有用户
   private async getUsers(): Promise<User[]> {
-    const client = await this.getRedisClient();
+    const redisAvailable = await this.checkRedisAvailability();
     
-    if (client) {
+    if (redisAvailable) {
       try {
-        const usersData = await client.get(USERS_STORAGE_KEY);
-        return usersData ? JSON.parse(usersData) : [];
+        const usersData = await redisClient.getJSON<User[]>(USERS_STORAGE_KEY);
+        if (usersData) {
+          console.log('📖 从Redis云端存储读取用户数据');
+          return usersData;
+        }
       } catch (error) {
         console.warn('⚠️ 从Redis读取用户数据失败，使用本地存储:', error);
       }
@@ -96,13 +76,15 @@ export class CloudAuthService {
 
   // 保存用户到存储
   private async saveUsers(users: User[]): Promise<void> {
-    const client = await this.getRedisClient();
+    const redisAvailable = await this.checkRedisAvailability();
     
-    if (client) {
+    if (redisAvailable) {
       try {
-        await client.set(USERS_STORAGE_KEY, JSON.stringify(users));
-        console.log('✅ 用户数据已保存到Redis云端存储');
-        return;
+        const success = await redisClient.setJSON(USERS_STORAGE_KEY, users);
+        if (success) {
+          console.log('✅ 用户数据已保存到Redis云端存储');
+          return;
+        }
       } catch (error) {
         console.warn('⚠️ 保存用户数据到Redis失败，使用本地存储:', error);
       }
@@ -111,6 +93,7 @@ export class CloudAuthService {
     // 后备方案：使用localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      console.log('💾 用户数据已保存到本地存储');
     }
   }
 
@@ -371,18 +354,15 @@ export class CloudAuthService {
     return true;
   }
 
-  // 关闭Redis连接
+  // 重置Redis连接状态
   async disconnect(): Promise<void> {
-    if (redisClient) {
-      try {
-        await redisClient.disconnect();
-        console.log('🔌 Redis连接已关闭');
-      } catch (error) {
-        console.warn('⚠️ 关闭Redis连接失败:', error);
-      }
-      redisClient = null;
+    try {
+      // 重置Redis可用性检查
+      this.redisAvailable = null;
+      console.log('🔌 Redis连接状态已重置');
+    } catch (error) {
+      console.warn('⚠️ 重置Redis状态失败:', error);
     }
-    this.redisInitialized = false;
   }
 }
 
