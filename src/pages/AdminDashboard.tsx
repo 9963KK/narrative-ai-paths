@@ -17,12 +17,12 @@ import {
   TrendingUp,
   Calendar,
   Cpu,
-  Home
+  LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard: React.FC = () => {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, logout } = useAuth();
   const navigate = useNavigate();
   const [userSummaries, setUserSummaries] = useState<UserTokenSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,8 +100,8 @@ const AdminDashboard: React.FC = () => {
     loadData(); // 重新加载数据
   };
 
-  const handleGoHome = () => {
-    navigate('/', { state: { fromAdmin: true } });
+  const handleLogout = () => {
+    logout();
   };
 
   const formatCurrency = (amount: number) => {
@@ -152,9 +152,9 @@ const AdminDashboard: React.FC = () => {
               <p className="text-gray-600">Token使用监控和用户管理</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleGoHome}>
-                <Home className="h-4 w-4 mr-2" />
-                返回首页
+              <Button variant="outline" onClick={handleLogout} className="text-red-600 hover:bg-red-50">
+                <LogOut className="h-4 w-4 mr-2" />
+                退出登录
               </Button>
               <Button variant="outline" onClick={loadData} disabled={isLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
