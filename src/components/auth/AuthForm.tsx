@@ -103,27 +103,32 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+      <Card className="w-full max-w-md min-h-[580px] flex flex-col">
+        <CardHeader className="space-y-1 flex-shrink-0">
           <CardTitle className="text-2xl text-center">叙事AI路径</CardTitle>
           <CardDescription className="text-center">
             登录您的账户或创建新账户开始使用
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">登录</TabsTrigger>
-              <TabsTrigger value="register">注册</TabsTrigger>
-            </TabsList>
-            
-            {error && (
-              <Alert className="mt-4" variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+        <CardContent className="flex-1 flex flex-col justify-between">
+          <div className="flex-1 flex flex-col">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="login">登录</TabsTrigger>
+                <TabsTrigger value="register">注册</TabsTrigger>
+              </TabsList>
+              
+              {error && (
+                <Alert className="mb-4" variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <TabsContent value="login" className="space-y-4 animate-in fade-in-50 duration-200">
+              <div className="flex-1 relative">
+                <TabsContent 
+                  value="login" 
+                  className="absolute inset-0 space-y-4 animate-in fade-in-50 duration-200 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-50"
+                >
               <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-emailOrUsername">邮箱或用户名</Label>
@@ -172,13 +177,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
                   )}
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? '登录中...' : '登录'}
-                </Button>
-              </form>
-            </TabsContent>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? '登录中...' : '登录'}
+                  </Button>
+                </form>
+                </TabsContent>
 
-            <TabsContent value="register" className="space-y-4 animate-in fade-in-50 duration-200">
+                <TabsContent 
+                  value="register" 
+                  className="absolute inset-0 space-y-4 animate-in fade-in-50 duration-200 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-50"
+                >
               <form onSubmit={handleRegisterSubmit(handleRegister)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-username">用户名</Label>
@@ -274,12 +282,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
                   )}
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? '注册中...' : '注册'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? '注册中...' : '注册'}
+                  </Button>
+                </form>
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
         </CardContent>
       </Card>
     </div>
