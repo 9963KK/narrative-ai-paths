@@ -50,6 +50,10 @@ export class CloudAuthService {
 
   // 用户注册
   async register(username: string, email: string, password: string, role: 'user' | 'admin' = 'user'): Promise<boolean> {
+    let registeredInCloud = false;
+    let registeredLocally = false;
+    
+    // 1. 首先尝试注册到Supabase
     const supabaseAvailable = await this.checkSupabaseAvailability();
     
     if (supabaseAvailable) {
@@ -59,6 +63,7 @@ export class CloudAuthService {
         const usernameExists = await supabaseService.isUsernameExists(username);
         
         if (emailExists || usernameExists) {
+          console.log('⚠️ 用户已存在于云端数据库');
           return false;
         }
 
@@ -70,40 +75,62 @@ export class CloudAuthService {
           role
         });
 
-        return user !== null;
+        if (user) {
+          registeredInCloud = true;
+          console.log('✅ 用户已注册到Supabase云端');
+        }
       } catch (error) {
-        console.error('Supabase注册失败:', error);
+        console.error('Supabase注册失败，将保存到本地:', error);
       }
     }
 
-    // 后备方案：使用localStorage
+    // 2. 无论云端是否成功，都保存到localStorage作为备份
     if (typeof window !== 'undefined') {
-      const usersData = localStorage.getItem('narrative_ai_users');
-      const users = usersData ? JSON.parse(usersData) : [];
-      
-      // 检查邮箱和用户名是否已存在
-      const existingUser = users.find((user: any) => user.email === email || user.username === username);
-      if (existingUser) {
-        return false;
+      try {
+        const usersData = localStorage.getItem('narrative_ai_users');
+        const users = usersData ? JSON.parse(usersData) : [];
+        
+        // 检查本地是否已存在
+        const existingUser = users.find((user: any) => user.email === email || user.username === username);
+        if (existingUser && !registeredInCloud) {
+          return false; // 本地已存在且云端注册失败
+        }
+
+        // 如果本地不存在，创建新用户
+        if (!existingUser) {
+          const newUser = {
+            id: this.generateUserId(),
+            username,
+            email,
+            password: this.hashPassword(password),
+            createdAt: new Date().toISOString(),
+            role,
+            syncedToCloud: registeredInCloud // 标记是否已同步到云端
+          };
+
+          users.push(newUser);
+          localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+          registeredLocally = true;
+          
+          if (registeredInCloud) {
+            console.log('✅ 用户已同时保存到云端和本地');
+          } else {
+            console.log('💾 用户已保存到本地，将在网络恢复后同步到云端');
+            // 设置待同步标记
+            localStorage.setItem('has_pending_sync', 'true');
+          }
+        }
+      } catch (error) {
+        console.error('本地存储失败:', error);
       }
-
-      // 创建新用户
-      const newUser = {
-        id: this.generateUserId(),
-        username,
-        email,
-        password: this.hashPassword(password),
-        createdAt: new Date().toISOString(),
-        role
-      };
-
-      users.push(newUser);
-      localStorage.setItem('narrative_ai_users', JSON.stringify(users));
-      console.log('💾 用户已注册到本地存储');
-      return true;
     }
 
-    return false;
+    // 3. 如果云端失败但本地成功，启动后台同步
+    if (!registeredInCloud && registeredLocally) {
+      this.scheduleBackgroundSync();
+    }
+
+    return registeredInCloud || registeredLocally;
   }
 
   // 用户登录 - 支持邮箱或用户名
@@ -449,6 +476,187 @@ export class CloudAuthService {
     }
 
     return false;
+  }
+
+  // 后台同步调度器
+  private scheduleBackgroundSync(): void {
+    // 立即尝试同步一次
+    setTimeout(() => this.attemptBackgroundSync(), 1000);
+    
+    // 设置定期同步（每30秒检查一次）
+    if (typeof window !== 'undefined') {
+      const existingInterval = parseInt(localStorage.getItem('sync_interval_id') || '0');
+      if (existingInterval) {
+        clearInterval(existingInterval);
+      }
+      
+      const intervalId = setInterval(() => this.attemptBackgroundSync(), 30000);
+      localStorage.setItem('sync_interval_id', intervalId.toString());
+    }
+  }
+
+  // 尝试后台同步
+  private async attemptBackgroundSync(): Promise<void> {
+    try {
+      const hasPendingSync = localStorage.getItem('has_pending_sync');
+      if (!hasPendingSync) return;
+
+      const supabaseAvailable = await this.checkSupabaseAvailability();
+      if (!supabaseAvailable) return;
+
+      console.log('🔄 尝试后台同步未同步的用户...');
+
+      const usersData = localStorage.getItem('narrative_ai_users');
+      const users = usersData ? JSON.parse(usersData) : [];
+      
+      const unsyncedUsers = users.filter((user: any) => !user.syncedToCloud);
+      
+      if (unsyncedUsers.length === 0) {
+        localStorage.removeItem('has_pending_sync');
+        return;
+      }
+
+      let syncedCount = 0;
+      for (const user of unsyncedUsers) {
+        try {
+          // 检查用户是否已存在于云端
+          const existsInCloud = await supabaseService.isEmailExists(user.email);
+          if (existsInCloud) {
+            // 标记为已同步
+            user.syncedToCloud = true;
+            syncedCount++;
+            continue;
+          }
+
+          // 创建到云端
+          const result = await supabaseService.createUser({
+            username: user.username,
+            email: user.email,
+            password_hash: user.password,
+            role: user.role || 'user'
+          });
+
+          if (result) {
+            user.syncedToCloud = true;
+            syncedCount++;
+            console.log(`✅ 用户 ${user.email} 已同步到云端`);
+          }
+        } catch (error) {
+          console.error(`同步用户 ${user.email} 失败:`, error);
+        }
+      }
+
+      if (syncedCount > 0) {
+        // 更新本地存储
+        localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+        console.log(`🎉 后台同步完成，共同步 ${syncedCount} 个用户`);
+        
+        // 检查是否还有未同步的用户
+        const stillPending = users.some((user: any) => !user.syncedToCloud);
+        if (!stillPending) {
+          localStorage.removeItem('has_pending_sync');
+          
+          // 清除定时器
+          const intervalId = localStorage.getItem('sync_interval_id');
+          if (intervalId) {
+            clearInterval(parseInt(intervalId));
+            localStorage.removeItem('sync_interval_id');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('后台同步失败:', error);
+    }
+  }
+
+  // 手动触发同步
+  async manualSync(): Promise<{ success: number; failed: number }> {
+    const usersData = localStorage.getItem('narrative_ai_users');
+    const users = usersData ? JSON.parse(usersData) : [];
+    
+    const unsyncedUsers = users.filter((user: any) => !user.syncedToCloud);
+    
+    if (unsyncedUsers.length === 0) {
+      return { success: 0, failed: 0 };
+    }
+
+    const supabaseAvailable = await this.checkSupabaseAvailability();
+    if (!supabaseAvailable) {
+      return { success: 0, failed: unsyncedUsers.length };
+    }
+
+    let success = 0;
+    let failed = 0;
+
+    for (const user of unsyncedUsers) {
+      try {
+        const result = await supabaseService.createUser({
+          username: user.username,
+          email: user.email,
+          password_hash: user.password,
+          role: user.role || 'user'
+        });
+
+        if (result) {
+          user.syncedToCloud = true;
+          success++;
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        failed++;
+      }
+    }
+
+    // 更新本地存储
+    localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+    
+    if (success > 0) {
+      const stillPending = users.some((user: any) => !user.syncedToCloud);
+      if (!stillPending) {
+        localStorage.removeItem('has_pending_sync');
+      }
+    }
+
+    return { success, failed };
+  }
+
+  // 获取待同步用户数量
+  getPendingSyncCount(): number {
+    if (typeof window === 'undefined') return 0;
+    
+    const usersData = localStorage.getItem('narrative_ai_users');
+    const users = usersData ? JSON.parse(usersData) : [];
+    
+    return users.filter((user: any) => !user.syncedToCloud).length;
+  }
+
+  // 获取同步状态详情
+  getSyncStatus(): {
+    pendingCount: number;
+    totalLocalUsers: number;
+    hasPendingSync: boolean;
+    lastSyncTime: string | null;
+  } {
+    if (typeof window === 'undefined') {
+      return {
+        pendingCount: 0,
+        totalLocalUsers: 0,
+        hasPendingSync: false,
+        lastSyncTime: null
+      };
+    }
+    
+    const usersData = localStorage.getItem('narrative_ai_users');
+    const users = usersData ? JSON.parse(usersData) : [];
+    const pendingCount = users.filter((user: any) => !user.syncedToCloud).length;
+    
+    return {
+      pendingCount,
+      totalLocalUsers: users.length,
+      hasPendingSync: pendingCount > 0,
+      lastSyncTime: localStorage.getItem('last_sync_time')
+    };
   }
 
   // 重置Supabase连接状态
