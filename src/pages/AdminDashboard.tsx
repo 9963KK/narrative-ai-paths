@@ -16,11 +16,14 @@ import {
   Shield,
   TrendingUp,
   Calendar,
-  Cpu
+  Cpu,
+  Home
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard: React.FC = () => {
   const { user, isGuest } = useAuth();
+  const navigate = useNavigate();
   const [userSummaries, setUserSummaries] = useState<UserTokenSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalStats, setTotalStats] = useState({
