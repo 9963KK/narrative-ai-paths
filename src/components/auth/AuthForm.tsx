@@ -9,6 +9,8 @@ import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '@/services/authService';
 
 const registerSchema = z.object({
   username: z.string().min(3, '用户名至少需要3个字符').max(20, '用户名不能超过20个字符'),
@@ -40,6 +42,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('login');
+  const navigate = useNavigate();
 
   const {
     register: registerForm,
@@ -65,7 +68,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     
     try {
       const success = await onLogin(data.emailOrUsername, data.password);
-      if (!success) {
+      if (success) {
+        // 登录成功后，检查是否为管理员
+        const currentUser = authService.getCurrentUser();
+        if (currentUser && currentUser.role === 'admin') {
+          navigate('/admin');
+        }
+        // 普通用户会由ProtectedRoute正常处理
+      } else {
         setError('用户名/邮箱或密码错误');
       }
     } catch (err) {
