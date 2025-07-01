@@ -15,7 +15,14 @@ export class UnifiedAuthService {
 
   // 检查Supabase连接
   private async checkSupabaseConnection(): Promise<boolean> {
-    if (this.supabaseConnected !== null && isProduction) {
+    // 开发环境直接返回false，不尝试连接Supabase
+    if (!isProduction) {
+      this.supabaseConnected = false;
+      return false;
+    }
+
+    // 生产环境必须连接Supabase
+    if (this.supabaseConnected !== null) {
       return this.supabaseConnected;
     }
 
@@ -23,20 +30,14 @@ export class UnifiedAuthService {
       const isConnected = await supabaseService.testConnection();
       this.supabaseConnected = isConnected;
       
-      if (isProduction && !isConnected) {
+      if (!isConnected) {
         throw new Error('生产环境必须连接Supabase数据库');
       }
       
       return isConnected;
     } catch (error) {
-      if (isProduction) {
-        console.error('❌ 生产环境Supabase连接失败:', error);
-        throw error;
-      } else {
-        console.warn('⚠️ 开发环境Supabase连接失败，使用本地存储:', error);
-        this.supabaseConnected = false;
-        return false;
-      }
+      console.error('❌ 生产环境Supabase连接失败:', error);
+      throw error;
     }
   }
 
@@ -69,10 +70,10 @@ export class UnifiedAuthService {
 
   // 用户注册
   async register(username: string, email: string, password: string, role: 'user' | 'admin' = 'user'): Promise<boolean> {
-    const isConnected = await this.checkSupabaseConnection();
-    
-    if (isProduction || isConnected) {
-      // 生产环境或有Supabase连接时，强制使用Supabase
+    if (isProduction) {
+      // 生产环境使用Supabase
+      const isConnected = await this.checkSupabaseConnection();
+      
       try {
         const emailExists = await supabaseService.isEmailExists(email);
         const usernameExists = await supabaseService.isUsernameExists(username);
@@ -89,19 +90,16 @@ export class UnifiedAuthService {
         });
 
         if (user) {
-          console.log('✅ 用户已注册到Supabase');
+          console.log('✅ 用户已注册到Supabase（生产环境）');
           return true;
         }
         return false;
       } catch (error) {
         console.error('Supabase注册失败:', error);
-        if (isProduction) {
-          throw error; // 生产环境必须成功
-        }
-        return false;
+        throw error; // 生产环境必须成功
       }
     } else {
-      // 开发环境且无Supabase连接，使用本地存储
+      // 开发环境使用本地存储
       const users = this.getLocalUsers();
       
       const existingUser = users.find((user: any) => 
@@ -129,10 +127,10 @@ export class UnifiedAuthService {
 
   // 用户登录
   async login(emailOrUsername: string, password: string): Promise<AuthUser | null> {
-    const isConnected = await this.checkSupabaseConnection();
-    
-    if (isProduction || isConnected) {
-      // 生产环境或有Supabase连接时，从Supabase验证
+    if (isProduction) {
+      // 生产环境使用Supabase
+      const isConnected = await this.checkSupabaseConnection();
+      
       try {
         const user = await supabaseService.findUserByEmailOrUsername(emailOrUsername);
         
@@ -146,19 +144,16 @@ export class UnifiedAuthService {
           };
 
           localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
-          console.log('✅ Supabase登录成功');
+          console.log('✅ Supabase登录成功（生产环境）');
           return authUser;
         }
         return null;
       } catch (error) {
         console.error('Supabase登录失败:', error);
-        if (isProduction) {
-          throw error; // 生产环境必须成功
-        }
-        return null;
+        throw error; // 生产环境必须成功
       }
     } else {
-      // 开发环境且无Supabase连接，使用本地存储
+      // 开发环境使用本地存储
       const users = this.getLocalUsers();
       
       const user = users.find((u: any) => 
@@ -232,45 +227,41 @@ export class UnifiedAuthService {
 
   // 创建默认管理员账户
   async createDefaultAdmin(): Promise<boolean> {
-    try {
-      const isConnected = await this.checkSupabaseConnection();
-      
-      if (isProduction || isConnected) {
-        // 使用Supabase创建管理员
+    if (isProduction) {
+      // 生产环境使用Supabase
+      try {
+        const isConnected = await this.checkSupabaseConnection();
         const success = await supabaseService.createDefaultAdmin();
         if (success) {
-          console.log('🔑 默认管理员账户已创建（Supabase）');
+          console.log('🔑 默认管理员账户已创建（Supabase生产环境）');
           return true;
         }
         return false;
-      } else {
-        // 开发环境使用本地存储
-        const users = this.getLocalUsers();
-        const existingAdmin = users.find((user: any) => user.username === 'admin');
-        if (existingAdmin) {
-          return false;
-        }
-
-        const adminUser = {
-          id: 'admin_' + Date.now(),
-          username: 'admin',
-          email: 'admin@narrative-ai.com',
-          password: this.hashPassword('AINOVEL@cjh180498'),
-          createdAt: new Date().toISOString(),
-          role: 'admin'
-        };
-
-        users.push(adminUser);
-        this.saveLocalUsers(users);
-        console.log('🔑 默认管理员账户已创建（本地存储）');
-        return true;
-      }
-    } catch (error) {
-      console.error('创建默认管理员失败:', error);
-      if (isProduction) {
+      } catch (error) {
+        console.error('创建默认管理员失败:', error);
         throw error;
       }
-      return false;
+    } else {
+      // 开发环境使用本地存储
+      const users = this.getLocalUsers();
+      const existingAdmin = users.find((user: any) => user.username === 'admin');
+      if (existingAdmin) {
+        return false;
+      }
+
+      const adminUser = {
+        id: 'admin_' + Date.now(),
+        username: 'admin',
+        email: 'admin@narrative-ai.com',
+        password: this.hashPassword('AINOVEL@cjh180498'),
+        createdAt: new Date().toISOString(),
+        role: 'admin'
+      };
+
+      users.push(adminUser);
+      this.saveLocalUsers(users);
+      console.log('🔑 默认管理员账户已创建（开发环境本地存储）');
+      return true;
     }
   }
 
@@ -280,19 +271,17 @@ export class UnifiedAuthService {
       return null;
     }
 
-    try {
-      const isConnected = await this.checkSupabaseConnection();
-      
-      if (isProduction || isConnected) {
+    if (isProduction) {
+      // 生产环境使用Supabase
+      try {
+        const isConnected = await this.checkSupabaseConnection();
         return await supabaseService.getAllUsers();
-      } else {
-        return this.getLocalUsers();
-      }
-    } catch (error) {
-      console.error('获取所有用户失败:', error);
-      if (isProduction) {
+      } catch (error) {
+        console.error('获取所有用户失败:', error);
         throw error;
       }
+    } else {
+      // 开发环境使用本地存储
       return this.getLocalUsers();
     }
   }
@@ -304,10 +293,11 @@ export class UnifiedAuthService {
       return false;
     }
 
-    try {
-      const isConnected = await this.checkSupabaseConnection();
-      
-      if (isProduction || isConnected) {
+    if (isProduction) {
+      // 生产环境使用Supabase
+      try {
+        const isConnected = await this.checkSupabaseConnection();
+        
         // 检查新邮箱和用户名是否已被其他用户使用
         if (updates.email && updates.email !== currentUser.email) {
           const emailExists = await supabaseService.isEmailExists(updates.email, currentUser.id);
@@ -326,37 +316,34 @@ export class UnifiedAuthService {
           return true;
         }
         return false;
-      } else {
-        // 开发环境本地存储更新
-        const users = this.getLocalUsers();
-        const userIndex = users.findIndex((u: any) => u.id === currentUser.id);
-        
-        if (userIndex === -1) return false;
-
-        // 检查重复
-        if (updates.email && updates.email !== currentUser.email) {
-          const emailExists = users.some((u: any) => u.email === updates.email && u.id !== currentUser.id);
-          if (emailExists) return false;
-        }
-
-        if (updates.username && updates.username !== currentUser.username) {
-          const usernameExists = users.some((u: any) => u.username === updates.username && u.id !== currentUser.id);
-          if (usernameExists) return false;
-        }
-
-        users[userIndex] = { ...users[userIndex], ...updates };
-        this.saveLocalUsers(users);
-
-        const updatedAuthUser = { ...currentUser, ...updates };
-        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedAuthUser));
-        return true;
-      }
-    } catch (error) {
-      console.error('更新用户信息失败:', error);
-      if (isProduction) {
+      } catch (error) {
+        console.error('更新用户信息失败:', error);
         throw error;
       }
-      return false;
+    } else {
+      // 开发环境使用本地存储
+      const users = this.getLocalUsers();
+      const userIndex = users.findIndex((u: any) => u.id === currentUser.id);
+      
+      if (userIndex === -1) return false;
+
+      // 检查重复
+      if (updates.email && updates.email !== currentUser.email) {
+        const emailExists = users.some((u: any) => u.email === updates.email && u.id !== currentUser.id);
+        if (emailExists) return false;
+      }
+
+      if (updates.username && updates.username !== currentUser.username) {
+        const usernameExists = users.some((u: any) => u.username === updates.username && u.id !== currentUser.id);
+        if (usernameExists) return false;
+      }
+
+      users[userIndex] = { ...users[userIndex], ...updates };
+      this.saveLocalUsers(users);
+
+      const updatedAuthUser = { ...currentUser, ...updates };
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedAuthUser));
+      return true;
     }
   }
 
@@ -367,31 +354,29 @@ export class UnifiedAuthService {
       return false;
     }
 
-    try {
-      const isConnected = await this.checkSupabaseConnection();
-      
-      if (isProduction || isConnected) {
+    if (isProduction) {
+      // 生产环境使用Supabase
+      try {
+        const isConnected = await this.checkSupabaseConnection();
         const user = await supabaseService.findUserById(currentUser.id);
         
         if (user && this.verifyPassword(currentPassword, user.password_hash)) {
           return await supabaseService.updateUserPassword(currentUser.id, this.hashPassword(newPassword));
         }
         return false;
-      } else {
-        const users = this.getLocalUsers();
-        const user = users.find((u: any) => u.id === currentUser.id);
-        
-        if (user && this.verifyPassword(currentPassword, user.password)) {
-          user.password = this.hashPassword(newPassword);
-          this.saveLocalUsers(users);
-          return true;
-        }
-        return false;
-      }
-    } catch (error) {
-      console.error('更改密码失败:', error);
-      if (isProduction) {
+      } catch (error) {
+        console.error('更改密码失败:', error);
         throw error;
+      }
+    } else {
+      // 开发环境使用本地存储
+      const users = this.getLocalUsers();
+      const user = users.find((u: any) => u.id === currentUser.id);
+      
+      if (user && this.verifyPassword(currentPassword, user.password)) {
+        user.password = this.hashPassword(newPassword);
+        this.saveLocalUsers(users);
+        return true;
       }
       return false;
     }
@@ -404,29 +389,27 @@ export class UnifiedAuthService {
       return false;
     }
 
-    try {
-      const isConnected = await this.checkSupabaseConnection();
-      
-      if (isProduction || isConnected) {
+    if (isProduction) {
+      // 生产环境使用Supabase
+      try {
+        const isConnected = await this.checkSupabaseConnection();
         const success = await supabaseService.deleteUser(currentUser.id);
         if (success) {
           this.logout();
           return true;
         }
         return false;
-      } else {
-        const users = this.getLocalUsers();
-        const filteredUsers = users.filter((u: any) => u.id !== currentUser.id);
-        this.saveLocalUsers(filteredUsers);
-        this.logout();
-        return true;
-      }
-    } catch (error) {
-      console.error('删除账户失败:', error);
-      if (isProduction) {
+      } catch (error) {
+        console.error('删除账户失败:', error);
         throw error;
       }
-      return false;
+    } else {
+      // 开发环境使用本地存储
+      const users = this.getLocalUsers();
+      const filteredUsers = users.filter((u: any) => u.id !== currentUser.id);
+      this.saveLocalUsers(filteredUsers);
+      this.logout();
+      return true;
     }
   }
 
@@ -436,13 +419,20 @@ export class UnifiedAuthService {
     supabaseConnected: boolean;
     storageMode: 'supabase' | 'local';
   }> {
-    const supabaseConnected = await this.checkSupabaseConnection();
-    
-    return {
-      isProduction,
-      supabaseConnected,
-      storageMode: (isProduction || supabaseConnected) ? 'supabase' : 'local'
-    };
+    if (isProduction) {
+      const supabaseConnected = await this.checkSupabaseConnection();
+      return {
+        isProduction,
+        supabaseConnected,
+        storageMode: 'supabase'
+      };
+    } else {
+      return {
+        isProduction,
+        supabaseConnected: false,
+        storageMode: 'local'
+      };
+    }
   }
 }
 
