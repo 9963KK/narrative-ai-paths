@@ -3,8 +3,24 @@ import { authService, AuthUser } from '@/services/authService';
 import { cloudAuthService } from '@/services/cloudAuthService';
 import { userStorage } from '@/services/userStorage';
 
-// 配置是否使用云端存储（用户认证数据）
-const USE_CLOUD_STORAGE = true;
+// 智能检测是否使用云端存储
+const USE_CLOUD_STORAGE = (() => {
+  // 1. 检查是否在生产环境（Vercel部署时）
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return true; // 生产环境使用云端存储
+  }
+  
+  // 2. 检查是否有KV环境变量（手动配置云端存储）
+  if (typeof process !== 'undefined' && (process.env.KV_REST_API_URL || process.env.KV_REST_API_TOKEN)) {
+    return true; // 有KV配置时使用云端存储
+  }
+  
+  // 3. 默认本地开发使用localStorage
+  return false;
+})();
+
+console.log(`🔧 存储模式: ${USE_CLOUD_STORAGE ? '云端存储 (Vercel KV)' : '本地存储 (localStorage)'}`);
+console.log(`🌐 环境: ${typeof window !== 'undefined' ? `${window.location.hostname}` : '服务端'}`);
 
 interface AuthContextType {
   user: AuthUser | null;

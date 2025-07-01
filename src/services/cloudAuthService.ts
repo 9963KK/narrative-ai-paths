@@ -5,14 +5,27 @@ let kv: any = null;
 const initVercelKV = async () => {
   try {
     // 检查是否有Vercel KV环境变量
-    if (process.env.KV_REST_API_URL || process.env.REDIS_URL) {
+    const kvUrl = process.env.KV_REST_API_URL;
+    const kvToken = process.env.KV_REST_API_TOKEN;
+    const redisUrl = process.env.REDIS_URL;
+    
+    if (kvUrl && kvToken) {
+      console.log('🔑 检测到Vercel KV环境变量');
       const { kv: vercelKV } = await import('@vercel/kv');
       kv = vercelKV;
-      console.log('✅ Vercel KV已连接');
+      console.log('✅ Vercel KV已连接（使用REST API）');
       return kv;
+    } else if (redisUrl) {
+      console.log('🔑 检测到Redis URL环境变量');
+      const { kv: vercelKV } = await import('@vercel/kv');
+      kv = vercelKV;
+      console.log('✅ Vercel KV已连接（使用Redis URL）');
+      return kv;
+    } else {
+      console.log('📍 未检测到KV环境变量，将使用本地存储');
     }
   } catch (error) {
-    console.warn('⚠️ Vercel KV连接失败，使用本地存储:', error);
+    console.warn('⚠️ Vercel KV连接失败，将使用本地存储:', error);
   }
   return null;
 };

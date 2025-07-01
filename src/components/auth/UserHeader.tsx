@@ -15,6 +15,7 @@ export const UserHeader: React.FC = () => {
 
   const handleLogout = () => {
     logout();
+    navigate('/'); // 退出登录后跳转到首页
   };
 
   const handleAdminDashboard = () => {
