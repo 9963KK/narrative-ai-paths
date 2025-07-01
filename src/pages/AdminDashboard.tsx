@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { tokenMonitor, UserTokenSummary } from '@/services/tokenMonitorService';
 import { authService, User } from '@/services/authService';
+import { cloudAuthService } from '@/services/cloudAuthService';
+
+// 配置是否使用云端存储（与AuthContext保持一致）
+const USE_CLOUD_STORAGE = true;
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -53,14 +57,17 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  const loadData = () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
       const summaries = tokenMonitor.getUserTokenSummaries();
       setUserSummaries(summaries);
       
+      // 根据配置选择认证服务
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      
       // 加载所有用户
-      const users = authService.getAllUsers();
+      const users = await currentAuthService.getAllUsers();
       if (users) {
         setAllUsers(users);
       }
@@ -116,25 +123,48 @@ const AdminDashboard: React.FC = () => {
     logout();
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (window.confirm('确定要删除这个用户吗？此操作无法撤销。')) {
-      const users = authService.getAllUsers();
-      if (users) {
-        const filteredUsers = users.filter(u => u.id !== userId);
-        localStorage.setItem('narrative_ai_users', JSON.stringify(filteredUsers));
-        loadData(); // 重新加载数据
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      
+      if (USE_CLOUD_STORAGE) {
+        // 使用云端存储的删除方法
+        const success = await cloudAuthService.deleteUser(userId);
+        if (success) {
+          loadData(); // 重新加载数据
+        }
+      } else {
+        // 使用本地存储的删除方法
+        const users = await currentAuthService.getAllUsers();
+        if (users) {
+          const filteredUsers = users.filter(u => u.id !== userId);
+          localStorage.setItem('narrative_ai_users', JSON.stringify(filteredUsers));
+          loadData(); // 重新加载数据
+        }
       }
     }
   };
 
-  const handleToggleUserRole = (userId: string, currentRole: string) => {
-    const users = authService.getAllUsers();
-    if (users) {
-      const userIndex = users.findIndex(u => u.id === userId);
-      if (userIndex !== -1) {
-        users[userIndex].role = currentRole === 'admin' ? 'user' : 'admin';
-        localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+  const handleToggleUserRole = async (userId: string, currentRole: string) => {
+    const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    
+    if (USE_CLOUD_STORAGE) {
+      // 使用云端存储的角色切换方法
+      const success = await cloudAuthService.toggleUserRole(userId, newRole);
+      if (success) {
         loadData(); // 重新加载数据
+      }
+    } else {
+      // 使用本地存储的角色切换方法
+      const users = await currentAuthService.getAllUsers();
+      if (users) {
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex !== -1) {
+          users[userIndex].role = newRole;
+          localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+          loadData(); // 重新加载数据
+        }
       }
     }
   };

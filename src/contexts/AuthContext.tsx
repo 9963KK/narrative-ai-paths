@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, AuthUser } from '@/services/authService';
+import { cloudAuthService } from '@/services/cloudAuthService';
 import { userStorage } from '@/services/userStorage';
+
+// 配置是否使用云端存储（用户认证数据）
+const USE_CLOUD_STORAGE = true;
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -27,19 +31,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 检查是否有已登录的用户
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-    
-    // 创建默认管理员账户
-    authService.createDefaultAdmin();
-    
-    setIsLoading(false);
+    const initAuth = async () => {
+      // 根据配置选择服务
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      
+      // 检查是否有已登录的用户
+      const currentUser = currentAuthService.getCurrentUser();
+      setUser(currentUser);
+      
+      // 创建默认管理员账户
+      await currentAuthService.createDefaultAdmin();
+      
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (emailOrUsername: string, password: string): Promise<boolean> => {
     try {
-      const loggedInUser = await authService.login(emailOrUsername, password);
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      const loggedInUser = await currentAuthService.login(emailOrUsername, password);
       if (loggedInUser) {
         setUser(loggedInUser);
         return true;
@@ -53,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (username: string, email: string, password: string): Promise<boolean> => {
     try {
-      return await authService.register(username, email, password);
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      return await currentAuthService.register(username, email, password);
     } catch (error) {
       console.error('Register error:', error);
       return false;
@@ -61,7 +74,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    const currentUser = authService.getCurrentUser();
+    const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+    const currentUser = currentAuthService.getCurrentUser();
     
     // 如果是游客用户，清理临时数据
     if (currentUser?.isGuest) {
@@ -69,15 +83,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🗑️ 游客模式数据已清理');
     }
     
-    authService.logout();
+    currentAuthService.logout();
     setUser(null);
   };
 
   const updateUser = async (updates: Partial<Pick<AuthUser, 'username' | 'email'>>): Promise<boolean> => {
     try {
-      const success = await authService.updateUser(updates);
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      const success = await currentAuthService.updateUser(updates);
       if (success) {
-        const updatedUser = authService.getCurrentUser();
+        const updatedUser = currentAuthService.getCurrentUser();
         setUser(updatedUser);
         return true;
       }
@@ -90,7 +105,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
-      return await authService.changePassword(currentPassword, newPassword);
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      return await currentAuthService.changePassword(currentPassword, newPassword);
     } catch (error) {
       console.error('Change password error:', error);
       return false;
@@ -99,7 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const deleteAccount = async (): Promise<boolean> => {
     try {
-      const success = await authService.deleteAccount();
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      const success = await currentAuthService.deleteAccount();
       if (success) {
         setUser(null);
         return true;
@@ -113,7 +130,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginAsGuest = async (): Promise<boolean> => {
     try {
-      const guestUser = await authService.loginAsGuest();
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      const guestUser = await currentAuthService.loginAsGuest();
       setUser(guestUser);
       return true;
     } catch (error) {
@@ -124,19 +142,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const registerFromGuest = async (username: string, email: string, password: string): Promise<boolean> => {
     try {
-      const currentUser = authService.getCurrentUser();
+      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
+      const currentUser = currentAuthService.getCurrentUser();
       if (!currentUser?.isGuest) {
         return false;
       }
 
       // 注册新用户
-      const success = await authService.register(username, email, password);
+      const success = await currentAuthService.register(username, email, password);
       if (!success) {
         return false;
       }
 
       // 登录新用户
-      const newUser = await authService.login(email, password);
+      const newUser = await currentAuthService.login(email, password);
       if (!newUser) {
         return false;
       }
