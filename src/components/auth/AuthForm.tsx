@@ -130,13 +130,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
         <CardContent className="flex-1 flex flex-col justify-between">
           <div className="flex-1 flex flex-col">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login">登录</TabsTrigger>
-                <TabsTrigger value="register">注册</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 transition-all duration-200">
+                <TabsTrigger value="login" className="transition-all duration-200 ease-out">登录</TabsTrigger>
+                <TabsTrigger value="register" className="transition-all duration-200 ease-out">注册</TabsTrigger>
               </TabsList>
               
               {error && (
-                <Alert className="mb-4" variant="destructive">
+                <Alert className="mb-4 animate-in slide-in-from-top-2 fade-in-0 duration-300" variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -144,7 +144,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
               <div className="flex-1 relative">
                 <TabsContent 
                   value="login" 
-                  className="absolute inset-0 space-y-4 animate-in fade-in-50 duration-200 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-50"
+                  className={`absolute inset-0 space-y-4 transition-all duration-300 ease-out ${
+                    activeTab === 'login' 
+                      ? 'opacity-100 translate-x-0 scale-100' 
+                      : 'opacity-0 translate-x-4 scale-95 pointer-events-none'
+                  }`}
                 >
               <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
@@ -202,7 +206,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
 
                 <TabsContent 
                   value="register" 
-                  className="absolute inset-0 space-y-4 animate-in fade-in-50 duration-200 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-50"
+                  className={`absolute inset-0 space-y-4 transition-all duration-300 ease-out ${
+                    activeTab === 'register' 
+                      ? 'opacity-100 translate-x-0 scale-100' 
+                      : 'opacity-0 -translate-x-4 scale-95 pointer-events-none'
+                  }`}
                 >
               <form onSubmit={handleRegisterSubmit(handleRegister)} className="space-y-4">
                 <div className="space-y-2">
