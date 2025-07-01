@@ -25,9 +25,6 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      'process.env.REDIS_URL': JSON.stringify(env.REDIS_URL),
-      'process.env.KV_REST_API_URL': JSON.stringify(env.KV_REST_API_URL),
-      'process.env.KV_REST_API_TOKEN': JSON.stringify(env.KV_REST_API_TOKEN),
       'process.env.NODE_ENV': JSON.stringify(mode),
       global: "globalThis",
     },

@@ -10,25 +10,28 @@ const USE_CLOUD_STORAGE = (() => {
     return true; // 生产环境使用云端存储
   }
   
-  // 2. 检查是否有Redis/KV环境变量（手动配置云端存储）
-  if (typeof process !== 'undefined' && (process.env.REDIS_URL || process.env.KV_REST_API_URL || process.env.KV_REST_API_TOKEN)) {
-    return true; // 有Redis/KV配置时使用云端存储
+  // 2. 检查是否有Supabase环境变量（手动配置云端存储）
+  if (typeof window !== 'undefined' && (
+    import.meta.env.VITE_SUPABASE_URL || 
+    import.meta.env.VITE_SUPABASE_ANON_KEY
+  )) {
+    return true; // 有Supabase配置时使用云端存储
   }
   
   // 3. 默认本地开发使用localStorage
   return false;
 })();
 
-console.log(`🔧 存储模式: ${USE_CLOUD_STORAGE ? '云端存储 (Redis)' : '本地存储 (localStorage)'}`);
+console.log(`🔧 存储模式: ${USE_CLOUD_STORAGE ? '云端存储 (Supabase)' : '本地存储 (localStorage)'}`);
 console.log(`🌐 环境: ${typeof window !== 'undefined' ? `${window.location.hostname}` : '服务端'}`);
 
-// 在生产环境中提醒配置Redis
+// 在生产环境中提醒配置Supabase
 if (typeof window !== 'undefined' && 
     window.location.hostname !== 'localhost' && 
     window.location.hostname !== '127.0.0.1' && 
     USE_CLOUD_STORAGE) {
   console.log('🚀 生产环境检测到，准备使用云端存储');
-  console.log('⚠️ 如果看到Redis连接失败，请在Vercel Dashboard配置REDIS_URL环境变量');
+  console.log('⚠️ 如果看到Supabase连接失败，请在Vercel Dashboard配置Supabase环境变量');
 }
 
 interface AuthContextType {
