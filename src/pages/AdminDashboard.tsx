@@ -11,9 +11,9 @@ const USE_CLOUD_STORAGE = (() => {
     return true; // 生产环境使用云端存储
   }
   
-  // 2. 检查是否有KV环境变量（手动配置云端存储）
-  if (typeof process !== 'undefined' && (process.env.KV_REST_API_URL || process.env.KV_REST_API_TOKEN)) {
-    return true; // 有KV配置时使用云端存储
+  // 2. 检查是否有Redis/KV环境变量（手动配置云端存储）
+  if (typeof process !== 'undefined' && (process.env.REDIS_URL || process.env.KV_REST_API_URL || process.env.KV_REST_API_TOKEN)) {
+    return true; // 有Redis/KV配置时使用云端存储
   }
   
   // 3. 默认本地开发使用localStorage

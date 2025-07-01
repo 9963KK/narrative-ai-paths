@@ -1,31 +1,29 @@
-// 动态导入Vercel KV（只在有环境变量时使用）
-let kv: any = null;
+// 动态导入Redis客户端（只在有环境变量时使用）
+let redisClient: any = null;
 
-// 尝试初始化Vercel KV
-const initVercelKV = async () => {
+// 尝试初始化Redis连接
+const initRedisClient = async () => {
   try {
-    // 检查是否有Vercel KV环境变量
-    const kvUrl = process.env.KV_REST_API_URL;
-    const kvToken = process.env.KV_REST_API_TOKEN;
-    const redisUrl = process.env.REDIS_URL;
+    // 检查是否有Redis环境变量
+    const redisUrl = process.env.REDIS_URL || process.env.KV_REST_API_URL;
     
-    if (kvUrl && kvToken) {
-      console.log('🔑 检测到Vercel KV环境变量');
-      const { kv: vercelKV } = await import('@vercel/kv');
-      kv = vercelKV;
-      console.log('✅ Vercel KV已连接（使用REST API）');
-      return kv;
-    } else if (redisUrl) {
+    if (redisUrl) {
       console.log('🔑 检测到Redis URL环境变量');
-      const { kv: vercelKV } = await import('@vercel/kv');
-      kv = vercelKV;
-      console.log('✅ Vercel KV已连接（使用Redis URL）');
-      return kv;
+      const { createClient } = await import('redis');
+      
+      redisClient = createClient({ url: redisUrl });
+      
+      // 连接到Redis
+      await redisClient.connect();
+      
+      console.log('✅ Redis连接成功');
+      return redisClient;
     } else {
-      console.log('📍 未检测到KV环境变量，将使用本地存储');
+      console.log('📍 未检测到Redis环境变量，将使用本地存储');
     }
   } catch (error) {
-    console.warn('⚠️ Vercel KV连接失败，将使用本地存储:', error);
+    console.warn('⚠️ Redis连接失败，将使用本地存储:', error);
+    redisClient = null;
   }
   return null;
 };
@@ -52,36 +50,35 @@ const USERS_STORAGE_KEY = 'narrative_ai_users';
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 
 export class CloudAuthService {
-  private kvClient: any = null;
-  private kvInitialized = false;
+  private redisInitialized = false;
 
-  // 初始化KV连接
-  private async getKVClient() {
-    if (this.kvInitialized) {
-      return this.kvClient;
+  // 初始化Redis连接
+  private async getRedisClient() {
+    if (this.redisInitialized) {
+      return redisClient;
     }
 
     try {
-      this.kvClient = await initVercelKV();
-      this.kvInitialized = true;
-      return this.kvClient;
+      await initRedisClient();
+      this.redisInitialized = true;
+      return redisClient;
     } catch (error) {
-      console.warn('⚠️ KV客户端初始化失败:', error);
-      this.kvInitialized = true;
+      console.warn('⚠️ Redis客户端初始化失败:', error);
+      this.redisInitialized = true;
       return null;
     }
   }
 
   // 获取所有用户
   private async getUsers(): Promise<User[]> {
-    const kvClient = await this.getKVClient();
+    const client = await this.getRedisClient();
     
-    if (kvClient) {
+    if (client) {
       try {
-        const usersData = await kvClient.get(USERS_STORAGE_KEY);
+        const usersData = await client.get(USERS_STORAGE_KEY);
         return usersData ? JSON.parse(usersData) : [];
       } catch (error) {
-        console.warn('⚠️ 从云端读取用户数据失败，使用本地存储:', error);
+        console.warn('⚠️ 从Redis读取用户数据失败，使用本地存储:', error);
       }
     }
     
@@ -96,15 +93,15 @@ export class CloudAuthService {
 
   // 保存用户到存储
   private async saveUsers(users: User[]): Promise<void> {
-    const kvClient = await this.getKVClient();
+    const client = await this.getRedisClient();
     
-    if (kvClient) {
+    if (client) {
       try {
-        await kvClient.set(USERS_STORAGE_KEY, JSON.stringify(users));
-        console.log('✅ 用户数据已保存到云端存储');
+        await client.set(USERS_STORAGE_KEY, JSON.stringify(users));
+        console.log('✅ 用户数据已保存到Redis云端存储');
         return;
       } catch (error) {
-        console.warn('⚠️ 保存用户数据到云端失败，使用本地存储:', error);
+        console.warn('⚠️ 保存用户数据到Redis失败，使用本地存储:', error);
       }
     }
     
@@ -371,11 +368,18 @@ export class CloudAuthService {
     return true;
   }
 
-  // 关闭KV连接（Vercel KV无需手动关闭连接）
+  // 关闭Redis连接
   async disconnect(): Promise<void> {
-    // Vercel KV 是无状态的，无需手动关闭连接
-    this.kvClient = null;
-    this.kvInitialized = false;
+    if (redisClient) {
+      try {
+        await redisClient.disconnect();
+        console.log('🔌 Redis连接已关闭');
+      } catch (error) {
+        console.warn('⚠️ 关闭Redis连接失败:', error);
+      }
+      redisClient = null;
+    }
+    this.redisInitialized = false;
   }
 }
 
