@@ -1,4 +1,5 @@
 import { ModelConfig } from '@/components/model-config/constants';
+import { userStorage } from './userStorage';
 
 const CONFIG_STORAGE_KEY = 'narrative-ai-model-config';
 const MULTI_CONFIG_STORAGE_KEY = 'narrative-ai-multi-configs';
@@ -36,7 +37,7 @@ export const saveModelConfig = (config: ModelConfig): void => {
       timestamp: Date.now() // 添加保存时间戳
     };
     
-    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(configToSave));
+    userStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(configToSave));
     console.log('✅ 模型配置已保存到本地存储');
   } catch (error) {
     console.error('❌ 保存配置失败:', error);
@@ -46,7 +47,7 @@ export const saveModelConfig = (config: ModelConfig): void => {
 // 从本地存储加载配置
 export const loadModelConfig = (): ModelConfig | null => {
   try {
-    const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+    const saved = userStorage.getItem(CONFIG_STORAGE_KEY);
     if (!saved) return null;
     
     const config = JSON.parse(saved);
@@ -66,13 +67,13 @@ export const loadModelConfig = (): ModelConfig | null => {
 
 // 检查是否有保存的配置
 export const hasSavedConfig = (): boolean => {
-  return localStorage.getItem(CONFIG_STORAGE_KEY) !== null;
+  return userStorage.getItem(CONFIG_STORAGE_KEY) !== null;
 };
 
 // 清除保存的配置
 export const clearSavedConfig = (): void => {
   try {
-    localStorage.removeItem(CONFIG_STORAGE_KEY);
+    userStorage.removeItem(CONFIG_STORAGE_KEY);
     console.log('✅ 已清除保存的配置');
   } catch (error) {
     console.error('❌ 清除配置失败:', error);
@@ -82,7 +83,7 @@ export const clearSavedConfig = (): void => {
 // 获取配置保存时间
 export const getConfigSaveTime = (): Date | null => {
   try {
-    const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+    const saved = userStorage.getItem(CONFIG_STORAGE_KEY);
     if (!saved) return null;
     
     const config = JSON.parse(saved);
@@ -123,7 +124,7 @@ export const saveProviderConfig = (provider: string, config: Partial<ModelConfig
       timestamp: Date.now()
     };
     
-    localStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
+    userStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
     console.log(`✅ ${provider} 配置已保存`);
   } catch (error) {
     console.error(`❌ 保存 ${provider} 配置失败:`, error);
@@ -177,7 +178,7 @@ export const clearProviderConfig = (provider: string): void => {
   try {
     const multiConfigs = loadMultiProviderConfigs();
     delete multiConfigs[provider];
-    localStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
+    userStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
     console.log(`✅ ${provider} 配置已清除`);
   } catch (error) {
     console.error(`❌ 清除 ${provider} 配置失败:`, error);
@@ -187,7 +188,7 @@ export const clearProviderConfig = (provider: string): void => {
 // 内部函数：加载所有供应商配置
 const loadMultiProviderConfigs = (): MultiProviderConfigs => {
   try {
-    const saved = localStorage.getItem(MULTI_CONFIG_STORAGE_KEY);
+    const saved = userStorage.getItem(MULTI_CONFIG_STORAGE_KEY);
     return saved ? JSON.parse(saved) : {};
   } catch (error) {
     console.error('❌ 加载多供应商配置失败:', error);

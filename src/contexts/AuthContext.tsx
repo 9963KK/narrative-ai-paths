@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, AuthUser } from '@/services/authService';
+import { userStorage } from '@/services/userStorage';
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (emailOrUsername: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
+  registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
@@ -55,6 +57,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    const currentUser = authService.getCurrentUser();
+    
+    // 如果是游客用户，清理临时数据
+    if (currentUser?.isGuest) {
+      userStorage.clearUserData();
+      console.log('🗑️ 游客模式数据已清理');
+    }
+    
     authService.logout();
     setUser(null);
   };
@@ -108,11 +118,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const registerFromGuest = async (username: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser?.isGuest) {
+        return false;
+      }
+
+      // 注册新用户
+      const success = await authService.register(username, email, password);
+      if (!success) {
+        return false;
+      }
+
+      // 登录新用户
+      const newUser = await authService.login(email, password);
+      if (!newUser) {
+        return false;
+      }
+
+      // 迁移游客数据到新用户
+      userStorage.migrateDataToUser(currentUser.id, newUser.id);
+      
+      setUser(newUser);
+      console.log('✅ 游客数据已迁移到新账户');
+      return true;
+    } catch (error) {
+      console.error('Register from guest error:', error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     login,
     register,
+    registerFromGuest,
     loginAsGuest,
     logout,
     updateUser,

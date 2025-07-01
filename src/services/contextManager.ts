@@ -1,4 +1,5 @@
 import { ModelConfig } from '@/components/model-config/constants';
+import { userStorage } from './userStorage';
 
 // 对话消息接口
 export interface ConversationMessage {
@@ -134,7 +135,7 @@ class ContextManager {
       existingContexts[contextId] = savedContext;
       
       // 一次性保存到本地存储
-      localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(existingContexts));
+      userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(existingContexts));
       
       console.log(`💾 故事上下文已保存: ${savedContext.title} (ID: ${contextId})`);
       return contextId;
@@ -166,7 +167,7 @@ class ContextManager {
       // 更新最后游玩时间
       context.lastPlayTime = new Date();
       savedContexts[contextId] = context;
-      localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+      userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
 
       console.log(`📂 故事上下文已加载: ${context.title}`);
       return context;
@@ -182,7 +183,7 @@ class ContextManager {
    */
   getSavedContexts(): SavedContextsList {
     try {
-      const data = localStorage.getItem(CONTEXTS_STORAGE_KEY);
+      const data = userStorage.getItem(CONTEXTS_STORAGE_KEY);
       if (!data) return {};
       
       const contexts = JSON.parse(data);
@@ -220,7 +221,7 @@ class ContextManager {
       const title = savedContexts[contextId].title;
       delete savedContexts[contextId];
       
-      localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+      userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
       console.log(`🗑️ 存档已删除: ${title}`);
       return true;
       
@@ -243,7 +244,7 @@ class ContextManager {
       }
 
       savedContexts[contextId].title = newTitle.trim();
-      localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+      userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
       
       console.log(`✏️ 存档已重命名: ${newTitle}`);
       return true;
@@ -438,7 +439,7 @@ class ContextManager {
       
       // 如果有变化，保存到localStorage
       if (hasChanges) {
-        localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+        userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
         console.log('✅ 存档清理和迁移完成');
       } else {
         console.log('✅ 没有发现需要清理的存档');
@@ -483,7 +484,7 @@ class ContextManager {
 
       const savedContexts = this.getSavedContexts();
       savedContexts[newId] = context;
-      localStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
+      userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(savedContexts));
 
       console.log(`📥 存档已导入: ${context.title}`);
       return newId;

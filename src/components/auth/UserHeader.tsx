@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { GuestToRegisterDialog } from './GuestToRegisterDialog';
 import { LogOut, User, Settings, UserPlus, AlertTriangle } from 'lucide-react';
 
 export const UserHeader: React.FC = () => {
@@ -60,10 +61,12 @@ export const UserHeader: React.FC = () => {
           
           {isGuest ? (
             <>
-              <DropdownMenuItem className="cursor-pointer text-blue-600">
-                <UserPlus className="mr-2 h-4 w-4" />
-                <span>注册账户以保存数据</span>
-              </DropdownMenuItem>
+              <GuestToRegisterDialog>
+                <DropdownMenuItem className="cursor-pointer text-blue-600" onSelect={(e) => e.preventDefault()}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span>注册账户以保存数据</span>
+                </DropdownMenuItem>
+              </GuestToRegisterDialog>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
