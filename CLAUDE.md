@@ -42,3 +42,16 @@
 - `vercel domains` - 管理域名
 - `vercel dns` - 管理 DNS 记录
 - `vercel alias` - 管理域名别名
+
+### 数据库管理
+- `vercel env pull .env.local` - 拉取数据库环境变量到本地
+- `vercel env add DATABASE_URL` - 添加数据库连接字符串
+- `vercel env add REDIS_URL` - 添加Redis连接字符串
+- `redis-cli -u $KV_REST_API_URL` - 使用Redis CLI连接Vercel KV
+- `psql $DATABASE_URL` - 使用psql连接Vercel Postgres
+
+### 数据库集成流程
+1. `vercel link` - 链接项目到Vercel
+2. 在Vercel Dashboard创建数据库（Redis/PostgreSQL）
+3. `vercel env pull .env.development.local` - 拉取数据库连接信息
+4. `npm i @vercel/postgres` 或 `npm i @vercel/kv` - 安装对应SDK
