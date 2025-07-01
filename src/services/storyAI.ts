@@ -1798,10 +1798,37 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             
             // 验证并转换选择项格式
             const validatedChoices = choices.map((choice, index) => {
+              // 从description中提取简短标题作为text
+              let choiceText = choice.text || choice.title || choice.action;
+              
+              if (!choiceText && choice.description) {
+                // 从description中提取前面部分作为标题
+                const desc = choice.description.toString();
+                if (desc.length > 10) {
+                  // 取前15个字符作为标题，在合适位置断开
+                  const shortText = desc.substring(0, 15);
+                  const commaIndex = shortText.lastIndexOf('，');
+                  const periodIndex = shortText.lastIndexOf('。');
+                  const breakIndex = Math.max(commaIndex, periodIndex);
+                  
+                  if (breakIndex > 5) {
+                    choiceText = desc.substring(0, breakIndex);
+                  } else {
+                    choiceText = shortText + '...';
+                  }
+                } else {
+                  choiceText = desc;
+                }
+              }
+              
+              if (!choiceText) {
+                choiceText = `选择${index + 1}`;
+              }
+              
               // 检查必需字段并进行格式转换
               const validatedChoice: Choice = {
                 id: choice.id || (index + 1),
-                text: choice.text || choice.title || "未知选择",
+                text: choiceText,
                 description: choice.description || "暂无描述",
                 consequences: choice.consequences || choice.impact || "后果未知",
                 difficulty: choice.difficulty || 3
