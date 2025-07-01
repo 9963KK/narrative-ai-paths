@@ -4,7 +4,12 @@ const CURRENT_USER_KEY = 'narrative_ai_current_user';
 const USERS_STORAGE_KEY = 'narrative_ai_users';
 
 // 检查是否为生产环境
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = import.meta.env.PROD || 
+                    import.meta.env.MODE === 'production' || 
+                    (typeof window !== 'undefined' && 
+                     window.location.hostname !== 'localhost' && 
+                     window.location.hostname !== '127.0.0.1' &&
+                     !window.location.hostname.includes('dev'));
 
 export interface AuthUser extends UserProfile {
   isGuest?: boolean;
@@ -127,34 +132,53 @@ export class UnifiedAuthService {
 
   // 用户登录
   async login(emailOrUsername: string, password: string): Promise<AuthUser | null> {
+    console.log('🔐 开始登录流程...');
+    console.log('🌍 环境检测:', isProduction ? '生产环境' : '开发环境');
+    console.log('👤 登录用户:', emailOrUsername);
+    
     if (isProduction) {
       // 生产环境使用Supabase
+      console.log('🔗 生产环境：连接Supabase...');
       const isConnected = await this.checkSupabaseConnection();
+      console.log('📡 Supabase连接状态:', isConnected);
       
       try {
+        console.log('🔍 查找用户:', emailOrUsername);
         const user = await supabaseService.findUserByEmailOrUsername(emailOrUsername);
+        console.log('👤 找到用户:', user ? user.username : '用户不存在');
         
-        if (user && this.verifyPassword(password, user.password_hash)) {
-          const authUser: AuthUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            created_at: user.created_at,
-            role: user.role
-          };
+        if (user) {
+          console.log('🔒 验证密码...');
+          const passwordValid = this.verifyPassword(password, user.password_hash);
+          console.log('✅ 密码验证结果:', passwordValid);
+          console.log('🔑 存储的哈希:', user.password_hash);
+          console.log('🔑 计算的哈希:', this.hashPassword(password));
+          
+          if (passwordValid) {
+            const authUser: AuthUser = {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              created_at: user.created_at,
+              role: user.role
+            };
 
-          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
-          console.log('✅ Supabase登录成功（生产环境）');
-          return authUser;
+            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
+            console.log('✅ Supabase登录成功（生产环境）');
+            return authUser;
+          }
         }
+        console.log('❌ 登录失败：用户不存在或密码错误');
         return null;
       } catch (error) {
-        console.error('Supabase登录失败:', error);
+        console.error('❌ Supabase登录失败:', error);
         throw error; // 生产环境必须成功
       }
     } else {
       // 开发环境使用本地存储
+      console.log('💾 开发环境：使用本地存储');
       const users = this.getLocalUsers();
+      console.log('👥 本地用户数量:', users.length);
       
       const user = users.find((u: any) => 
         (u.email === emailOrUsername || u.username === emailOrUsername) &&
@@ -174,6 +198,7 @@ export class UnifiedAuthService {
         console.log('✅ 本地存储登录成功（开发环境）');
         return authUser;
       }
+      console.log('❌ 本地登录失败：用户不存在或密码错误');
       return null;
     }
   }
