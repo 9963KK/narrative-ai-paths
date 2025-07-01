@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GuestToRegisterDialog } from './GuestToRegisterDialog';
-import { SyncStatusBadge } from '@/components/SyncStatusBadge';
+// 移除同步状态徽章，新系统不需要复杂的同步逻辑
 import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,10 +46,7 @@ export const UserHeader: React.FC = () => {
         )}
       </div>
       
-      <div className="flex items-center space-x-3">
-        {!isGuest && <SyncStatusBadge />}
-        
-        <DropdownMenu>
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
@@ -111,8 +108,7 @@ export const UserHeader: React.FC = () => {
             </>
           )}
         </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      </DropdownMenu>
     </div>
   );
 };

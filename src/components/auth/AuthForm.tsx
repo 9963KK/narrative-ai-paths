@@ -10,8 +10,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '@/services/authService';
-import { SyncNotification } from '@/components/SyncNotification';
+import { unifiedAuthService } from '@/services/unifiedAuthService';
+// 移除同步通知，因为新系统不需要复杂的同步逻辑
 
 const registerSchema = z.object({
   username: z.string().min(3, '用户名至少需要3个字符').max(20, '用户名不能超过20个字符'),
@@ -43,7 +43,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('login');
-  const [syncKey, setSyncKey] = useState(0); // 用于强制刷新同步状态
   const navigate = useNavigate();
 
   const {
@@ -97,8 +96,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
         resetRegister();
         setActiveTab('login');
         setError('');
-        // 注册成功后刷新同步状态，可能有新的待同步用户
-        handleSyncCompleted();
       } else {
         setError('注册失败，邮箱可能已被使用');
       }
@@ -132,18 +129,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     }
   };
 
-  // 同步完成后的回调，刷新同步状态
-  const handleSyncCompleted = () => {
-    setSyncKey(prev => prev + 1);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md space-y-4">
-        {/* 同步状态通知 */}
-        <SyncNotification key={syncKey} onSyncCompleted={handleSyncCompleted} />
-        
-        <Card className="min-h-[580px] flex flex-col">
+      <Card className="w-full max-w-md min-h-[580px] flex flex-col">
           <CardHeader className="space-y-1 flex-shrink-0">
             <CardTitle className="text-2xl text-center">叙事AI路径</CardTitle>
             <CardDescription className="text-center">
@@ -354,8 +342,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
             </Button>
           </div>
         </CardContent>
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 };
