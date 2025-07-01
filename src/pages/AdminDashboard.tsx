@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { tokenMonitor, UserTokenSummary } from '@/services/tokenMonitorService';
+import { authService, User } from '@/services/authService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,11 @@ import {
   TrendingUp,
   Calendar,
   Cpu,
-  LogOut
+  LogOut,
+  UserPlus,
+  Settings,
+  Trash2,
+  Edit
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +30,7 @@ const AdminDashboard: React.FC = () => {
   const { user, isGuest, logout } = useAuth();
   const navigate = useNavigate();
   const [userSummaries, setUserSummaries] = useState<UserTokenSummary[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalStats, setTotalStats] = useState({
     totalUsers: 0,
@@ -52,6 +58,12 @@ const AdminDashboard: React.FC = () => {
     try {
       const summaries = tokenMonitor.getUserTokenSummaries();
       setUserSummaries(summaries);
+      
+      // 加载所有用户
+      const users = authService.getAllUsers();
+      if (users) {
+        setAllUsers(users);
+      }
       
       // 计算总体统计
       const stats = summaries.reduce((acc, summary) => ({
@@ -102,6 +114,29 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (window.confirm('确定要删除这个用户吗？此操作无法撤销。')) {
+      const users = authService.getAllUsers();
+      if (users) {
+        const filteredUsers = users.filter(u => u.id !== userId);
+        localStorage.setItem('narrative_ai_users', JSON.stringify(filteredUsers));
+        loadData(); // 重新加载数据
+      }
+    }
+  };
+
+  const handleToggleUserRole = (userId: string, currentRole: string) => {
+    const users = authService.getAllUsers();
+    if (users) {
+      const userIndex = users.findIndex(u => u.id === userId);
+      if (userIndex !== -1) {
+        users[userIndex].role = currentRole === 'admin' ? 'user' : 'admin';
+        localStorage.setItem('narrative_ai_users', JSON.stringify(users));
+        loadData(); // 重新加载数据
+      }
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -182,8 +217,8 @@ const AdminDashboard: React.FC = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(totalStats.totalUsers)}</div>
-              <p className="text-xs text-muted-foreground">活跃用户</p>
+              <div className="text-2xl font-bold">{formatNumber(allUsers.length)}</div>
+              <p className="text-xs text-muted-foreground">注册用户</p>
             </CardContent>
           </Card>
 
@@ -221,88 +256,187 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* 详细数据表格 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              用户Token使用详情
-            </CardTitle>
-            <CardDescription>
-              用户的详细Token消耗统计和成本分析
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                加载中...
-              </div>
-            ) : userSummaries.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                暂无使用数据
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>用户</TableHead>
-                      <TableHead>角色</TableHead>
-                      <TableHead className="text-right">请求数</TableHead>
-                      <TableHead className="text-right">Token数</TableHead>
-                      <TableHead className="text-right">消费</TableHead>
-                      <TableHead>首次使用</TableHead>
-                      <TableHead>最后使用</TableHead>
-                      <TableHead>主要模型</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userSummaries.map((summary) => {
-                      // 找出最常用的模型
-                      let mostUsedModel = '';
-                      let maxTokens = 0;
-                      Object.entries(summary.modelBreakdown).forEach(([provider, models]) => {
-                        Object.entries(models).forEach(([model, stats]) => {
-                          if (stats.tokens > maxTokens) {
-                            maxTokens = stats.tokens;
-                            mostUsedModel = `${provider}/${model}`;
-                          }
-                        });
-                      });
+        {/* 标签页 */}
+        <Tabs defaultValue="token-usage" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="token-usage" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Token使用统计
+            </TabsTrigger>
+            <TabsTrigger value="user-management" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              用户管理
+            </TabsTrigger>
+          </TabsList>
 
-                      return (
-                        <TableRow key={summary.userId}>
-                          <TableCell className="font-medium">
-                            <div>
-                              <div>{summary.username}</div>
-                              <div className="text-xs text-gray-500">{summary.userId.slice(0, 8)}...</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{getRoleBadge(summary.role)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(summary.totalRequests)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(summary.totalTokens)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(summary.totalCost)}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-600">
-                            {formatDate(summary.firstUsage)}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-600">
-                            {formatDate(summary.lastUsage)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <Badge variant="outline">{mostUsedModel}</Badge>
-                          </TableCell>
+          {/* Token使用统计标签页 */}
+          <TabsContent value="token-usage">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  用户Token使用详情
+                </CardTitle>
+                <CardDescription>
+                  用户的详细Token消耗统计和成本分析
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                    加载中...
+                  </div>
+                ) : userSummaries.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    暂无使用数据
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>用户</TableHead>
+                          <TableHead>角色</TableHead>
+                          <TableHead className="text-right">请求数</TableHead>
+                          <TableHead className="text-right">Token数</TableHead>
+                          <TableHead className="text-right">消费</TableHead>
+                          <TableHead>首次使用</TableHead>
+                          <TableHead>最后使用</TableHead>
+                          <TableHead>主要模型</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {userSummaries.map((summary) => {
+                          // 找出最常用的模型
+                          let mostUsedModel = '';
+                          let maxTokens = 0;
+                          Object.entries(summary.modelBreakdown).forEach(([provider, models]) => {
+                            Object.entries(models).forEach(([model, stats]) => {
+                              if (stats.tokens > maxTokens) {
+                                maxTokens = stats.tokens;
+                                mostUsedModel = `${provider}/${model}`;
+                              }
+                            });
+                          });
+
+                          return (
+                            <TableRow key={summary.userId}>
+                              <TableCell className="font-medium">
+                                <div>
+                                  <div>{summary.username}</div>
+                                  <div className="text-xs text-gray-500">{summary.userId.slice(0, 8)}...</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{getRoleBadge(summary.role)}</TableCell>
+                              <TableCell className="text-right">{formatNumber(summary.totalRequests)}</TableCell>
+                              <TableCell className="text-right">{formatNumber(summary.totalTokens)}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(summary.totalCost)}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                {formatDate(summary.firstUsage)}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                {formatDate(summary.lastUsage)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <Badge variant="outline">{mostUsedModel}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 用户管理标签页 */}
+          <TabsContent value="user-management">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  用户管理
+                </CardTitle>
+                <CardDescription>
+                  管理系统中的所有用户账户
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                    加载中...
+                  </div>
+                ) : allUsers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    暂无用户数据
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>用户信息</TableHead>
+                          <TableHead>角色</TableHead>
+                          <TableHead>注册时间</TableHead>
+                          <TableHead>操作</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allUsers.map((userInfo) => (
+                          <TableRow key={userInfo.id}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <div className="font-semibold">{userInfo.username}</div>
+                                <div className="text-sm text-gray-500">{userInfo.email}</div>
+                                <div className="text-xs text-gray-400">{userInfo.id.slice(0, 12)}...</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {getRoleBadge(userInfo.role || 'user')}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {formatDate(userInfo.createdAt)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleToggleUserRole(userInfo.id, userInfo.role || 'user')}
+                                  className="text-blue-600 hover:bg-blue-50"
+                                >
+                                  <Settings className="h-3 w-3 mr-1" />
+                                  {userInfo.role === 'admin' ? '设为普通用户' : '设为管理员'}
+                                </Button>
+                                {userInfo.id !== user?.id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteUser(userInfo.id)}
+                                    className="text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-3 w-3 mr-1" />
+                                    删除
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
