@@ -19,8 +19,17 @@ const USE_CLOUD_STORAGE = (() => {
   return false;
 })();
 
-console.log(`🔧 存储模式: ${USE_CLOUD_STORAGE ? '云端存储 (Vercel KV)' : '本地存储 (localStorage)'}`);
+console.log(`🔧 存储模式: ${USE_CLOUD_STORAGE ? '云端存储 (Redis)' : '本地存储 (localStorage)'}`);
 console.log(`🌐 环境: ${typeof window !== 'undefined' ? `${window.location.hostname}` : '服务端'}`);
+
+// 在生产环境中提醒配置Redis
+if (typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' && 
+    USE_CLOUD_STORAGE) {
+  console.log('🚀 生产环境检测到，准备使用云端存储');
+  console.log('⚠️ 如果看到Redis连接失败，请在Vercel Dashboard配置REDIS_URL环境变量');
+}
 
 interface AuthContextType {
   user: AuthUser | null;

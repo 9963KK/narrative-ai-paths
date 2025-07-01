@@ -19,10 +19,12 @@ const initRedisClient = async () => {
       console.log('✅ Redis连接成功');
       return redisClient;
     } else {
-      console.log('📍 未检测到Redis环境变量，将使用本地存储');
+      console.warn('⚠️ 未检测到Redis环境变量，将使用本地存储');
+      console.warn('💡 如果在生产环境，请在Vercel Dashboard配置REDIS_URL环境变量');
     }
   } catch (error) {
-    console.warn('⚠️ Redis连接失败，将使用本地存储:', error);
+    console.error('❌ Redis连接失败，将使用本地存储:', error);
+    console.error('💡 请检查Redis URL配置和网络连接');
     redisClient = null;
   }
   return null;
