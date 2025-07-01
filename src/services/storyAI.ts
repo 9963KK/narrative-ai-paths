@@ -1668,48 +1668,54 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
     
     const systemPrompt = `你是一个故事分支设计专家。根据当前场景和角色，生成有意义的选择项。
 
-**❌ 禁止格式：绝对不要返回字符串数组！**
-错误示例： ["选择1", "选择2", "选择3"] ❌
-错误示例： {"choices": ["选择1", "选择2"]} ❌
-这些格式会导致程序错误，绝对不能使用！
+**🚨 格式警告：严禁使用以下字段名！**
+- 禁止使用：impact、next_mood、next_scene、tension_change、mood_change 等字段
+- 这些字段会导致程序解析错误！
 
-**✅ 必须格式：只能返回对象数组！**
-正确示例：
+**❌ 禁止格式：绝对不要返回字符串数组或错误字段！**
+错误示例1： ["选择1", "选择2", "选择3"] ❌
+错误示例2： {"choices": ["选择1", "选择2"]} ❌
+错误示例3： [{"description": "xxx", "impact": "xxx", "next_mood": "xxx"}] ❌ (错误字段)
+
+**✅ 强制要求格式：只能返回包含以下5个字段的对象数组！**
+必须严格使用这个模板：
 [
   {
     "id": 1,
-    "text": "选择的具体行动描述",
-    "description": "选择的详细说明，解释这个行动的具体内容",
-    "consequences": "可能产生的后果和影响",
+    "text": "具体的行动选择",
+    "description": "详细说明这个选择的内容和方式",
+    "consequences": "选择这个行动可能带来的具体后果",
     "difficulty": 3
   },
   {
     "id": 2,
-    "text": "另一个选择的具体行动描述", 
-    "description": "另一个选择的详细说明，解释这个行动的具体内容",
-    "consequences": "这个选择可能带来的后果和风险",
+    "text": "另一个具体的行动选择",
+    "description": "详细说明这个选择的内容和方式", 
+    "consequences": "选择这个行动可能带来的具体后果",
     "difficulty": 2
   }
 ]
 
-**严格格式要求：**
-- 每个选择项必须是包含5个字段的对象：id, text, description, consequences, difficulty
-- id：数字（1, 2, 3...）
-- text：选择的行动描述（字符串，简洁明了）
-- description：详细说明这个选择的具体内容（字符串）
-- consequences：可能产生的后果和影响（字符串，描述风险和收益）
-- difficulty：难度等级1-5（数字）
-- 绝对不能返回简单的字符串数组
-- 输出必须是纯JSON对象数组，不要包含任何解释文字
+**🔥 严格字段要求（5个字段，一个都不能少，一个都不能错）：**
+1. id：整数（1, 2, 3...）
+2. text：行动选择的简短标题（字符串，8-15字）
+3. description：选择的详细说明（字符串，20-40字）
+4. consequences：可能后果描述（字符串，15-30字，具体描述风险和收益）
+5. difficulty：难度等级（整数，1-5）
 
-**重要要求：必须使用中文创作，所有内容都必须是中文**
+**🚨 重要提醒：**
+- 绝对不能使用impact、next_mood等其他字段名
+- 必须使用consequences而不是impact
+- 必须包含text字段作为选择标题
+- 输出纯JSON，不要任何额外文字
+- 必须使用中文创作
 
-要求：
-1. 每个选择都应该有不同的后果和难度
-2. 选择难度应该合理分布（1-5）
-3. 考虑角色的能力和特征
-4. 保持故事的紧张感和趣味性
-5. 选择数量应该根据情况灵活变化`;
+**内容要求：**
+1. text要简洁有力，体现具体行动
+2. description要详细说明具体做法
+3. consequences要具体描述可能的结果，不要使用"可能会产生重要影响"这种泛化描述
+4. 难度要合理分布
+5. 保持故事紧张感`;
 
     const prompt = `当前场景：${currentScene}
 
@@ -1798,23 +1804,23 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
             
             // 验证并转换选择项格式
             const validatedChoices = choices.map((choice, index) => {
-              // 从description中提取简短标题作为text
-              let choiceText = choice.text || choice.title || choice.action;
+              // 从多个可能的字段中提取text
+              let choiceText = choice.text || choice.title || choice.action || choice.name;
               
               if (!choiceText && choice.description) {
                 // 从description中提取前面部分作为标题
                 const desc = choice.description.toString();
                 if (desc.length > 10) {
-                  // 取前15个字符作为标题，在合适位置断开
-                  const shortText = desc.substring(0, 15);
+                  // 取前12个字符作为标题，在合适位置断开
+                  const shortText = desc.substring(0, 12);
                   const commaIndex = shortText.lastIndexOf('，');
                   const periodIndex = shortText.lastIndexOf('。');
                   const breakIndex = Math.max(commaIndex, periodIndex);
                   
-                  if (breakIndex > 5) {
+                  if (breakIndex > 4) {
                     choiceText = desc.substring(0, breakIndex);
                   } else {
-                    choiceText = shortText + '...';
+                    choiceText = shortText + (desc.length > 12 ? '...' : '');
                   }
                 } else {
                   choiceText = desc;
@@ -1825,19 +1831,53 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
                 choiceText = `选择${index + 1}`;
               }
               
+              // 从多个可能的字段中提取consequences
+              let consequences = choice.consequences || choice.impact || choice.result || choice.outcome;
+              
+              // 如果consequences是通用描述，尝试生成更具体的
+              if (!consequences || consequences === "可能会产生重要影响，需要谨慎行动" || 
+                  consequences.includes("产生重要影响") || consequences.includes("谨慎行动")) {
+                // 根据choice的其他信息生成更具体的后果描述
+                if (choice.description) {
+                  const desc = choice.description.toString();
+                  if (desc.includes("攻击") || desc.includes("战斗")) {
+                    consequences = "可能引发冲突或受伤";
+                  } else if (desc.includes("隐藏") || desc.includes("偷偷")) {
+                    consequences = "可能避免风险但错失信息";
+                  } else if (desc.includes("交谈") || desc.includes("询问")) {
+                    consequences = "可能获得信息但暴露意图";
+                  } else if (desc.includes("逃跑") || desc.includes("离开")) {
+                    consequences = "保证安全但失去机会";
+                  } else {
+                    consequences = "结果不确定，需要承担风险";
+                  }
+                } else {
+                  consequences = "后果未知";
+                }
+              }
+              
               // 检查必需字段并进行格式转换
               const validatedChoice: Choice = {
                 id: choice.id || (index + 1),
                 text: choiceText,
                 description: choice.description || "暂无描述",
-                consequences: choice.consequences || choice.impact || "后果未知",
-                difficulty: choice.difficulty || 3
+                consequences: consequences,
+                difficulty: choice.difficulty || Math.floor(Math.random() * 3) + 2 // 2-4随机难度
               };
               
               // 验证转换后的字段
               if (!validatedChoice.id || !validatedChoice.text || !validatedChoice.description || !validatedChoice.consequences) {
+                console.warn('❌ 选择项字段验证失败:', {
+                  原始选择: choice,
+                  转换结果: validatedChoice
+                });
                 throw new Error(`选择项缺少必需字段: ${JSON.stringify(choice)}`);
               }
+              
+              console.log(`✅ 选择项${index + 1}转换成功:`, {
+                text: validatedChoice.text,
+                consequences: validatedChoice.consequences
+              });
               
               return validatedChoice;
             });
