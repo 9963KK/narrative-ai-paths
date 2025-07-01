@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        buffer: "buffer",
       },
     },
     define: {
@@ -28,6 +29,10 @@ export default defineConfig(({ mode }) => {
       'process.env.KV_REST_API_URL': JSON.stringify(env.KV_REST_API_URL),
       'process.env.KV_REST_API_TOKEN': JSON.stringify(env.KV_REST_API_TOKEN),
       'process.env.NODE_ENV': JSON.stringify(mode),
+      global: "globalThis",
+    },
+    optimizeDeps: {
+      include: ["buffer"],
     },
   };
 });
