@@ -4,6 +4,7 @@ export interface User {
   email: string;
   password: string; // 在生产环境中，这应该是加密的
   createdAt: string;
+  role?: 'user' | 'admin';
 }
 
 export interface AuthUser {
@@ -12,6 +13,7 @@ export interface AuthUser {
   email: string;
   createdAt: string;
   isGuest?: boolean;
+  role?: 'user' | 'admin';
 }
 
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -47,7 +49,7 @@ export class AuthService {
   }
 
   // 用户注册
-  async register(username: string, email: string, password: string): Promise<boolean> {
+  async register(username: string, email: string, password: string, role: 'user' | 'admin' = 'user'): Promise<boolean> {
     const users = this.getUsers();
     
     // 检查邮箱是否已存在
@@ -68,7 +70,8 @@ export class AuthService {
       username,
       email,
       password: this.hashPassword(password),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      role
     };
 
     users.push(newUser);
@@ -92,7 +95,8 @@ export class AuthService {
       id: user.id,
       username: user.username,
       email: user.email,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      role: user.role || 'user'
     };
 
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
@@ -213,6 +217,47 @@ export class AuthService {
   isGuestUser(): boolean {
     const currentUser = this.getCurrentUser();
     return currentUser?.isGuest === true;
+  }
+
+  // 检查是否为管理员
+  isAdmin(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.role === 'admin';
+  }
+
+  // 创建默认管理员账户
+  async createDefaultAdmin(): Promise<boolean> {
+    const users = this.getUsers();
+    
+    // 检查是否已存在admin用户
+    const existingAdmin = users.find(user => user.username === 'admin');
+    if (existingAdmin) {
+      return false; // 管理员已存在
+    }
+
+    // 创建管理员账户
+    const adminUser: User = {
+      id: 'admin_' + Date.now(),
+      username: 'admin',
+      email: 'admin@narrative-ai.com',
+      password: this.hashPassword('AINOVEL@cjh180498'),
+      createdAt: new Date().toISOString(),
+      role: 'admin'
+    };
+
+    users.push(adminUser);
+    this.saveUsers(users);
+    
+    console.log('🔑 默认管理员账户已创建');
+    return true;
+  }
+
+  // 获取所有用户（仅管理员可用）
+  getAllUsers(): User[] | null {
+    if (!this.isAdmin()) {
+      return null;
+    }
+    return this.getUsers();
   }
 }
 

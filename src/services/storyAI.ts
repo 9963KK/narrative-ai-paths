@@ -1,4 +1,5 @@
 import { ModelConfig } from '@/components/model-config/constants';
+import { tokenMonitor } from './tokenMonitorService';
 
 // 故事配置接口 - 改为导入类型
 import type { StoryConfig } from '@/components/StoryInitializer';
@@ -751,6 +752,27 @@ ${newSummary}`;
     }
 
     const result = await response.json();
+    
+    // 记录Token使用情况
+    if (result.usage) {
+      const usage = result.usage;
+      const cost = tokenMonitor.estimateTokenCost(
+        this.modelConfig.provider,
+        this.modelConfig.model,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0
+      );
+      
+      tokenMonitor.logTokenUsage({
+        modelProvider: this.modelConfig.provider,
+        modelName: this.modelConfig.model,
+        promptTokens: usage.prompt_tokens || 0,
+        completionTokens: usage.completion_tokens || 0,
+        totalTokens: usage.total_tokens || 0,
+        cost: cost,
+        requestType: forceJsonOutput ? 'choice_generation' : 'story_generation'
+      });
+    }
     
     // 如果使用历史记录，保存AI的回复
     if (useHistory && result.choices && result.choices[0] && result.choices[0].message) {

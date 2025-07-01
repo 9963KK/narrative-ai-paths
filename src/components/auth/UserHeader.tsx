@@ -4,15 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GuestToRegisterDialog } from './GuestToRegisterDialog';
-import { LogOut, User, Settings, UserPlus, AlertTriangle } from 'lucide-react';
+import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const UserHeader: React.FC = () => {
   const { user, logout, isGuest } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleAdminDashboard = () => {
+    navigate('/admin');
   };
 
   const getInitials = (username: string) => {
@@ -83,6 +89,15 @@ export const UserHeader: React.FC = () => {
                 <Settings className="mr-2 h-4 w-4" />
                 <span>设置</span>
               </DropdownMenuItem>
+              {user.role === 'admin' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>管理后台</span>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />

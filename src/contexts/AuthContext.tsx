@@ -30,6 +30,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 检查是否有已登录的用户
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
+    
+    // 创建默认管理员账户
+    authService.createDefaultAdmin();
+    
     setIsLoading(false);
   }, []);
 
