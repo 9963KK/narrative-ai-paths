@@ -11,6 +11,7 @@ export interface AuthUser {
   username: string;
   email: string;
   createdAt: string;
+  isGuest?: boolean;
 }
 
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -192,6 +193,26 @@ export class AuthService {
     
     this.logout();
     return true;
+  }
+
+  // 游客模式登录
+  async loginAsGuest(): Promise<AuthUser> {
+    const guestUser: AuthUser = {
+      id: 'guest_' + Date.now(),
+      username: '游客用户',
+      email: 'guest@example.com',
+      createdAt: new Date().toISOString(),
+      isGuest: true
+    };
+
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(guestUser));
+    return guestUser;
+  }
+
+  // 检查是否为游客用户
+  isGuestUser(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.isGuest === true;
   }
 }
 

@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading, login, register } = useAuth();
+  const { user, isLoading, login, register, loginAsGuest } = useAuth();
 
   if (isLoading) {
     return (
@@ -18,7 +18,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <AuthForm onLogin={login} onRegister={register} />;
+    return <AuthForm onLogin={login} onRegister={register} onGuestLogin={loginAsGuest} />;
   }
 
   return <>{children}</>;

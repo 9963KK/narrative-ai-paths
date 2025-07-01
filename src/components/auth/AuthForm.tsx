@@ -31,9 +31,10 @@ type LoginForm = z.infer<typeof loginSchema>;
 interface AuthFormProps {
   onLogin: (emailOrUsername: string, password: string) => Promise<boolean>;
   onRegister: (username: string, email: string, password: string) => Promise<boolean>;
+  onGuestLogin: () => Promise<boolean>;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,6 +100,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
     setError('');
     resetLogin();
     resetRegister();
+  };
+
+  const handleGuestLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const success = await onGuestLogin();
+      if (!success) {
+        setError('游客登录失败，请稍后重试');
+      }
+    } catch (err) {
+      setError('游客登录失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -289,6 +306,21 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister }) => {
                 </TabsContent>
               </div>
             </Tabs>
+          </div>
+          
+          {/* 游客模式按钮 */}
+          <div className="flex flex-col items-center space-y-3 pt-4 border-t">
+            <p className="text-sm text-gray-500 text-center">
+              想要快速体验？无需注册
+            </p>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleGuestLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? '正在进入...' : '游客模式体验'}
+            </Button>
           </div>
         </CardContent>
       </Card>

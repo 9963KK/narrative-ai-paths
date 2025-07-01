@@ -6,10 +6,12 @@ interface AuthContextType {
   isLoading: boolean;
   login: (emailOrUsername: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
+  loginAsGuest: () => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
+  isGuest: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,15 +97,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginAsGuest = async (): Promise<boolean> => {
+    try {
+      const guestUser = await authService.loginAsGuest();
+      setUser(guestUser);
+      return true;
+    } catch (error) {
+      console.error('Guest login error:', error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     login,
     register,
+    loginAsGuest,
     logout,
     updateUser,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    isGuest: user?.isGuest === true
   };
 
   return (
