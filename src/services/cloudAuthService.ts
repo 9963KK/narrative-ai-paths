@@ -1,7 +1,8 @@
-// 动态导入Redis客户端（只在有环境变量时使用）
+// 注意：在浏览器环境中，我们暂时禁用Redis连接以避免兼容性问题
+// 实际的Redis连接应该通过服务端API来实现
 let redisClient: any = null;
 
-// 尝试初始化Redis连接
+// 尝试初始化Redis连接（浏览器环境中暂时禁用）
 const initRedisClient = async () => {
   try {
     // 检查是否有Redis环境变量
@@ -9,15 +10,15 @@ const initRedisClient = async () => {
     
     if (redisUrl) {
       console.log('🔑 检测到Redis URL环境变量');
-      const { createClient } = await import('redis');
+      console.warn('⚠️ 浏览器环境中暂时禁用Redis直连，使用本地存储');
+      console.warn('💡 生产环境建议通过服务端API实现Redis连接');
       
-      redisClient = createClient({ url: redisUrl });
-      
-      // 连接到Redis
-      await redisClient.connect();
-      
-      console.log('✅ Redis连接成功');
-      return redisClient;
+      // 暂时注释掉Redis直连代码，避免浏览器兼容性问题
+      // const { createClient } = await import('redis');
+      // redisClient = createClient({ url: redisUrl });
+      // await redisClient.connect();
+      // console.log('✅ Redis连接成功');
+      // return redisClient;
     } else {
       console.warn('⚠️ 未检测到Redis环境变量，将使用本地存储');
       console.warn('💡 如果在生产环境，请在Vercel Dashboard配置REDIS_URL环境变量');
