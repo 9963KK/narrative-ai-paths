@@ -1796,12 +1796,26 @@ ${currentStory.characters.map(c => `${c.name}(${c.role}): ${c.traits}${c.appeara
               throw new Error('AI返回的选择项不是有效数组或为空');
             }
             
-            // 验证每个选择项的必需字段
-            for (const choice of choices) {
-              if (!choice.id || !choice.text || !choice.description || !choice.consequences || !choice.difficulty) {
+            // 验证并转换选择项格式
+            const validatedChoices = choices.map((choice, index) => {
+              // 检查必需字段并进行格式转换
+              const validatedChoice: Choice = {
+                id: choice.id || (index + 1),
+                text: choice.text || choice.title || "未知选择",
+                description: choice.description || "暂无描述",
+                consequences: choice.consequences || choice.impact || "后果未知",
+                difficulty: choice.difficulty || 3
+              };
+              
+              // 验证转换后的字段
+              if (!validatedChoice.id || !validatedChoice.text || !validatedChoice.description || !validatedChoice.consequences) {
                 throw new Error(`选择项缺少必需字段: ${JSON.stringify(choice)}`);
               }
-            }
+              
+              return validatedChoice;
+            });
+            
+            choices = validatedChoices;
             
             console.log(`✅ 第${attempts}次尝试成功生成选择项`, choices.length, '个选择');
             return choices;
