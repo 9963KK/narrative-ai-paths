@@ -100,6 +100,10 @@ const AdminDashboard: React.FC = () => {
     loadData(); // 重新加载数据
   };
 
+  const handleGoHome = () => {
+    navigate('/', { state: { fromAdmin: true } });
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -148,6 +152,10 @@ const AdminDashboard: React.FC = () => {
               <p className="text-gray-600">Token使用监控和用户管理</p>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={handleGoHome}>
+                <Home className="h-4 w-4 mr-2" />
+                返回首页
+              </Button>
               <Button variant="outline" onClick={loadData} disabled={isLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 刷新数据
