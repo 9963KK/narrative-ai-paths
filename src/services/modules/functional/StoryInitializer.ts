@@ -24,12 +24,12 @@ export class StoryInitializer implements IStoryInitializer {
   /**
    * 生成初始故事
    */
-  async generateInitialStory(config: StoryConfig): Promise<StoryGenerationResponse> {
+  async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
-      console.log('🎭 开始生成初始故事...', config);
+      console.log('🎭 开始生成初始故事...', { config, isAdvanced });
 
-      const prompt = this.buildInitialStoryPrompt(config);
-      const systemPrompt = this.getInitialStorySystemPrompt();
+      const prompt = this.buildInitialStoryPrompt(config, isAdvanced);
+      const systemPrompt = this.getInitialStorySystemPrompt(isAdvanced);
 
       // 调用AI生成初始故事
       const response = await aiModelService.callAI(
@@ -184,28 +184,65 @@ export class StoryInitializer implements IStoryInitializer {
   /**
    * 构建初始故事提示词
    */
-  private buildInitialStoryPrompt(config: StoryConfig): string {
-    return `请基于以下信息创建一个引人入胜的故事开头：
+  private buildInitialStoryPrompt(config: StoryConfig, isAdvanced?: boolean): string {
+    // 检查是否为高级配置
+    const isAdvancedConfig = config.tone || config.story_length || config.preferred_ending;
+    
+    if (isAdvancedConfig && isAdvanced) {
+      // 高级配置的提示词
+      return `请基于以下详细配置创建一个精确的故事开头：
+
+故事类型：${config.genre}
+故事构想：${config.story_idea}
+主要目标：${config.main_goal || '探索未知的世界'}
+故事基调：${(config as any).tone || '未指定'}
+故事长度：${(config as any).story_length || '未指定'}
+期望结局：${(config as any).preferred_ending || '未指定'}
+
+高级创作要求：
+1. 创建600-900字的精彩开场场景，融合环境、角色和情节
+2. 严格按照用户指定的故事基调和风格创作
+3. 为指定的故事长度做好章节规划
+4. 考虑期望结局类型，在开场中埋下相应伏笔
+5. 创建立体的角色形象，包含详细外貌和背景
+6. 提供3-4个高质量的选择项，每个都有明确的后果
+
+请以JSON格式返回，包含以下字段：
+- scene: 开场场景描述（600-900字，文学品质）
+- characters: 角色数组（包含name, role, traits, appearance, backstory）
+- choices: 选择项数组（包含id, text, description, consequences, difficulty）
+- chapter_title: 章节标题（8-15字，引人入胜）
+- mood: 当前氛围（与故事基调匹配，8-12字）
+- tension_level: 紧张度(1-10)
+- story_length_target: 故事长度目标
+- preferred_ending_type: 期望结局类型
+- setting_details: 详细设定描述`;
+    } else {
+      // 简单配置的提示词
+      return `请基于以下信息创建一个引人入胜的故事开头：
 
 故事类型：${config.genre}
 故事构想：${config.story_idea}
 主要目标：${config.main_goal || '探索未知的世界'}
 
-要求：
-1. 创建一个吸引人的开场场景
-2. 介绍主要角色和背景设定
-3. 设置初始的情况和挑战
-4. 为玩家提供3-4个有意义的选择
+创作要求：
+1. 创建一个吸引人的开场场景（400-600字）
+2. 介绍主要角色和背景设定，塑造生动的角色形象
+3. 设置初始的情况和挑战，建立故事冲突
+4. 为玩家提供3-4个有意义的选择，推动故事发展
 5. 建立适当的故事氛围和紧张感
+6. 发挥创意，将简单想法转化为完整的故事世界
 
 请以JSON格式返回，包含以下字段：
-- scene: 开场场景描述
-- characters: 角色数组
-- choices: 选择项数组
-- chapter_title: 章节标题
-- mood: 当前氛围
+- scene: 开场场景描述（生动具体，融合环境和角色）
+- characters: 角色数组（包含name, role, traits, appearance, backstory）
+- choices: 选择项数组（包含id, text, description, consequences, difficulty）
+- chapter_title: 章节标题（8-15字）
+- mood: 当前氛围（符合故事类型，8-12字）
 - tension_level: 紧张度(1-10)
 - setting_details: 设定详情`;
+    }
+  }
   }
 
   /**
@@ -273,22 +310,98 @@ export class StoryInitializer implements IStoryInitializer {
   /**
    * 获取初始故事系统提示词
    */
-  private getInitialStorySystemPrompt(): string {
-    return `你是一个专业的互动故事创作者。你的任务是创建引人入胜的故事开头，为玩家提供沉浸式的体验。
+  private getInitialStorySystemPrompt(isAdvanced?: boolean): string {
+    if (isAdvanced) {
+      return `你是一个专业的交互式小说创作AI，具备顶级的文学创作能力。请根据用户的详细设定创建一个完全符合要求的故事开场，展现极具沉浸感和文学价值的创作水准。
 
-创作原则：
-1. 立即将读者带入故事情境
-2. 创造生动的角色和场景
-3. 设置有趣的冲突和挑战
-4. 提供有意义的选择选项
-5. 保持故事的连贯性和逻辑性
-6. 必须返回有效的JSON格式
+高质量创作标准：
+1. 角色塑造艺术：
+   - 严格遵循用户提供的角色设定（姓名、角色定位、性格特征）
+   - 为角色添加生动的外貌描写和丰富的背景故事
+   - 展现角色的独特说话方式、行为习惯、内心世界
+   - 通过细节描写体现角色的个性魅力
+
+2. 环境世界构建：
+   - 运用五感描写打造立体的环境感受
+   - 细致描绘光影、色彩、质感、声音、气味
+   - 营造与故事基调完美契合的氛围
+   - 通过环境细节暗示故事的深层主题
+
+3. 情节设计艺术：
+   - 设置引人入胜的开场钩子
+   - 巧妙埋下伏笔，为后续发展铺垫
+   - 制造适度的悬念和期待感
+   - 确保开场与期望结局类型呼应
+
+4. 选择设计原则：
+   - 每个选择都有明确的行动描述和可能后果
+   - 选择之间形成有意义的分支和对比
+   - 难度设计合理，体现不同的风险收益
+   - 选择推动角色发展和情节前进
+
+5. 文学表达技巧：
+   - 使用丰富的修辞手法：比喻、象征、对比、排比等
+   - 营造诗意的语言节奏和美感
+   - 通过细节展现而非直接陈述
+   - 创造独特的叙述声音和文风
+
+6. JSON格式要求：
+   - 必须返回完整、有效的JSON格式
+   - 包含所有必需字段，内容丰富详实
+   - 确保字符转义正确，避免格式错误
+
+写作风格：
+- 使用第二人称叙述（"你"）增强代入感
+- 描述生动具体，营造身临其境的体验
+- 语言精美而不失通俗易懂
+- 节奏控制得当，张弛有度`;
+    } else {
+      return `你是一个专业的互动故事创作者，具备将简单想法转化为精彩故事的能力。用户只提供了基础想法，请你发挥创意，创造一个完整而引人入胜的故事世界。
+
+大师级创作任务：
+1. 角色创造艺术（3-5个立体角色）：
+   - 为每个角色设计独特的性格层次和内在矛盾
+   - 创造生动具体的外貌特征和标志性细节
+   - 构建丰富的背景故事，体现角色的成长轨迹
+   - 赋予角色独特的说话方式、行为模式和价值观
+
+2. 世界构建专家级要求：
+   - 运用五感描写创造身临其境的环境体验
+   - 设计具有象征意义的环境元素
+   - 营造与故事类型完美契合的独特氛围
+   - 支持玩家的探索和互动需求
+
+3. 叙事技巧精华：
+   - 设置令人难忘的开场钩子
+   - 巧妙运用对比、冲突、悬念等戏剧元素
+   - 创造多层次的故事含义和隐喻
+   - 确保每个场景都推进人物关系和情节发展
+
+4. 选择设计艺术：
+   - 创造3-4个各具特色的选择选项
+   - 每个选择有清晰的描述、后果和难度评估
+   - 选择之间形成有意义的道德和策略考量
+   - 为不同类型的玩家提供多样化的游戏路径
+
+5. 文学美学追求：
+   - 运用丰富的修辞手法增强表达力
+   - 创造诗意的语言节奏和音韵美
+   - 通过细节和象征展现深层主题
+   - 营造独特的叙述声音和文学风格
+
+6. 格式规范要求：
+   - 必须返回有效的JSON格式
+   - 所有字段内容详实，避免空值
+   - 确保JSON结构完整，语法正确
+
+你需要完全发挥想象力和文学造诣，将用户的简单想法升华为具有深度和美感的故事艺术。
 
 写作风格：
 - 使用第二人称叙述（"你"）
 - 描述生动具体，避免抽象概念
 - 营造适当的氛围和情绪
 - 鼓励玩家的参与和投入`;
+    }
   }
 
   /**

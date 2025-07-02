@@ -42,9 +42,9 @@ export class ContentParser implements IContentParser {
           choices: parsed.choices || [],
           characters: parsed.characters || [],
           new_characters: parsed.new_characters || [],
-          chapter_title: parsed.chapter_title,
-          mood: this.truncateMood(parsed.mood),
-          tension_level: parsed.tension_level,
+          chapter_title: parsed.chapter_title || '序章',
+          mood: this.truncateMood(parsed.mood || '神秘'),
+          tension_level: parsed.tension_level || 3,
           story_length_target: parsed.story_length_target,
           preferred_ending_type: parsed.preferred_ending_type,
           setting_details: parsed.setting_details
@@ -199,8 +199,13 @@ export class ContentParser implements IContentParser {
       return false;
     }
 
-    // 选择项验证（如果存在）
-    if (content.choices && !this.validateChoiceFormat(content.choices)) {
+    // 选择项验证（必需字段）
+    if (!content.choices || !Array.isArray(content.choices) || content.choices.length === 0) {
+      console.warn('⚠️ choices 字段缺失或为空');
+      return false;
+    }
+
+    if (!this.validateChoiceFormat(content.choices)) {
       console.warn('⚠️ choices 字段格式错误');
       return false;
     }
@@ -237,19 +242,28 @@ export class ContentParser implements IContentParser {
 
       // 必需字段检查
       if (!choice.text || typeof choice.text !== 'string') {
+        console.warn('⚠️ 选择项缺少text字段');
+        return false;
+      }
+
+      if (!choice.description || typeof choice.description !== 'string') {
+        console.warn('⚠️ 选择项缺少description字段');
         return false;
       }
 
       // 可选字段类型检查
       if (choice.id !== undefined && typeof choice.id !== 'number') {
+        console.warn('⚠️ 选择项id字段类型错误');
         return false;
       }
 
-      if (choice.description !== undefined && typeof choice.description !== 'string') {
+      if (choice.consequences !== undefined && typeof choice.consequences !== 'string') {
+        console.warn('⚠️ 选择项consequences字段类型错误');
         return false;
       }
 
       if (choice.difficulty !== undefined && typeof choice.difficulty !== 'number') {
+        console.warn('⚠️ 选择项difficulty字段类型错误');
         return false;
       }
     }
