@@ -345,6 +345,51 @@ class StoryAI {
     console.log('🔄 故事状态已重置');
   }
 
+  /**
+   * 清空对话历史（向后兼容方法）
+   */
+  clearConversationHistory(): void {
+    conversationManager.clearHistory();
+    console.log('🔄 对话历史已清空');
+  }
+
+  /**
+   * 获取对话历史（向后兼容方法）
+   */
+  getConversationHistory(): ConversationHistory[] {
+    return conversationManager.getHistory();
+  }
+
+  /**
+   * 设置对话历史（向后兼容方法）
+   */
+  setConversationHistory(history: ConversationHistory[], summaryData?: SummaryData): void {
+    conversationManager.clearHistory();
+    history.forEach(msg => {
+      conversationManager.addToHistory(msg.role, msg.content);
+    });
+    
+    if (summaryData) {
+      conversationManager.setSummaryState(summaryData.toString(), summaryData);
+    }
+    
+    console.log('📝 对话历史已设置');
+  }
+
+  /**
+   * 获取摘要状态（向后兼容方法）
+   */
+  getSummaryState(): { summary: string; data?: SummaryData } {
+    return conversationManager.getSummaryState();
+  }
+
+  /**
+   * 生成自定义结局（向后兼容方法）
+   */
+  async generateCustomEnding(storyState: StoryState, endingType: string): Promise<string> {
+    return await this.generateStoryEnding(storyState, endingType);
+  }
+
   // ==================== 新功能扩展 ====================
 
   /**

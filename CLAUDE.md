@@ -1,6 +1,7 @@
 ## Development Principles
 
 - 不要随便修改 prompt 和对应的 JSON 解析函数,需要谨慎
+- 文档类信息都存在 docs 文件夹下
 
 ## Version Control Guidelines
 

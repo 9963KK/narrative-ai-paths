@@ -180,6 +180,71 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### 故事初始化API兼容性问题 (2025-07-02)
+
+#### 问题描述
+故事初始化失败，控制台错误：
+```
+storyAI.clearConversationHistory is not a function
+```
+
+#### 根本原因
+模块化重构后，某些方法从主 `storyAI` 类迁移到了专门的模块，但组件中的调用代码还在使用旧的API：
+
+**缺失的方法**：
+- `clearConversationHistory()` → 已迁移到 `conversationManager.clearHistory()`
+- `getConversationHistory()` → 已迁移到 `conversationManager.getHistory()`
+- `setConversationHistory()` → 需要通过 `conversationManager` 实现
+- `getSummaryState()` → 已迁移到 `conversationManager.getSummaryState()`
+- `generateCustomEnding()` → 需要包装 `generateStoryEnding()`
+
+#### 影响范围
+**StoryManager.tsx**：
+- 第76行：`storyAI.clearConversationHistory()`
+- 第840行：`storyAI.clearConversationHistory()`
+- 第852行：`storyAI.getConversationHistory()`
+- 第858行：`storyAI.getSummaryState()`
+- 第950行：`storyAI.setConversationHistory()`
+- 第972行：`storyAI.setConversationHistory()`
+
+#### 解决方案
+在 `src/services/storyAI.ts` 中添加向后兼容的包装方法：
+
+```typescript
+// 向后兼容方法
+clearConversationHistory(): void {
+  conversationManager.clearHistory();
+}
+
+getConversationHistory(): ConversationHistory[] {
+  return conversationManager.getHistory();
+}
+
+setConversationHistory(history: ConversationHistory[], summaryData?: SummaryData): void {
+  conversationManager.clearHistory();
+  history.forEach(msg => {
+    conversationManager.addToHistory(msg.role, msg.content);
+  });
+  if (summaryData) {
+    conversationManager.setSummaryState(summaryData.toString(), summaryData);
+  }
+}
+
+getSummaryState(): { summary: string; data?: SummaryData } {
+  return conversationManager.getSummaryState();
+}
+
+async generateCustomEnding(storyState: StoryState, endingType: string): Promise<string> {
+  return await this.generateStoryEnding(storyState, endingType);
+}
+```
+
+#### 验证结果
+- ✅ 所有API调用兼容性恢复
+- ✅ 故事初始化流程正常
+- ✅ 保持模块化架构优势
+- ✅ 向后兼容性完整
+
 ### esbuild版本冲突问题 (2025-07-02)
 
 #### 问题描述
@@ -227,6 +292,11 @@ Cannot start service: Host version "0.21.5" does not match binary version "0.25.
 ---
 
 ## 版本历史
+
+### v2.2.2 (2025-07-02)
+- 修复故事初始化API兼容性问题
+- 添加向后兼容的方法包装
+- 解决 "clearConversationHistory is not a function" 错误
 
 ### v2.2.1 (2025-07-02)
 - 完全迁移到模块化架构
