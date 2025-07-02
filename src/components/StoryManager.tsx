@@ -86,7 +86,7 @@ const StoryManager: React.FC = () => {
           story_id: `ST${Date.now()}`,
           current_scene: response.content.scene,
           characters: response.content.characters || [],
-          setting: config.setting,
+          setting: response.content.setting_details || config.setting || '未知世界',
           chapter: 1,
           chapter_title: response.content.chapter_title || '序章',
           choices_made: [],

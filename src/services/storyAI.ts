@@ -97,7 +97,7 @@ class StoryAI {
       console.log('🎬 开始生成初始故事...', { config, isAdvanced });
 
       // 使用 StoryInitializer 模块
-      const response = await storyInitializer.generateInitialStory(config);
+      const response = await storyInitializer.generateInitialStory(config, isAdvanced);
       
       if (response.success && response.content) {
         // 初始化故事状态
@@ -151,7 +151,11 @@ class StoryAI {
       // 获取当前故事状态
       const currentState = storyStateManager.getState();
       if (!currentState) {
-        throw new Error('未找到当前故事状态');
+        console.error('❌ 未找到当前故事状态，可能故事未正确初始化');
+        return {
+          success: false,
+          error: '故事状态未找到，请重新开始故事'
+        };
       }
 
       // 记录用户选择

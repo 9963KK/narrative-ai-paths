@@ -180,6 +180,94 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### 故事状态管理修复，解决"未找到当前故事状态"错误 (2025-07-02)
+
+#### 问题描述
+故事初始化后，在选择项生成阶段出现错误：
+```
+下一章节生成失败: Error: 未找到当前故事状态
+at StoryAI.generateNextChapter (storyAI.ts:154:15)
+```
+
+#### 根本原因分析
+经过调用流程梳理，发现三个关键问题：
+
+1. **StoryInitializer调用参数缺失**：
+   - `storyAI.generateInitialStory()` 调用时没有传递 `isAdvanced` 参数
+   - 导致StoryInitializer模块收到undefined参数
+
+2. **错误处理过于严格**：
+   - `generateNextChapter` 中直接抛出异常而不是返回错误响应
+   - 导致整个故事流程中断
+
+3. **数据源不一致**：
+   - StoryManager使用 `config.setting`
+   - StoryAI使用 `response.content.setting_details`
+   - 可能导致setting字段验证失败
+
+#### 具体修复
+
+**1. 修复StoryInitializer调用**：
+```typescript
+// 修复前
+const response = await storyInitializer.generateInitialStory(config);
+
+// 修复后
+const response = await storyInitializer.generateInitialStory(config, isAdvanced);
+```
+
+**2. 改进错误处理**：
+```typescript
+// 修复前 - 直接抛出异常
+if (!currentState) {
+  throw new Error('未找到当前故事状态');
+}
+
+// 修复后 - 返回错误响应
+if (!currentState) {
+  console.error('❌ 未找到当前故事状态，可能故事未正确初始化');
+  return {
+    success: false,
+    error: '故事状态未找到，请重新开始故事'
+  };
+}
+```
+
+**3. 统一数据源**：
+```typescript
+// 修复前
+setting: config.setting,
+
+// 修复后 - 优先使用AI生成的详细设定
+setting: response.content.setting_details || config.setting || '未知世界',
+```
+
+**4. 增强调试信息**：
+```typescript
+setState(state: StoryState): void {
+  console.log('🔍 尝试设置故事状态:', state);
+  if (!this.validateState(state)) {
+    console.error('❌ 故事状态验证失败，状态详情:', state);
+    throw new Error('故事状态验证失败');
+  }
+  // ...
+}
+```
+
+#### 影响范围
+- **故事初始化流程**: 修复参数传递和状态设置
+- **错误处理机制**: 提供更友好的错误处理而不是崩溃
+- **状态验证**: 确保状态数据的完整性和一致性
+- **用户体验**: 减少故事流程中断的情况
+
+#### 验证结果
+- ✅ TypeScript编译通过
+- ✅ 构建成功
+- ✅ StoryInitializer参数传递正确
+- ✅ 错误处理机制改进
+- ✅ 数据源统一，减少验证失败
+- ✅ 预期解决故事状态管理问题
+
 ### StoryInitializer方法签名修复，解决初始故事生成失败问题 (2025-07-02)
 
 #### 问题描述

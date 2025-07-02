@@ -32,7 +32,9 @@ export class StoryStateManager implements IStoryStateManager {
    * 设置故事状态
    */
   setState(state: StoryState): void {
+    console.log('🔍 尝试设置故事状态:', state);
     if (!this.validateState(state)) {
+      console.error('❌ 故事状态验证失败，状态详情:', state);
       throw new Error('故事状态验证失败');
     }
     
