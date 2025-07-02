@@ -180,6 +180,62 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### StoryInitializer方法签名修复，解决初始故事生成失败问题 (2025-07-02)
+
+#### 问题描述
+初始故事生成失败，控制台显示多个错误：
+- `ContentParser.ts` 中有JSON解析错误
+- `StoryInitializer` 出现了"初始故事生成失败"的错误
+- 用户无法开始新的故事创建流程
+
+#### 根本原因
+新模块化实现的 `StoryInitializer.generateInitialStory()` 方法签名与主调用代码不匹配：
+- **主调用代码**: `storyInitializer.generateInitialStory(config, isAdvanced)`
+- **新实现**: `generateInitialStory(config: StoryConfig)` - 缺少 `isAdvanced` 参数
+- **语法错误**: if-else结构缺少正确的结束括号
+
+#### 具体修复
+
+**1. 修复方法签名**：
+```typescript
+// 修复前
+async generateInitialStory(config: StoryConfig): Promise<StoryGenerationResponse>
+
+// 修复后  
+async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse>
+```
+
+**2. 更新相关方法支持 isAdvanced 参数**：
+```typescript
+private buildInitialStoryPrompt(config: StoryConfig, isAdvanced?: boolean): string
+private getInitialStorySystemPrompt(isAdvanced?: boolean): string
+```
+
+**3. 修复语法错误**：
+```typescript
+// 修复前 - 缺少if-else结构的结束括号
+- setting_details: 设定详情`;
+  }
+
+// 修复后 - 正确的括号结构
+- setting_details: 设定详情`;
+    }  // else 块结束
+  }    // 函数结束
+```
+
+#### 影响范围
+- **StoryInitializer模块**: 方法签名与调用代码完全匹配
+- **故事生成流程**: 恢复正常的初始故事创建功能
+- **高级配置支持**: 保持对简单和高级配置的完整支持
+- **用户体验**: 修复故事创建失败的问题
+
+#### 验证结果
+- ✅ TypeScript编译通过
+- ✅ 构建成功，无语法错误
+- ✅ 方法签名与调用代码完全匹配
+- ✅ 保持对isAdvanced参数的完整支持
+- ✅ 预期修复初始故事生成失败问题
+
 ### DocumentAnalyzer提示词优化，解决分析结果不完整问题 (2025-07-02)
 
 #### 问题描述

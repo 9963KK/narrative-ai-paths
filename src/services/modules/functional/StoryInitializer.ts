@@ -243,11 +243,7 @@ export class StoryInitializer implements IStoryInitializer {
 - setting_details: 设定详情`;
     }
   }
-  }
 
-  /**
-   * 构建大纲提示词
-   */
   private buildOutlinePrompt(config: StoryConfig): string {
     return `请为以下故事构想生成3-5个不同的故事大纲选项：
 
