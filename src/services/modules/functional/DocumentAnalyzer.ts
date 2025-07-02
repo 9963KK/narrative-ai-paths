@@ -18,6 +18,20 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
     console.log('📄 DocumentAnalyzer 初始化完成');
   }
 
+  // ==================== 模型配置 ====================
+
+  /**
+   * 设置模型配置 (向后兼容方法)
+   */
+  setModelConfig(config: any): void {
+    try {
+      aiModelService.setModelConfig(config);
+      console.log('📄 DocumentAnalyzer 模型配置已更新');
+    } catch (error) {
+      console.error('📄 DocumentAnalyzer 模型配置设置失败:', error);
+    }
+  }
+
   // ==================== 文档分析 ====================
 
   /**

@@ -180,6 +180,43 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### DocumentAnalyzer模块setModelConfig兼容性问题 (2025-07-02)
+
+#### 问题描述
+用户点击文档分析功能时出现错误：
+```
+documentAnalyzer.setModelConfig is not a function
+```
+
+#### 根本原因
+新的模块化架构中，`DocumentAnalyzer` 类通过 `aiModelService` 处理AI调用，但没有提供向后兼容的 `setModelConfig` 方法。`DocumentAnalyzer.tsx` 组件仍在第53行调用 `documentAnalyzer.setModelConfig(modelConfig)`。
+
+#### 具体修复
+**在 `src/services/modules/functional/DocumentAnalyzer.ts` 中添加向后兼容方法**：
+```typescript
+/**
+ * 设置模型配置 (向后兼容方法)
+ */
+setModelConfig(config: any): void {
+  try {
+    aiModelService.setModelConfig(config);
+    console.log('📄 DocumentAnalyzer 模型配置已更新');
+  } catch (error) {
+    console.error('📄 DocumentAnalyzer 模型配置设置失败:', error);
+  }
+}
+```
+
+#### 影响范围
+- **DocumentAnalyzer.tsx**: 第53行的模型配置调用恢复正常
+- **文档分析功能**: 用户可以正常使用文档分析和上传功能
+
+#### 验证结果
+- ✅ TypeScript编译检查通过
+- ✅ 构建成功，无错误
+- ✅ 文档分析模块API兼容性恢复
+- ✅ 模块化架构完整性保持
+
 ### API调用参数类型错误修复 (2025-07-02)
 
 #### 问题描述
