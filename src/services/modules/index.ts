@@ -15,13 +15,11 @@ export { contentParser, ContentParser } from './functional/ContentParser';
 export { conversationManager, ConversationManager } from './functional/ConversationManager';
 export { summaryManager, SummaryManager } from './functional/SummaryManager';
 export { storyInitializer, StoryInitializer } from './functional/StoryInitializer';
-
-// 注意：以下模块尚未实现，将在后续版本中添加
-// export { contentGenerator, ContentGenerator } from './functional/ContentGenerator';
-// export { choiceGenerator, ChoiceGenerator } from './functional/ChoiceGenerator';
-// export { endingGenerator, EndingGenerator } from './functional/EndingGenerator';
-// export { characterDeveloper, CharacterDeveloper } from './functional/CharacterDeveloper';
-// export { documentAnalyzer, DocumentAnalyzer } from './functional/DocumentAnalyzer';
+export { contentGenerator, ContentGenerator } from './functional/ContentGenerator';
+export { choiceGenerator, ChoiceGenerator } from './functional/ChoiceGenerator';
+export { endingGenerator, EndingGenerator } from './functional/EndingGenerator';
+export { characterDeveloper, CharacterDeveloper } from './functional/CharacterDeveloper';
+export { documentAnalyzer, DocumentAnalyzer } from './functional/DocumentAnalyzer';
 
 // ==================== 工具函数 ====================
 
@@ -46,6 +44,6 @@ export function getModuleStatus() {
     aiModel: aiModelService.getState(),
     // 其他模块状态可以在这里添加
     initialized: true,
-    version: '2.1.0'
+    version: '2.2.0'
   };
 }

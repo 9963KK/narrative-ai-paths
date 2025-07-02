@@ -18,6 +18,11 @@ import {
   conversationManager,
   summaryManager,
   storyInitializer,
+  contentGenerator,
+  choiceGenerator,
+  endingGenerator,
+  characterDeveloper,
+  documentAnalyzer,
   
   // 类型定义
   StoryState,
