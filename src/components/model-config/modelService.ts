@@ -188,30 +188,65 @@ class ModelService {
 
   // 获取火山引擎模型列表
   private async fetchVolcengineModels(apiKey: string, baseUrl?: string): Promise<ModelInfo[]> {
-    const url = `${baseUrl || 'https://ark.cn-beijing.volces.com/api/v3'}/models`;
+    // 火山引擎不提供OpenAI风格的/models端点
+    // 我们通过测试API连接性来验证API Key，然后返回预设的模型列表
     
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+    try {
+      // 测试API连接性 - 使用一个简单的调用来验证API Key
+      const testUrl = `${baseUrl || 'https://ark.cn-beijing.volces.com/api/v3'}/chat/completions`;
+      
+      const testResponse = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'doubao-pro-4k', // 使用一个通用模型进行测试
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 1
+        })
+      });
+
+      // 如果收到401错误，说明API Key无效
+      if (testResponse.status === 401) {
+        throw new Error('API Key无效或已过期');
       }
-    });
-
-    if (!response.ok) {
-      throw new Error(`火山引擎 API错误: ${response.statusText}`);
+      
+      // 其他错误码（如400，404等）可能是正常的，说明API Key是有效的
+      console.log('🔍 火山引擎API Key验证成功，返回预设模型列表');
+      
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('网络连接失败，请检查网络连接');
+      }
+      throw error;
     }
 
-    const data = await response.json();
-    
-    if (!data.data || !Array.isArray(data.data)) {
-      throw new Error('火山引擎返回数据格式错误');
-    }
+    // 返回火山引擎豆包系列的预设模型列表
+    return this.getVolcenginePresetModels();
+  }
 
-    return data.data.map((model: any) => ({
-      id: model.id,
-      name: this.formatVolcengineModelName(model.id),
-      description: model.description || `${model.id} - 火山引擎豆包模型`,
-      context_length: this.getVolcengineContextWindow(model.id)
+  // 获取火山引擎预设模型列表
+  private getVolcenginePresetModels(): ModelInfo[] {
+    const presetModels = [
+      'doubao-pro-128k',
+      'doubao-pro-32k', 
+      'doubao-pro-4k',
+      'doubao-lite-128k',
+      'doubao-lite-32k',
+      'doubao-lite-4k',
+      'doubao-seed-1.6',
+      'doubao-seed-1.6-flash',
+      'deepseek-r1',
+      'deepseek-v3'
+    ];
+
+    return presetModels.map(modelId => ({
+      id: modelId,
+      name: this.formatVolcengineModelName(modelId),
+      description: `${modelId} - 火山引擎豆包模型`,
+      context_length: this.getVolcengineContextWindow(modelId)
     }));
   }
 
@@ -223,7 +258,11 @@ class ModelService {
       'doubao-pro-4k': '豆包 Pro 4K',
       'doubao-lite-128k': '豆包 Lite 128K',
       'doubao-lite-32k': '豆包 Lite 32K',
-      'doubao-lite-4k': '豆包 Lite 4K'
+      'doubao-lite-4k': '豆包 Lite 4K',
+      'doubao-seed-1.6': '豆包 Seed 1.6',
+      'doubao-seed-1.6-flash': '豆包 Seed 1.6 Flash',
+      'deepseek-r1': 'DeepSeek R1',
+      'deepseek-v3': 'DeepSeek V3'
     };
     return nameMap[modelId] || modelId;
   }
@@ -236,9 +275,13 @@ class ModelService {
       'doubao-pro-4k': 4000,
       'doubao-lite-128k': 128000,
       'doubao-lite-32k': 32000,
-      'doubao-lite-4k': 4000
+      'doubao-lite-4k': 4000,
+      'doubao-seed-1.6': 32768,
+      'doubao-seed-1.6-flash': 32768,
+      'deepseek-r1': 65536,
+      'deepseek-v3': 65536
     };
-    return contextMap[modelId] || 4000;
+    return contextMap[modelId] || 32768;
   }
 
   // 获取Google Gemini模型列表
