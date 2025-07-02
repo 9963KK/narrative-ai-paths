@@ -180,6 +180,80 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### DocumentAnalyzer模块化架构核心逻辑修复 (2025-07-02)
+
+#### 问题描述
+在文档分析过程中仍然出现 "Cannot read properties of undefined (reading 'map')" 错误，经调用流程分析发现问题根源：
+
+**根本原因**: 
+- 组件使用新的模块化 `DocumentAnalyzer` (`@/services/modules`)
+- 新实现缺少旧实现中成熟的JSON解析和重试逻辑
+- 简化的 `parseAnalysisResult` 方法无法处理复杂的AI响应格式
+
+#### 调用流程分析
+```
+用户点击"开始分析" 
+→ DocumentAnalyzer.tsx - handleAnalyze()
+→ @/services/modules - documentAnalyzer.analyzeDocument()
+→ 新模块化实现 (缺少完整错误处理)
+→ 简化的JSON解析失败
+→ 返回不完整数据结构
+→ 组件渲染崩溃
+```
+
+#### 具体修复
+
+**1. 移植成熟的JSON解析逻辑**：
+```typescript
+// 增强的JSON清理和修复逻辑
+private parseAnalysisResult(content: string): any {
+  // 1. 清理markdown标记和特殊字符
+  // 2. 移除BOM和控制字符
+  // 3. 提取JSON核心内容
+  // 4. 多层次JSON修复机制
+  // 5. 完整的数据结构验证和默认值填充
+}
+```
+
+**2. 添加重试机制**：
+```typescript
+// 最多3次重试，包含质量验证
+for (let attempt = 1; attempt <= 3; attempt++) {
+  // AI调用 → JSON解析 → 角色名称质量验证
+  const hasValidCharacterNames = tempResult.characters.some(char => {
+    const invalidNames = ['主角', '男主', '女主', '主人公'];
+    return char.name?.trim() && !invalidNames.includes(char.name);
+  });
+  
+  if (hasValidCharacterNames || attempt === 3) {
+    break; // 质量满足要求或最后一次尝试
+  }
+}
+```
+
+**3. 增强数据验证**：
+- 所有字段都有默认值回退
+- 数组类型验证和过滤
+- 角色数据完整性检查
+- 嵌套对象结构保证
+
+#### 修复内容对比
+
+| 功能特性 | 旧实现 | 新实现(修复前) | 新实现(修复后) |
+|---------|--------|---------------|---------------|
+| JSON清理逻辑 | ✅ 完整 | ❌ 简化 | ✅ 完整移植 |
+| 重试机制 | ✅ 3次重试 | ❌ 无 | ✅ 3次重试 |
+| 角色质量验证 | ✅ 有 | ❌ 无 | ✅ 有 |
+| 数据结构验证 | ✅ 完整 | ❌ 基础 | ✅ 完整 |
+| 错误处理 | ✅ 详细 | ❌ 简单 | ✅ 详细 |
+
+#### 验证结果
+- ✅ 构建成功，模块化架构完整
+- ✅ JSON解析鲁棒性大幅提升
+- ✅ 文档分析成功率提高
+- ✅ 数据完整性得到保障
+- ✅ 角色名称质量控制恢复
+
 ### DocumentAnalyzer组件防御性编程修复 (2025-07-02)
 
 #### 问题描述

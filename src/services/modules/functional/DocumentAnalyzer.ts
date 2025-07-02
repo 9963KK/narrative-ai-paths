@@ -35,7 +35,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
   // ==================== 文档分析 ====================
 
   /**
-   * 分析文档内容
+   * 分析文档内容 (增强版，包含重试机制)
    */
   async analyzeDocument(content: string, fileName: string): Promise<DocumentAnalysisResult> {
     try {
@@ -52,24 +52,64 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
         throw new Error('文档内容过短，无法进行有效分析');
       }
 
-      const prompt = this.buildDocumentAnalysisPrompt(cleanedContent, fileName);
-      const systemPrompt = this.getDocumentAnalysisSystemPrompt();
-
-      const response = await aiModelService.callAI(
-        prompt,
-        systemPrompt,
-        false, // 不使用历史
-        true   // 强制JSON输出
-      );
-
-      if (!response.success || !response.choices?.[0]?.message?.content) {
-        throw new Error('AI文档分析失败');
-      }
-
-      const content_str = response.choices[0].message.content;
+      // 重试机制，最多3次
+      let analysisData = null;
+      let lastError = null;
       
-      // 解析分析结果
-      const analysisData = this.parseAnalysisResult(content_str);
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`📄 文档分析尝试 ${attempt}/3`);
+          
+          const prompt = this.buildDocumentAnalysisPrompt(cleanedContent, fileName);
+          const systemPrompt = this.getDocumentAnalysisSystemPrompt();
+
+          const response = await aiModelService.callAI(
+            prompt,
+            systemPrompt,
+            false, // 不使用历史
+            true   // 强制JSON输出
+          );
+
+          if (!response.success || !response.choices?.[0]?.message?.content) {
+            throw new Error('AI文档分析失败');
+          }
+
+          const content_str = response.choices[0].message.content;
+          console.log(`📄 AI分析原始响应 (尝试${attempt}):`, content_str);
+          
+          // 解析分析结果
+          const tempResult = this.parseAnalysisResult(content_str);
+          
+          // 验证角色名称质量
+          const hasValidCharacterNames = tempResult.characters && tempResult.characters.length > 0 && 
+            tempResult.characters.some((char: any) => {
+              const name = char.name?.trim() || '';
+              // 检查是否是有效的角色名称（不是泛指词汇）
+              const invalidNames = ['主角', '男主', '女主', '主人公', '角色', '人物', '配角', '反派', '男性', '女性', '主要角色', '次要角色'];
+              return name.length > 0 && !invalidNames.includes(name);
+            });
+
+          if (hasValidCharacterNames || attempt === 3) {
+            // 如果角色名称有效，或者已经是最后一次尝试，就使用这个结果
+            analysisData = tempResult;
+            console.log(`📄 文档分析完成 (尝试${attempt}):`, analysisData);
+            break;
+          } else {
+            console.log(`📄 角色名称提取质量不佳，准备重试 (尝试${attempt})`);
+            // 如果是前两次尝试且角色名称质量不佳，继续重试
+            continue;
+          }
+        } catch (error) {
+          lastError = error;
+          console.error(`📄 文档分析尝试${attempt}失败:`, error);
+          
+          if (attempt === 3) {
+            // 最后一次尝试失败，抛出错误
+            throw error;
+          }
+          // 否则继续下一次尝试
+        }
+      }
       
       if (analysisData) {
         console.log(`✅ 文档 ${fileName} 分析成功`);
@@ -514,30 +554,162 @@ ${content}
 - 核心冲突或挑战`;
   }
 
-  // 解析方法
+  // 解析方法 (增强版，移植自旧实现)
   private parseAnalysisResult(content: string): any {
     try {
-      // 尝试直接解析JSON
-      const parsed = JSON.parse(content);
+      // 清理响应文本
+      let cleanedResponse = content.trim();
       
-      // 验证必要字段
-      if (parsed.characters && parsed.setting && parsed.themes && 
-          parsed.plotElements && parsed.writingStyle && parsed.suggestedStorySeeds) {
-        return parsed;
-      } else {
-        throw new Error('缺少必要字段');
+      // 移除可能的markdown代码块标记
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '');
       }
-    } catch (error) {
-      console.warn('JSON解析失败，尝试修复:', error);
+      if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/^```\s*/, '');
+      }
+      if (cleanedResponse.endsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/\s*```$/, '');
+      }
+
+      // 增强的JSON清理逻辑
+      // 移除BOM和其他不可见字符
+      cleanedResponse = cleanedResponse.replace(/^\uFEFF/, ''); // BOM
+      cleanedResponse = cleanedResponse.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ''); // 控制字符
       
-      // 尝试修复JSON格式
-      const repairedContent = contentParser.repairMalformedJSON(content);
+      // 移除可能的前后缀说明文字
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      console.log('📄 清理后的JSON字符串长度:', cleanedResponse.length);
+      console.log('📄 清理后的JSON前100字符:', cleanedResponse.substring(0, 100));
+
+      // 尝试直接解析
+      let parsed;
       try {
-        return JSON.parse(repairedContent);
-      } catch (repairError) {
-        console.error('JSON修复失败:', repairError);
-        return null;
+        parsed = JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        console.warn('📄 直接解析失败，尝试修复JSON格式:', parseError);
+        
+        // 尝试修复常见的JSON格式问题
+        let fixedJson = cleanedResponse;
+        
+        // 修复可能的尾逗号问题
+        fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+        
+        // 修复可能的引号问题
+        fixedJson = fixedJson.replace(/[\u201C\u201D]/g, '"'); // 中文引号
+        fixedJson = fixedJson.replace(/[\u2018\u2019]/g, "'"); // 中文单引号
+        
+        // 修复可能的换行问题
+        fixedJson = fixedJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        
+        // 再次尝试解析
+        try {
+          parsed = JSON.parse(fixedJson);
+          console.log('📄 JSON修复成功');
+        } catch (fixError) {
+          console.error('📄 JSON修复也失败:', fixError);
+          console.error('📄 问题JSON内容:', cleanedResponse);
+          
+          // 尝试使用更宽松的解析方式
+          try {
+            // 使用eval (仅在安全环境下)
+            parsed = (function() { 
+              return eval('(' + cleanedResponse + ')'); 
+            })();
+            console.log('📄 使用eval解析成功');
+          } catch (evalError) {
+            console.error('📄 eval解析也失败:', evalError);
+            throw new Error(`JSON解析失败: ${parseError.message}`);
+          }
+        }
       }
+      
+      // 验证并清理数据结构
+      if (!parsed.characters || !Array.isArray(parsed.characters)) {
+        parsed.characters = [];
+      } else {
+        // 验证和清理角色数据
+        parsed.characters = parsed.characters.filter((char: any) => {
+          // 确保角色有基本信息
+          return char && typeof char === 'object' && char.name && char.name.trim().length > 0;
+        }).map((char: any) => ({
+          name: char.name?.trim() || '未知角色',
+          role: char.role?.trim() || '未明确',
+          traits: char.traits?.trim() || '待定义',
+          appearance: char.appearance?.trim() || '',
+          backstory: char.backstory?.trim() || ''
+        }));
+      }
+      
+      if (!parsed.setting || typeof parsed.setting !== 'object') {
+        parsed.setting = {
+          time: '未明确',
+          place: '未明确',
+          worldBackground: '未明确',
+          atmosphere: '未明确'
+        };
+      }
+      
+      if (!parsed.themes || typeof parsed.themes !== 'object') {
+        parsed.themes = {
+          mainThemes: [],
+          deeperMeaning: ''
+        };
+      } else {
+        // 验证themes对象结构
+        if (!Array.isArray(parsed.themes.mainThemes)) {
+          parsed.themes.mainThemes = [];
+        }
+        if (typeof parsed.themes.deeperMeaning !== 'string') {
+          parsed.themes.deeperMeaning = '';
+        }
+      }
+      
+      if (!parsed.plotElements || typeof parsed.plotElements !== 'object') {
+        parsed.plotElements = {
+          mainConflict: '未明确',
+          keyEvents: [],
+          plotDevices: [],
+          narrativeTechniques: '未明确'
+        };
+      } else {
+        // 验证plotElements对象结构
+        if (typeof parsed.plotElements.mainConflict !== 'string') {
+          parsed.plotElements.mainConflict = '未明确';
+        }
+        if (!Array.isArray(parsed.plotElements.keyEvents)) {
+          parsed.plotElements.keyEvents = [];
+        }
+        if (!Array.isArray(parsed.plotElements.plotDevices)) {
+          parsed.plotElements.plotDevices = [];
+        }
+        if (typeof parsed.plotElements.narrativeTechniques !== 'string') {
+          parsed.plotElements.narrativeTechniques = '未明确';
+        }
+      }
+      
+      if (!parsed.writingStyle || typeof parsed.writingStyle !== 'object') {
+        parsed.writingStyle = {
+          tone: '未明确',
+          narrativePerspective: '未明确',
+          genre: '未明确'
+        };
+      }
+      
+      if (!parsed.suggestedStorySeeds || !Array.isArray(parsed.suggestedStorySeeds)) {
+        parsed.suggestedStorySeeds = [];
+      }
+
+      console.log('📄 JSON解析和验证完成');
+      return parsed;
+    } catch (error) {
+      console.error('📄 JSON解析失败:', error);
+      throw new Error('AI返回的分析结果格式错误，无法解析');
     }
   }
 
