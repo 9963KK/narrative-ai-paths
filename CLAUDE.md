@@ -6,6 +6,10 @@
 
 - 每次进行 git 更新的时候需要添加版本号（UI 完善或者 BUG 修复的更新是 vx.x.x.1 vx.x.x.2;后台处理模块的功能的增加是 vx.x.1 vx.x.2;在某个页面添加明显功能的是 vx.1 vx.2;）,或者打上时间标识
 
+## Feature and Modification Logging
+
+- 每次增加新功能或者修改原有功能都需要留下记录,包括变动的数据格式\接口等等相关信息都需要存储在 LOGS.md 文件中
+
 ## Testing Procedures
 
 - 测试文件测试成功后需要删除
