@@ -464,7 +464,8 @@ const StoryManager: React.FC = () => {
         const response = await storyAI.generateNextChapter(
           storyState.current_scene,
           selectedChoice.text,
-          previousChoices
+          previousChoices,
+          storyState // 传递完整的故事状态
         );
         
         if (response.success && response.content) {

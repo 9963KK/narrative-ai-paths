@@ -298,7 +298,13 @@ export class AIModelService implements IAIModelService {
         basePayload.response_format = { type: "json_object" };
         console.log(`🎯 启用JSON输出模式 (${provider})`);
       } else {
-        console.log(`⚠️ 提供商 ${provider} 不支持JSON输出模式，使用提示词强制`);
+        console.log(`⚠️ 提供商 ${provider} 不支持JSON输出模式，向提示词添加JSON强制要求`);
+        
+        // 对于不支持JSON模式的提供商，向用户提示词添加强制JSON要求
+        const userMessage = messages[messages.length - 1];
+        if (userMessage && userMessage.role === 'user') {
+          userMessage.content += '\n\n**重要：你必须严格返回有效的JSON对象格式，不要返回任何其他格式（如数组、纯文本等）。请确保JSON语法正确，包含所有必需字段。**';
+        }
       }
     }
 

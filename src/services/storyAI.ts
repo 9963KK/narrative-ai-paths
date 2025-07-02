@@ -143,15 +143,47 @@ class StoryAI {
   async generateNextChapter(
     currentStory: string, 
     selectedChoice: string, 
-    previousChoices?: string[]
+    previousChoices?: string[],
+    storyState?: StoryState
   ): Promise<StoryGenerationResponse> {
     try {
       console.log('📖 开始生成下一章节...');
 
       // 获取当前故事状态
-      const currentState = storyStateManager.getState();
+      let currentState = storyStateManager.getState();
+      
+      // 如果传入了 storyState 参数，优先使用它并同步到 storyStateManager
+      if (storyState) {
+        console.log('📝 使用传入的故事状态并同步到 storyStateManager');
+        storyStateManager.setState(storyState);
+        currentState = storyState;
+      }
+      // 如果 storyStateManager 中没有状态，但传入了 currentStory 参数
+      else if (!currentState && currentStory) {
+        console.warn('⚠️ storyStateManager 中无状态，但有 currentStory 参数，这可能是状态同步问题');
+        console.log('🔧 尝试从传入参数重建基本状态...');
+        
+        // 创建临时状态用于生成下一章节
+        const tempState: StoryState = {
+          story_id: `temp_${Date.now()}`,
+          current_scene: currentStory,
+          characters: [],
+          setting: '未知世界',
+          chapter: 1,
+          choices_made: previousChoices || [],
+          mood: '神秘',
+          tension_level: 3,
+          is_completed: false,
+          story_progress: 0
+        };
+        
+        currentState = tempState;
+        storyStateManager.setState(tempState);
+        console.log('📝 已创建并设置临时状态:', currentState);
+      }
+      
       if (!currentState) {
-        console.error('❌ 未找到当前故事状态，可能故事未正确初始化');
+        console.error('❌ 未找到当前故事状态，且无法从参数重建状态');
         return {
           success: false,
           error: '故事状态未找到，请重新开始故事'
@@ -440,7 +472,6 @@ class StoryAI {
       success: true,
       content: {
         scene: `基于你的选择"${selectedChoice}"，故事继续发展。你发现自己面临着新的挑战和机遇，需要做出进一步的决定来推进冒险的进程。`,
-        choices: contentParser.getDefaultChoices(),
         chapter_title: '未知的道路',
         mood: '紧张',
         tension_level: 5

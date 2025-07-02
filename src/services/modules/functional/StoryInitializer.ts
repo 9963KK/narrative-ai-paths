@@ -44,15 +44,22 @@ export class StoryInitializer implements IStoryInitializer {
       }
 
       const content = response.choices[0].message.content;
-      console.log('🎬 AI初始故事响应:', content.substring(0, 200));
+      console.log('🎬 AI初始故事响应（前500字符）:', content.substring(0, 500));
+      console.log('🎬 AI初始故事响应（完整长度）:', content.length);
 
       // 解析故事响应
       const storyResponse = contentParser.parseStoryResponse(content);
+      
       if (storyResponse && storyResponse.success) {
         console.log('✅ 初始故事生成成功');
         return storyResponse;
       } else {
-        throw new Error('初始故事解析失败');
+        console.error('❌ 初始故事解析失败，详细信息:');
+        console.error('解析结果:', storyResponse);
+        console.error('AI原始响应:', content);
+        
+        const errorMessage = storyResponse?.error || '解析返回null或success为false';
+        throw new Error(`初始故事解析失败: ${errorMessage}`);
       }
     } catch (error) {
       console.error('❌ 初始故事生成失败:', error);
@@ -207,16 +214,37 @@ export class StoryInitializer implements IStoryInitializer {
 5. 创建立体的角色形象，包含详细外貌和背景
 6. 提供3-4个高质量的选择项，每个都有明确的后果
 
-请以JSON格式返回，包含以下字段：
-- scene: 开场场景描述（600-900字，文学品质）
-- characters: 角色数组（包含name, role, traits, appearance, backstory）
-- choices: 选择项数组（包含id, text, description, consequences, difficulty）
-- chapter_title: 章节标题（8-15字，引人入胜）
-- mood: 当前氛围（与故事基调匹配，8-12字）
-- tension_level: 紧张度(1-10)
-- story_length_target: 故事长度目标
-- preferred_ending_type: 期望结局类型
-- setting_details: 详细设定描述`;
+**重要：必须严格按照以下JSON格式返回，不要返回其他格式：**
+
+{
+  "scene": "详细的开场场景描述（600-900字，文学品质）",
+  "characters": [
+    {
+      "name": "角色名字",
+      "role": "角色身份",
+      "traits": "性格特征",
+      "appearance": "外貌描述",
+      "backstory": "背景故事"
+    }
+  ],
+  "choices": [
+    {
+      "id": 1,
+      "text": "选择标题",
+      "description": "详细行动描述",
+      "consequences": "可能的后果",
+      "difficulty": 3
+    }
+  ],
+  "chapter_title": "章节标题（8-15字，引人入胜）",
+  "mood": "当前氛围（与故事基调匹配，8-12字）",
+  "tension_level": 5,
+  "story_length_target": "故事长度目标",
+  "preferred_ending_type": "期望结局类型",
+  "setting_details": "详细设定描述"
+}
+
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。`;
     } else {
       // 简单配置的提示词
       return `请基于以下信息创建一个引人入胜的故事开头：
@@ -233,14 +261,35 @@ export class StoryInitializer implements IStoryInitializer {
 5. 建立适当的故事氛围和紧张感
 6. 发挥创意，将简单想法转化为完整的故事世界
 
-请以JSON格式返回，包含以下字段：
-- scene: 开场场景描述（生动具体，融合环境和角色）
-- characters: 角色数组（包含name, role, traits, appearance, backstory）
-- choices: 选择项数组（包含id, text, description, consequences, difficulty）
-- chapter_title: 章节标题（8-15字）
-- mood: 当前氛围（符合故事类型，8-12字）
-- tension_level: 紧张度(1-10)
-- setting_details: 设定详情`;
+**重要：必须严格按照以下JSON格式返回，不要返回其他格式：**
+
+{
+  "scene": "详细的开场场景描述（400-600字，生动具体，融合环境和角色）",
+  "characters": [
+    {
+      "name": "角色名字",
+      "role": "角色身份",
+      "traits": "性格特征",
+      "appearance": "外貌描述",
+      "backstory": "背景故事"
+    }
+  ],
+  "choices": [
+    {
+      "id": 1,
+      "text": "选择标题",
+      "description": "详细行动描述",
+      "consequences": "可能的后果",
+      "difficulty": 3
+    }
+  ],
+  "chapter_title": "章节标题（8-15字）",
+  "mood": "当前氛围（8-12字）",
+  "tension_level": 5,
+  "setting_details": "详细设定描述"
+}
+
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。`;
     }
   }
 
@@ -342,9 +391,11 @@ export class StoryInitializer implements IStoryInitializer {
    - 创造独特的叙述声音和文风
 
 6. JSON格式要求：
-   - 必须返回完整、有效的JSON格式
-   - 包含所有必需字段，内容丰富详实
-   - 确保字符转义正确，避免格式错误
+   - **绝对必须**返回完整、有效的JSON对象格式
+   - **禁止**返回数组、字符串或其他格式
+   - 必须包含 scene、characters、choices 等所有必需字段
+   - 确保JSON语法正确，字符转义正确
+   - 如果不确定格式，请参考用户提示中的JSON示例
 
 写作风格：
 - 使用第二人称叙述（"你"）增强代入感
@@ -386,9 +437,11 @@ export class StoryInitializer implements IStoryInitializer {
    - 营造独特的叙述声音和文学风格
 
 6. 格式规范要求：
-   - 必须返回有效的JSON格式
+   - **绝对必须**返回有效的JSON对象格式，禁止返回数组
+   - 必须包含 scene、characters、choices 等所有字段
    - 所有字段内容详实，避免空值
    - 确保JSON结构完整，语法正确
+   - 如果不确定格式，请严格参考用户提示中的JSON示例
 
 你需要完全发挥想象力和文学造诣，将用户的简单想法升华为具有深度和美感的故事艺术。
 

@@ -219,7 +219,7 @@ export class ContentGenerator implements IContentGenerator {
       `${c.name}(${c.role}): ${c.traits}${c.appearance ? ` | 外貌：${c.appearance}` : ''}${c.backstory ? ` | 背景：${c.backstory}` : ''}`
     ).join('\n');
 
-    return `基于当前故事状态生成下一章节的内容：
+    return `继续这个故事的发展：
 
 【当前故事背景】：
 ${state.current_scene}
@@ -234,14 +234,27 @@ ${characterInfo}
 - 故事进度：${state.story_progress || 0}%
 - 设定：${state.setting}${choiceText}
 
-请创作一个极其生动丰富的新场景，要求：
-1. 环境沉浸感：描绘具体的光线、声音、气味、触感
-2. 角色真实感：展现角色的内心活动、微表情、身体语言
-3. 情节张力：在平稳与波澜之间找到平衡
-4. 文学美感：运用比喻、象征等手法
-5. 逻辑连贯：确保新场景与之前的情节自然衔接
+创作要求：
+1. 直接创作故事场景，不要包含任何"基于选择"、"你决定"等元数据描述
+2. 环境沉浸感：描绘具体的光线、声音、气味、触感
+3. 角色真实感：展现角色的内心活动、微表情、身体语言
+4. 情节张力：在平稳与波澜之间找到平衡
+5. 文学美感：运用比喻、象征等手法
+6. 逻辑连贯：确保新场景与之前的情节自然衔接
 
-请以JSON格式返回，包含scene、choices、chapter_title、mood、tension_level等字段。`;
+重要：scene字段必须只包含纯粹的故事内容，不要包含任何关于"选择"、"决定"的描述性文字。
+
+**重要：必须严格按照以下JSON对象格式返回，禁止返回数组格式：**
+
+{
+  "scene": "详细的故事场景描述（包含环境、角色动作、对话等）",
+  "chapter_title": "章节标题",
+  "mood": "当前氛围",
+  "tension_level": 5,
+  "new_characters": []
+}
+
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
   }
 
   /**
@@ -344,12 +357,11 @@ ${characterInfo}
 3. 新角色仅在故事自然需要时引入
 4. 故事推进要制造适当冲突和转折
 5. 文学性表达运用比喻、象征等修辞手法
-6. 必须返回有效的JSON格式
+6. **绝对必须**返回有效的JSON对象格式，禁止返回数组
 
 输出格式：
 {
   "scene": "详细场景描述",
-  "choices": [选择项数组],
   "chapter_title": "章节标题(8-15字)",
   "mood": "故事氛围(8-12字)",
   "tension_level": 数字,
@@ -436,7 +448,6 @@ ${characterInfo}
       success: true,
       content: {
         scene: sceneContent,
-        choices: contentParser.getDefaultChoices(),
         chapter_title: this.generateFallbackChapterTitle(state.chapter + 1, newMood),
         mood: newMood,
         tension_level: newTensionLevel

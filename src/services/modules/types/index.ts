@@ -100,7 +100,7 @@ export interface StoryGenerationResponse {
   success: boolean;
   content?: {
     scene: string;
-    choices: Choice[];
+    choices?: Choice[]; // 改为可选，因为选择项由专门的模块生成
     characters?: Character[];
     new_characters?: Character[];
     chapter_title?: string;

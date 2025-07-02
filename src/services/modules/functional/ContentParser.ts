@@ -26,20 +26,42 @@ export class ContentParser implements IContentParser {
   parseStoryResponse(response: string): StoryGenerationResponse | null {
     try {
       console.log('📖 开始解析故事响应...');
+      console.log('📄 原始响应长度:', response.length);
+      console.log('📄 原始响应前200字符:', response.substring(0, 200));
+      
       const content = this.extractJsonFromResponse(response);
+      console.log('🔧 提取的JSON内容长度:', content.length);
+      console.log('🔧 提取的JSON前200字符:', content.substring(0, 200));
+      
       const parsed = JSON.parse(content);
+      console.log('✅ JSON解析成功，解析结果类型:', Array.isArray(parsed) ? 'Array' : 'Object');
+      console.log('解析结果键值或长度:', Array.isArray(parsed) ? `数组长度: ${parsed.length}` : `对象键值: ${Object.keys(parsed)}`);
+      
+      // 检查是否错误地返回了数组
+      if (Array.isArray(parsed)) {
+        console.error('❌ AI返回了数组而不是对象，这不符合故事生成的格式要求');
+        console.error('返回的数组内容:', parsed);
+        return {
+          success: false,
+          error: 'AI返回了数组格式而不是预期的JSON对象格式，请重试'
+        };
+      }
       
       // 验证故事内容格式
       if (!this.validateStoryContent(parsed)) {
         console.warn('⚠️ 故事内容验证失败');
-        return null;
+        console.warn('验证的内容:', parsed);
+        return {
+          success: false,
+          error: '故事内容格式验证失败，缺少必需字段'
+        };
       }
 
       return {
         success: true,
         content: {
           scene: parsed.scene || '',
-          choices: parsed.choices || [],
+          choices: parsed.choices && parsed.choices.length > 0 ? parsed.choices : this.getDefaultChoices(),
           characters: parsed.characters || [],
           new_characters: parsed.new_characters || [],
           chapter_title: parsed.chapter_title || '序章',
@@ -199,15 +221,19 @@ export class ContentParser implements IContentParser {
       return false;
     }
 
-    // 选择项验证（必需字段）
-    if (!content.choices || !Array.isArray(content.choices) || content.choices.length === 0) {
-      console.warn('⚠️ choices 字段缺失或为空');
-      return false;
-    }
-
-    if (!this.validateChoiceFormat(content.choices)) {
-      console.warn('⚠️ choices 字段格式错误');
-      return false;
+    // 选择项验证（初始故事可能没有选择项）
+    if (content.choices) {
+      if (!Array.isArray(content.choices)) {
+        console.warn('⚠️ choices 字段类型错误，应为数组');
+        return false;
+      }
+      
+      if (content.choices.length > 0 && !this.validateChoiceFormat(content.choices)) {
+        console.warn('⚠️ choices 字段格式错误');
+        return false;
+      }
+    } else {
+      console.log('📝 choices 字段不存在，将使用默认选择项');
     }
 
     // 角色验证（如果存在）
