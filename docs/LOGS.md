@@ -180,6 +180,47 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### DocumentAnalyzer组件防御性编程修复 (2025-07-02)
+
+#### 问题描述
+文档分析过程中出现多个 TypeScript 错误：
+```
+Uncaught TypeError: Cannot read properties of undefined (reading 'map')
+```
+
+#### 根本原因
+在 `DocumentAnalyzer.tsx` 的 `renderAnalysisResult` 函数中，直接访问嵌套对象属性而没有进行空值检查。当AI分析返回的某些字段为 undefined 时，就会导致渲染错误。
+
+#### 影响范围
+- 文档分析结果展示页面崩溃
+- 用户无法查看分析结果
+- 控制台出现大量 TypeScript 错误
+
+#### 具体修复
+**1. 添加防御性数据检查**：
+```typescript
+// 防御性检查，确保所有必需的数据结构存在
+const characters = data.characters || [];
+const setting = data.setting || {};
+const themes = data.themes || {};
+const plotElements = data.plotElements || {};
+const writingStyle = data.writingStyle || {};
+const suggestedStorySeeds = data.suggestedStorySeeds || [];
+```
+
+**2. 更新所有数据访问点**：
+- `characters.map()` 替换 `data.characters.map()`
+- `char?.name || '未知角色'` 添加空值回退
+- `themes.mainThemes || []` 确保数组安全访问
+- `setting.time || '未明确'` 提供默认显示文本
+- 所有嵌套属性访问都添加了空值检查
+
+#### 验证结果
+- ✅ TypeScript编译检查通过
+- ✅ 构建成功，无运行时错误
+- ✅ 文档分析结果页面渲染稳定
+- ✅ 各种数据缺失情况都有合理的回退显示
+
 ### DocumentAnalyzer模块setModelConfig兼容性问题 (2025-07-02)
 
 #### 问题描述

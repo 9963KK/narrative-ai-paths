@@ -231,6 +231,14 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     if (!analysisResult?.data) return null;
 
     const { data } = analysisResult;
+    
+    // 防御性检查，确保所有必需的数据结构存在
+    const characters = data.characters || [];
+    const setting = data.setting || {};
+    const themes = data.themes || {};
+    const plotElements = data.plotElements || {};
+    const writingStyle = data.writingStyle || {};
+    const suggestedStorySeeds = data.suggestedStorySeeds || [];
 
     return (
       <div className="space-y-6">
@@ -258,23 +266,23 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
-                人物角色 ({data.characters.length})
+                人物角色 ({characters.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-32">
                 <div className="space-y-2">
-                  {data.characters.map((char, index) => (
+                  {characters.map((char, index) => (
                     <div key={index} className="p-2 border rounded-lg text-xs">
-                      <div className="font-semibold text-slate-800">{char.name}</div>
-                      <div className="text-slate-600 mb-1">{char.role}</div>
-                      <div className="text-slate-500">{char.traits}</div>
-                      {char.appearance && (
+                      <div className="font-semibold text-slate-800">{char?.name || '未知角色'}</div>
+                      <div className="text-slate-600 mb-1">{char?.role || '未明确'}</div>
+                      <div className="text-slate-500">{char?.traits || '待定义'}</div>
+                      {char?.appearance && (
                         <div className="text-slate-400 mt-1">外貌：{char.appearance}</div>
                       )}
                     </div>
                   ))}
-                  {data.characters.length === 0 && (
+                  {characters.length === 0 && (
                     <div className="text-slate-400 text-xs">未识别到明确的角色信息</div>
                   )}
                 </div>
@@ -294,19 +302,19 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
               <div className="space-y-2 text-xs">
                 <div>
                   <span className="font-semibold text-slate-700">时代：</span>
-                  <span className="text-slate-600">{data.setting.time}</span>
+                  <span className="text-slate-600">{setting.time || '未明确'}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">地点：</span>
-                  <span className="text-slate-600">{data.setting.place}</span>
+                  <span className="text-slate-600">{setting.place || '未明确'}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">世界观：</span>
-                  <span className="text-slate-600">{data.setting.worldBackground}</span>
+                  <span className="text-slate-600">{setting.worldBackground || '未明确'}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">氛围：</span>
-                  <span className="text-slate-600">{data.setting.atmosphere}</span>
+                  <span className="text-slate-600">{setting.atmosphere || '未明确'}</span>
                 </div>
               </div>
             </CardContent>
@@ -325,22 +333,25 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
                                   <div>
                   <div className="font-semibold text-slate-700 mb-1">主要主题：</div>
                   <div className="flex flex-wrap gap-1">
-                    {data.themes.mainThemes.map((theme, index) => (
+                    {(themes.mainThemes || []).map((theme, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {theme}
                       </Badge>
                     ))}
+                    {(!themes.mainThemes || themes.mainThemes.length === 0) && (
+                      <span className="text-slate-400 text-xs">未识别到明确主题</span>
+                    )}
                   </div>
-                  {data.themes.deeperMeaning && (
+                  {themes.deeperMeaning && (
                     <div className="mt-2">
                       <div className="font-semibold text-slate-700 mb-1">深层含义：</div>
-                      <div className="text-slate-600">{data.themes.deeperMeaning}</div>
+                      <div className="text-slate-600">{themes.deeperMeaning}</div>
                     </div>
                   )}
                 </div>
                 <div>
                   <div className="font-semibold text-slate-700 mb-1">主要冲突：</div>
-                  <div className="text-slate-600">{data.plotElements.mainConflict}</div>
+                  <div className="text-slate-600">{plotElements.mainConflict || '未明确'}</div>
                 </div>
               </div>
             </CardContent>
@@ -358,15 +369,15 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
               <div className="space-y-2 text-xs">
                 <div>
                   <span className="font-semibold text-slate-700">文体：</span>
-                  <span className="text-slate-600">{data.writingStyle.genre}</span>
+                  <span className="text-slate-600">{writingStyle.genre || '未明确'}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">语调：</span>
-                  <span className="text-slate-600">{data.writingStyle.tone}</span>
+                  <span className="text-slate-600">{writingStyle.tone || '未明确'}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">视角：</span>
-                  <span className="text-slate-600">{data.writingStyle.narrativePerspective}</span>
+                  <span className="text-slate-600">{writingStyle.narrativePerspective || '未明确'}</span>
                 </div>
               </div>
             </CardContent>
@@ -374,34 +385,34 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         </div>
 
         {/* 故事创意种子 */}
-        {data.suggestedStorySeeds.length > 0 && (
+        {suggestedStorySeeds.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-yellow-500" />
-                创意种子 ({data.suggestedStorySeeds.length})
+                创意种子 ({suggestedStorySeeds.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-40">
                 <div className="space-y-3">
-                  {data.suggestedStorySeeds.map((seed, index) => (
+                  {suggestedStorySeeds.map((seed, index) => (
                     <div key={index} className="p-3 border rounded-lg">
                       <div className="font-semibold text-slate-800 text-sm mb-1">
-                        {seed.title}
+                        {seed?.title || '未命名故事'}
                       </div>
                       <div className="text-slate-600 text-xs mb-2">
-                        {seed.premise}
+                        {seed?.premise || '暂无描述'}
                       </div>
                       <div className="flex flex-wrap gap-1 mb-2">
-                        {seed.characters.map((char, charIndex) => (
+                        {(seed?.characters || []).map((char, charIndex) => (
                           <Badge key={charIndex} variant="outline" className="text-xs">
                             {char}
                           </Badge>
                         ))}
                       </div>
                       <div className="text-slate-500 text-xs">
-                        背景：{seed.setting}
+                        背景：{seed?.setting || '未设定'}
                       </div>
                     </div>
                   ))}
