@@ -241,6 +241,117 @@ class ModelService {
     return contextMap[modelId] || 4000;
   }
 
+  // 获取Google Gemini模型列表
+  private async fetchGoogleModels(apiKey: string): Promise<ModelInfo[]> {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Google Gemini API错误: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.models || !Array.isArray(data.models)) {
+      throw new Error('Google Gemini返回数据格式错误');
+    }
+
+    return data.models
+      .filter((model: any) => model.supportedGenerationMethods?.includes('generateContent'))
+      .map((model: any) => {
+        const modelId = model.name.split('/')[1]; // 从 "models/gemini-pro" 中提取 "gemini-pro"
+        return {
+          id: modelId,
+          name: this.formatGoogleModelName(modelId),
+          description: model.description || `${modelId} - Google Gemini模型`,
+          context_length: this.getGoogleContextWindow(modelId)
+        };
+      });
+  }
+
+  // 获取Anthropic Claude模型列表
+  private async fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
+    const response = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Anthropic API错误: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.data || !Array.isArray(data.data)) {
+      throw new Error('Anthropic返回数据格式错误');
+    }
+
+    return data.data.map((model: any) => ({
+      id: model.id,
+      name: model.display_name || this.formatAnthropicModelName(model.id),
+      description: `${model.display_name || model.id} - Anthropic Claude模型`,
+      context_length: this.getAnthropicContextWindow(model.id)
+    }));
+  }
+
+  // 格式化Google模型名称
+  private formatGoogleModelName(modelId: string): string {
+    const nameMap: Record<string, string> = {
+      'gemini-pro': 'Gemini Pro',
+      'gemini-pro-vision': 'Gemini Pro Vision',
+      'gemini-1.5-pro': 'Gemini 1.5 Pro',
+      'gemini-1.5-flash': 'Gemini 1.5 Flash',
+      'gemini-1.0-pro': 'Gemini 1.0 Pro'
+    };
+    return nameMap[modelId] || modelId;
+  }
+
+  // 格式化Anthropic模型名称
+  private formatAnthropicModelName(modelId: string): string {
+    const nameMap: Record<string, string> = {
+      'claude-3-opus-20240229': 'Claude 3 Opus',
+      'claude-3-sonnet-20240229': 'Claude 3 Sonnet',
+      'claude-3-haiku-20240307': 'Claude 3 Haiku',
+      'claude-3-5-sonnet-20240620': 'Claude 3.5 Sonnet',
+      'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku'
+    };
+    return nameMap[modelId] || modelId;
+  }
+
+  // 获取Google上下文窗口大小
+  private getGoogleContextWindow(modelId: string): number {
+    const contextMap: Record<string, number> = {
+      'gemini-pro': 32768,
+      'gemini-pro-vision': 16384,
+      'gemini-1.5-pro': 1048576, // 1M tokens
+      'gemini-1.5-flash': 1048576,
+      'gemini-1.0-pro': 32768
+    };
+    return contextMap[modelId] || 32768;
+  }
+
+  // 获取Anthropic上下文窗口大小
+  private getAnthropicContextWindow(modelId: string): number {
+    const contextMap: Record<string, number> = {
+      'claude-3-opus-20240229': 200000,
+      'claude-3-sonnet-20240229': 200000,
+      'claude-3-haiku-20240307': 200000,
+      'claude-3-5-sonnet-20240620': 200000,
+      'claude-3-5-haiku-20241022': 200000
+    };
+    return contextMap[modelId] || 200000;
+  }
+
   // 主要的获取模型方法
   async fetchModels(provider: string, apiKey: string, baseUrl?: string): Promise<ModelListResponse> {
     if (!apiKey) {
@@ -276,19 +387,10 @@ class ModelService {
           models = await this.fetchVolcengineModels(apiKey, baseUrl);
           break;
         case 'anthropic':
-          // Anthropic 没有公开的models端点，返回静态列表
-          models = [
-            { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
-            { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet' },
-            { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' }
-          ];
+          models = await this.fetchAnthropicModels(apiKey);
           break;
         case 'google':
-          // Google 的模型API可能需要特殊处理
-          models = [
-            { id: 'gemini-pro', name: 'Gemini Pro' },
-            { id: 'gemini-pro-vision', name: 'Gemini Pro Vision' }
-          ];
+          models = await this.fetchGoogleModels(apiKey);
           break;
         default:
           return { data: [], error: `不支持的提供商: ${provider}` };

@@ -26,8 +26,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [useDynamicModels, setUseDynamicModels] = useState(false);
 
-  // 支持动态获取模型的提供商
-  const supportsDynamicModels = ['openai', 'openrouter', 'deepseek', 'moonshot', 'zhipu', 'volcengine'].includes(provider);
+  // 支持动态获取模型的提供商（除了custom，所有提供商都支持）
+  const supportsDynamicModels = provider !== 'custom';
 
   // 自动获取模型列表
   useEffect(() => {
