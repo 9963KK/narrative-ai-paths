@@ -180,6 +180,70 @@ src/services/modules/
 
 ## 🐛 Bug修复记录
 
+### API调用参数类型错误修复 (2025-07-02)
+
+#### 问题描述
+全面检查发现多个组件的API调用参数类型不匹配新的模块化架构：
+
+**主要错误**：
+1. `StoryManager.tsx` - `generateNextChapter` 参数类型错误
+2. `StoryReader.tsx` - `generateChoices` 参数类型错误  
+3. `documentAnalyzer.ts` - 类型导入路径错误
+4. `DocumentAnalyzer.tsx` - 模块导入路径错误
+
+#### 具体修复
+
+**1. StoryManager.tsx 第464行**：
+```typescript
+// 修复前
+const response = await storyAI.generateNextChapter(storyState, selectedChoice, previousChoices);
+
+// 修复后  
+const response = await storyAI.generateNextChapter(
+  storyState.current_scene,
+  selectedChoice.text, 
+  previousChoices
+);
+```
+
+**2. StoryReader.tsx 第557行**：
+```typescript
+// 修复前
+const aiChoices = await storyAI.generateChoices(scene, characters, {
+  ...story,
+  mood: story.mood || '神秘',
+  tension_level: story.tension_level || 5
+});
+
+// 修复后
+const aiChoices = await storyAI.generateChoices(scene, characters, story.setting || '未知世界');
+```
+
+**3. documentAnalyzer.ts 第2行**：
+```typescript
+// 修复前
+import { Character } from './storyAI';
+
+// 修复后
+import { Character } from './modules';
+```
+
+**4. DocumentAnalyzer.tsx 第24行**：
+```typescript
+// 修复前
+import { documentAnalyzer, DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
+
+// 修复后
+import { documentAnalyzer } from '@/services/modules';
+import { DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
+```
+
+#### 验证结果
+- ✅ TypeScript编译检查通过
+- ✅ API调用参数类型正确匹配
+- ✅ 模块导入路径统一
+- ✅ 系统完全兼容新架构
+
 ### 故事初始化API兼容性问题 (2025-07-02)
 
 #### 问题描述
@@ -292,6 +356,12 @@ Cannot start service: Host version "0.21.5" does not match binary version "0.25.
 ---
 
 ## 版本历史
+
+### v2.2.3 (2025-07-02)
+- 全面修复API调用兼容性问题
+- 修正generateNextChapter参数类型错误
+- 修正generateChoices参数类型错误
+- 更新模块导入路径
 
 ### v2.2.2 (2025-07-02)
 - 修复故事初始化API兼容性问题

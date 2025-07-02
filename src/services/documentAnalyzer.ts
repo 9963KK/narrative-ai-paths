@@ -1,5 +1,5 @@
 import { ModelConfig } from '@/components/model-config/constants';
-import { Character } from './storyAI';
+import { Character } from './modules';
 
 // 文档分析结果接口
 export interface DocumentAnalysisResult {

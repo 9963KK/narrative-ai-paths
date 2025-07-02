@@ -462,8 +462,8 @@ const StoryManager: React.FC = () => {
         console.log(`🔄 第${attempt}次尝试生成章节...`);
         
         const response = await storyAI.generateNextChapter(
-          storyState,
-          selectedChoice,
+          storyState.current_scene,
+          selectedChoice.text,
           previousChoices
         );
         

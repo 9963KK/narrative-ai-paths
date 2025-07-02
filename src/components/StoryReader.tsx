@@ -554,11 +554,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           const { storyAI } = await import('../services/storyAI');
           storyAI.setModelConfig(modelConfig);
           
-          const aiChoices = await storyAI.generateChoices(scene, characters, {
-            ...story,
-            mood: story.mood || '神秘',
-            tension_level: story.tension_level || 5
-          });
+          const aiChoices = await storyAI.generateChoices(scene, characters, story.setting || '未知世界');
           if (aiChoices && aiChoices.length > 0) {
             console.log('✅ AI选择生成成功');
             return aiChoices;

@@ -21,7 +21,8 @@ import {
   Eye,
   Loader2
 } from 'lucide-react';
-import { documentAnalyzer, DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
+import { documentAnalyzer } from '@/services/modules';
+import { DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
 import { ModelConfig } from '@/components/model-config/constants';
 
 interface DocumentAnalyzerProps {
