@@ -7,6 +7,7 @@ export const providers = [
   { value: 'deepseek', label: 'DeepSeek' },
   { value: 'moonshot', label: 'Moonshot (Kimi)' },
   { value: 'zhipu', label: '智谱AI (GLM)' },
+  { value: 'volcengine', label: '火山引擎 (豆包)' },
   { value: 'custom', label: '自定义API' }
 ];
 
@@ -14,7 +15,8 @@ export const defaultBaseUrls = {
   openrouter: 'https://openrouter.ai/api/v1',
   deepseek: 'https://api.deepseek.com/v1',
   moonshot: 'https://api.moonshot.cn/v1',
-  zhipu: 'https://open.bigmodel.cn/api/paas/v4'
+  zhipu: 'https://open.bigmodel.cn/api/paas/v4',
+  volcengine: 'https://ark.cn-beijing.volces.com/api/v3'
 };
 
 export const models = {
@@ -51,6 +53,14 @@ export const models = {
   zhipu: [
     { value: 'glm-4', label: 'GLM-4' },
     { value: 'glm-3-turbo', label: 'GLM-3 Turbo' }
+  ],
+  volcengine: [
+    { value: 'doubao-pro-128k', label: '豆包 Pro 128K' },
+    { value: 'doubao-pro-32k', label: '豆包 Pro 32K' },
+    { value: 'doubao-pro-4k', label: '豆包 Pro 4K' },
+    { value: 'doubao-lite-128k', label: '豆包 Lite 128K' },
+    { value: 'doubao-lite-32k', label: '豆包 Lite 32K' },
+    { value: 'doubao-lite-4k', label: '豆包 Lite 4K' }
   ],
   custom: [
     { value: 'custom-model', label: '自定义模型' }

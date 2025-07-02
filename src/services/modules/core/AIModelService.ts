@@ -224,6 +224,8 @@ export class AIModelService implements IAIModelService {
         return 'https://open.bigmodel.cn/api/paas/v4';
       case 'openrouter':
         return 'https://openrouter.ai/api/v1';
+      case 'volcengine':
+        return 'https://ark.cn-beijing.volces.com/api/v3';
       default:
         return this.modelConfig.baseUrl || '';
     }
@@ -292,7 +294,7 @@ export class AIModelService implements IAIModelService {
     // 添加JSON输出模式支持（仅对支持的提供商）
     if (forceJsonOutput) {
       const provider = this.modelConfig!.provider;
-      const supportsJsonMode = ['openai', 'deepseek', 'openrouter', 'moonshot', 'zhipu'].includes(provider);
+      const supportsJsonMode = ['openai', 'deepseek', 'openrouter', 'moonshot', 'zhipu', 'volcengine'].includes(provider);
       
       if (supportsJsonMode) {
         basePayload.response_format = { type: "json_object" };
