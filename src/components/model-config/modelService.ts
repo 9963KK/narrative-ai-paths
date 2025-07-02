@@ -186,6 +186,61 @@ class ModelService {
     })) || [];
   }
 
+  // 获取火山引擎模型列表
+  private async fetchVolcengineModels(apiKey: string, baseUrl?: string): Promise<ModelInfo[]> {
+    const url = `${baseUrl || 'https://ark.cn-beijing.volces.com/api/v3'}/models`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`火山引擎 API错误: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.data || !Array.isArray(data.data)) {
+      throw new Error('火山引擎返回数据格式错误');
+    }
+
+    return data.data.map((model: any) => ({
+      id: model.id,
+      name: this.formatVolcengineModelName(model.id),
+      description: model.description || `${model.id} - 火山引擎豆包模型`,
+      context_length: this.getVolcengineContextWindow(model.id)
+    }));
+  }
+
+  // 格式化火山引擎模型名称
+  private formatVolcengineModelName(modelId: string): string {
+    const nameMap: Record<string, string> = {
+      'doubao-pro-128k': '豆包 Pro 128K',
+      'doubao-pro-32k': '豆包 Pro 32K',
+      'doubao-pro-4k': '豆包 Pro 4K',
+      'doubao-lite-128k': '豆包 Lite 128K',
+      'doubao-lite-32k': '豆包 Lite 32K',
+      'doubao-lite-4k': '豆包 Lite 4K'
+    };
+    return nameMap[modelId] || modelId;
+  }
+
+  // 获取火山引擎上下文窗口大小
+  private getVolcengineContextWindow(modelId: string): number {
+    const contextMap: Record<string, number> = {
+      'doubao-pro-128k': 128000,
+      'doubao-pro-32k': 32000,
+      'doubao-pro-4k': 4000,
+      'doubao-lite-128k': 128000,
+      'doubao-lite-32k': 32000,
+      'doubao-lite-4k': 4000
+    };
+    return contextMap[modelId] || 4000;
+  }
+
   // 主要的获取模型方法
   async fetchModels(provider: string, apiKey: string, baseUrl?: string): Promise<ModelListResponse> {
     if (!apiKey) {
@@ -216,6 +271,9 @@ class ModelService {
           break;
         case 'zhipu':
           models = await this.fetchZhipuModels(apiKey);
+          break;
+        case 'volcengine':
+          models = await this.fetchVolcengineModels(apiKey, baseUrl);
           break;
         case 'anthropic':
           // Anthropic 没有公开的models端点，返回静态列表
