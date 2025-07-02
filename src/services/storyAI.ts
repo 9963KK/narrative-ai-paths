@@ -161,35 +161,8 @@ class StoryAI {
       // 检查是否需要生成摘要
       await this.checkAndGenerateSummary();
 
-      // 构建生成请求
-      const prompt = this.buildChapterPrompt(currentStory, selectedChoice, currentState);
-      const systemPrompt = this.getChapterSystemPrompt(currentState);
-
-      // 获取对话历史用于上下文
-      const history = conversationManager.getHistory();
-      const summaryState = conversationManager.getSummaryState();
-
-      // 调用AI生成下一章节
-      const aiResponse = await aiModelService.callAI(
-        prompt,
-        systemPrompt,
-        true, // 使用历史
-        true, // 强制JSON输出
-        history,
-        summaryState.summary
-      );
-
-      if (!aiResponse.success || !aiResponse.choices?.[0]?.message?.content) {
-        throw new Error('AI章节生成失败');
-      }
-
-      const content = aiResponse.choices[0].message.content;
-      
-      // 保存AI响应到对话历史
-      conversationManager.addToHistory('assistant', content);
-
-      // 解析故事响应
-      const storyResponse = contentParser.parseStoryResponse(content);
+      // 使用 ContentGenerator 模块生成下一章节
+      const storyResponse = await contentGenerator.generateNextChapter(currentState, selectedChoice);
       
       if (storyResponse && storyResponse.success && storyResponse.content) {
         // 更新故事状态
@@ -210,6 +183,9 @@ class StoryAI {
         }
 
         storyStateManager.updateState(updates);
+        
+        // 保存生成的内容到对话历史
+        conversationManager.addToHistory('assistant', storyResponse.content.scene);
         
         console.log('✅ 下一章节生成成功');
         return storyResponse;
@@ -234,34 +210,23 @@ class StoryAI {
       const currentState = storyStateManager.getState();
       if (!currentState) {
         console.warn('⚠️ 未找到当前故事状态，使用传入参数');
+        // 创建临时状态用于生成选择项
+        const tempState: StoryState = {
+          story_id: 'temp',
+          current_scene: scene,
+          characters: characters,
+          setting: setting,
+          chapter: 1,
+          choices_made: [],
+          mood: '神秘',
+          tension_level: 3,
+          is_completed: false
+        };
+        return await choiceGenerator.generateChoices(tempState, scene);
       }
 
-      const prompt = this.buildChoicesPrompt(scene, characters, setting, currentState);
-      const systemPrompt = this.getChoicesSystemPrompt();
-
-      // 调用AI生成选择项
-      const aiResponse = await aiModelService.callAI(
-        prompt,
-        systemPrompt,
-        false, // 不使用历史，避免干扰
-        true   // 强制JSON输出
-      );
-
-      if (!aiResponse.success || !aiResponse.choices?.[0]?.message?.content) {
-        throw new Error('AI选择项生成失败');
-      }
-
-      const content = aiResponse.choices[0].message.content;
-      
-      // 解析选择项
-      const choices = contentParser.parseChoices(content);
-      
-      if (choices && choices.length > 0) {
-        console.log(`✅ 选择项生成成功，共 ${choices.length} 个选项`);
-        return choices;
-      } else {
-        throw new Error('选择项解析失败');
-      }
+      // 使用 ChoiceGenerator 模块生成选择项
+      return await choiceGenerator.generateChoices(currentState, scene);
     } catch (error) {
       console.error('❌ 选择项生成失败:', error);
       
@@ -277,31 +242,15 @@ class StoryAI {
     try {
       console.log('🏁 开始生成故事结局...', { endingType });
 
-      const prompt = this.buildEndingPrompt(storyState, endingType);
-      const systemPrompt = this.getEndingSystemPrompt();
-
-      // 获取完整的故事上下文
-      const history = conversationManager.getHistory();
-      const summaryState = conversationManager.getSummaryState();
-
-      // 调用AI生成结局
-      const aiResponse = await aiModelService.callAI(
-        prompt,
-        systemPrompt,
-        false, // 不使用历史，使用自定义上下文
-        false  // 不强制JSON，结局是纯文本
-      );
-
-      if (!aiResponse.success || !aiResponse.choices?.[0]?.message?.content) {
-        throw new Error('AI结局生成失败');
-      }
-
-      const ending = aiResponse.choices[0].message.content.trim();
+      // 使用 EndingGenerator 模块生成结局
+      const ending = endingType 
+        ? await endingGenerator.generateCustomEnding(storyState, endingType)
+        : await endingGenerator.generateStoryEnding(storyState);
       
       // 标记故事为已完成
       storyStateManager.updateState({
         is_completed: true,
-        completion_type: (endingType as any) || 'neutral',
+        completion_type: (endingType as any) || endingGenerator.determineEndingType(storyState),
         story_progress: 100
       });
 
@@ -396,127 +345,40 @@ class StoryAI {
     console.log('🔄 故事状态已重置');
   }
 
-  // ==================== 私有辅助方法 ====================
+  // ==================== 新功能扩展 ====================
 
   /**
-   * 构建章节生成提示词
+   * 检查故事是否应该结束
    */
-  private buildChapterPrompt(currentStory: string, selectedChoice: string, state: StoryState): string {
-    return `基于玩家的选择，继续推进故事发展：
-
-当前故事背景：
-${currentStory}
-
-玩家选择：${selectedChoice}
-
-当前状态：
-- 章节：第${state.chapter}章
-- 氛围：${state.mood}
-- 紧张度：${state.tension_level}/10
-- 故事进度：${state.story_progress || 0}%
-
-请根据玩家的选择，生成下一章节的内容，包括：
-1. 场景描述（500-800字）
-2. 3-4个新的选择项
-3. 可能的新角色（如需要）
-4. 更新的章节标题
-5. 当前氛围和紧张度
-
-请以JSON格式返回，包含scene、choices、chapter_title、mood、tension_level等字段。`;
+  shouldStoryEnd(): boolean {
+    const state = storyStateManager.getState();
+    if (!state) return false;
+    
+    return endingGenerator.shouldStoryEnd(state);
   }
 
   /**
-   * 构建选择项生成提示词
+   * 获取故事完成度
    */
-  private buildChoicesPrompt(scene: string, characters: Character[], setting: string, state?: StoryState | null): string {
-    const characterNames = characters.map(c => c.name).join('、');
-    const currentMood = state?.mood || '神秘';
-    const tensionLevel = state?.tension_level || 3;
-
-    return `为以下故事场景生成3-4个有意义的选择项：
-
-场景：${scene}
-
-角色：${characterNames}
-设定：${setting}
-当前氛围：${currentMood}
-紧张度：${tensionLevel}/10
-
-要求：
-1. 每个选择都应该有不同的风险和机会
-2. 选择应该符合当前的故事氛围
-3. 提供明确的行动描述和可能后果
-4. 难度等级要有所区别（1-5）
-
-请以JSON数组格式返回，每个选择包含id、text、description、consequences、difficulty字段。`;
+  getStoryCompletion(): number {
+    const state = storyStateManager.getState();
+    if (!state) return 0;
+    
+    return endingGenerator.evaluateStoryCompletion(state);
   }
 
   /**
-   * 构建结局生成提示词
+   * 分析文档内容
    */
-  private buildEndingPrompt(storyState: StoryState, endingType?: string): string {
-    const choiceHistory = storyState.choices_made.join(' → ');
-    const characters = storyState.characters.map(c => `${c.name}(${c.role})`).join('、');
-
-    return `请为这个故事创作一个${endingType || '合适的'}结局：
-
-故事背景：${storyState.setting}
-当前场景：${storyState.current_scene}
-主要角色：${characters}
-选择历史：${choiceHistory}
-故事氛围：${storyState.mood}
-故事进度：${storyState.story_progress || 100}%
-
-要求：
-1. 结局应该合理地解决主要冲突
-2. 给角色适当的发展结果
-3. 与之前的选择和发展保持一致
-4. 长度控制在300-500字
-5. 提供满意的故事闭环
-
-请直接返回结局文本，不需要JSON格式。`;
+  async analyzeDocument(content: string, fileName: string) {
+    return await documentAnalyzer.analyzeDocument(content, fileName);
   }
 
   /**
-   * 获取系统提示词
+   * 发展角色
    */
-  private getChapterSystemPrompt(state: StoryState): string {
-    return `你是一个专业的互动故事作家。基于玩家的选择继续故事发展，保持故事的连贯性和吸引力。
-
-当前故事状态：
-- 类型：冒险/奇幻
-- 章节：第${state.chapter}章
-- 氛围：${state.mood}
-- 角色：${state.characters.map(c => c.name).join('、')}
-
-写作要求：
-1. 保持故事的连贯性和逻辑性
-2. 根据玩家选择合理推进情节
-3. 创造引人入胜的场景和对话
-4. 提供有意义的选择项
-5. 必须返回有效的JSON格式`;
-  }
-
-  private getChoicesSystemPrompt(): string {
-    return `你是一个互动故事的选择设计师。为玩家创造有意义且多样化的选择项。
-
-设计原则：
-1. 每个选择都有明确的风险和机会
-2. 选择难度要有梯度（简单、中等、困难）
-3. 后果描述要让玩家能够预见可能的结果
-4. 选择要符合故事的整体氛围
-5. 必须返回有效的JSON数组格式`;
-  }
-
-  private getEndingSystemPrompt(): string {
-    return `你是一个故事结局专家。创作令人满意的故事结局，为角色和情节提供合理的收尾。
-
-结局要求：
-1. 解决主要冲突和悬念
-2. 给角色适当的发展结果
-3. 与故事发展保持一致
-4. 提供情感上的满足感
-5. 直接返回文本，不使用JSON格式`;
+  async developCharacter(character: Character, context: string): Promise<Character> {
+    return await characterDeveloper.developCharacter(character, context);
   }
 
   // ==================== 备用方案 ====================
