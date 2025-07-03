@@ -85,7 +85,7 @@ const App = () => (
             
             {/* 设置页面 - 需要登录 */}
             <Route 
-              path="/app/settings" 
+              path="/settings" 
               element={
                 <ProtectedRoute>
                   <Settings />
@@ -95,7 +95,7 @@ const App = () => (
             
             {/* 个人资料页面 - 需要登录 */}
             <Route 
-              path="/app/profile" 
+              path="/profile" 
               element={
                 <ProtectedRoute>
                   <Profile />

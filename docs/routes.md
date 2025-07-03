@@ -109,7 +109,7 @@
   - 故事阅读和交互
 - **特点**: 承载主要故事功能
 
-### 9. 设置页面 `/app/settings`
+### 9. 设置页面 `/settings`
 - **组件**: `src/pages/Settings.tsx`
 - **权限**: 需要登录 (ProtectedRoute)
 - **功能**:
@@ -119,7 +119,7 @@
   - 隐私安全设置
 - **特点**: 集成ModelConfig组件，分标签页管理各项设置
 
-### 10. 个人资料页面 `/app/profile`
+### 10. 个人资料页面 `/profile`
 - **组件**: `src/pages/Profile.tsx`
 - **权限**: 需要登录 (ProtectedRoute)
 - **功能**:
@@ -174,7 +174,7 @@
 
 ### 权限控制
 - **公开页面**: `/`, `/login`, `404`
-- **需要登录**: `/app`, `/app/quick-start`, `/app/advanced`, `/app/document`, `/app/story`, `/app/settings`, `/app/profile`
+- **需要登录**: `/app`, `/app/quick-start`, `/app/advanced`, `/app/document`, `/app/story`, `/settings`, `/profile`
 - **需要管理员权限**: `/admin`
 
 ## 页面组件详情
@@ -228,13 +228,13 @@
 - **特点**: 承载StoryManager组件
 
 ### Settings 页面
-- **路径**: `/app/settings`
+- **路径**: `/settings`
 - **文件**: `src/pages/Settings.tsx`
 - **功能**: 应用设置管理
 - **特点**: 分标签页管理不同设置类型
 
 ### Profile 页面
-- **路径**: `/app/profile`
+- **路径**: `/profile`
 - **文件**: `src/pages/Profile.tsx`
 - **功能**: 用户资料和统计
 - **特点**: 展示用户信息和成就系统

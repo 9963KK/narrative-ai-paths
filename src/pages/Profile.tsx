@@ -294,7 +294,7 @@ const Profile: React.FC = () => {
                   <div className="flex flex-wrap gap-3">
                     <Button 
                       variant="outline"
-                      onClick={() => navigate('/app/settings')}
+                      onClick={() => navigate('/settings')}
                       className="flex items-center gap-2"
                     >
                       <User className="w-4 h-4" />
