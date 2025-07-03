@@ -14,6 +14,8 @@ import QuickStart from "./pages/QuickStart";
 import Advanced from "./pages/Advanced";
 import DocumentAnalysis from "./pages/DocumentAnalysis";
 import Story from "./pages/Story";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +79,26 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Story />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 设置页面 - 需要登录 */}
+            <Route 
+              path="/app/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 个人资料页面 - 需要登录 */}
+            <Route 
+              path="/app/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } 
             />

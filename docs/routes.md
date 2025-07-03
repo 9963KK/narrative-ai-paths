@@ -109,7 +109,27 @@
   - 故事阅读和交互
 - **特点**: 承载主要故事功能
 
-### 9. 404 页面 `*`
+### 9. 设置页面 `/app/settings`
+- **组件**: `src/pages/Settings.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - AI模型配置管理
+  - 账户设置和偏好
+  - 通知设置配置
+  - 隐私安全设置
+- **特点**: 集成ModelConfig组件，分标签页管理各项设置
+
+### 10. 个人资料页面 `/app/profile`
+- **组件**: `src/pages/Profile.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - 用户信息展示
+  - 创作统计数据
+  - 成就徽章系统
+  - 账户操作入口
+- **特点**: 完整的用户档案和统计信息
+
+### 11. 404 页面 `*`
 - **组件**: `src/pages/NotFound.tsx`
 - **权限**: 公开访问
 - **功能**:
@@ -154,7 +174,7 @@
 
 ### 权限控制
 - **公开页面**: `/`, `/login`, `404`
-- **需要登录**: `/app`, `/app/quick-start`, `/app/advanced`, `/app/document`, `/app/story`
+- **需要登录**: `/app`, `/app/quick-start`, `/app/advanced`, `/app/document`, `/app/story`, `/app/settings`, `/app/profile`
 - **需要管理员权限**: `/admin`
 
 ## 页面组件详情
@@ -207,6 +227,18 @@
 - **功能**: 故事阅读和交互
 - **特点**: 承载StoryManager组件
 
+### Settings 页面
+- **路径**: `/app/settings`
+- **文件**: `src/pages/Settings.tsx`
+- **功能**: 应用设置管理
+- **特点**: 分标签页管理不同设置类型
+
+### Profile 页面
+- **路径**: `/app/profile`
+- **文件**: `src/pages/Profile.tsx`
+- **功能**: 用户资料和统计
+- **特点**: 展示用户信息和成就系统
+
 ### NotFound 页面
 - **路径**: `*` (通配符)
 - **文件**: `src/pages/NotFound.tsx`
@@ -233,7 +265,14 @@
 
 ## 版本历史
 
-### v2.1.15 (最新)
+### v2.1.16 (最新)
+- 添加 `/app/settings` 设置页面，集成模型配置功能
+- 添加 `/app/profile` 个人资料页面，显示用户统计和成就
+- 更新用户头部菜单导航，链接到设置和资料页面
+- 模型配置组件支持嵌入模式，可在设置页面使用
+- 完善用户界面设置功能，满足用户配置管理需求
+
+### v2.1.15
 - 将主界面三个模块分离为独立路由
 - 添加 `/app/quick-start` 快速开始页面
 - 添加 `/app/advanced` 专业模式页面  

@@ -13,6 +13,8 @@ interface ModelConfigProps {
   config: ModelConfig;
   onConfigChange: (config: ModelConfig) => void;
   onClose: () => void;
+  showCloseButton?: boolean;
+  embedded?: boolean;
 }
 
 interface ApiTestResult {
@@ -21,7 +23,13 @@ interface ApiTestResult {
   timestamp: number;
 }
 
-const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChange, onClose }) => {
+const ModelConfigComponent: React.FC<ModelConfigProps> = ({ 
+  config, 
+  onConfigChange, 
+  onClose, 
+  showCloseButton = true, 
+  embedded = false 
+}) => {
   const [localConfig, setLocalConfig] = useState<ModelConfig>(config);
   const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
   const [isTestingApi, setIsTestingApi] = useState(false);
@@ -227,7 +235,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
   return (
     <>
       {/* 保存成功提示覆盖层 - 独立渲染，不影响主界面布局 */}
-      {showSaveSuccess && (
+      {!embedded && showSaveSuccess && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={handleCloseSuccessToast}
@@ -249,7 +257,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
         </div>
       )}
       
-      <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
+      <Card className={`w-full bg-white ${embedded ? 'shadow-none border-none' : 'max-w-2xl shadow-lg border-slate-200'}`}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Settings className="h-5 w-5 text-slate-600" />
@@ -391,13 +399,15 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
           >
             保存配置
           </Button>
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-all duration-300"
-          >
-            返回
-          </Button>
+          {showCloseButton && (
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-all duration-300"
+            >
+              返回
+            </Button>
+          )}
         </div>
       </CardContent>
       </Card>
