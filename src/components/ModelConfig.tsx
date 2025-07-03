@@ -27,6 +27,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [hasStoredConfig, setHasStoredConfig] = useState(false);
   const [configSaveTime, setConfigSaveTime] = useState<Date | null>(null);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   // 组件加载时尝试从本地存储加载配置
   useEffect(() => {
@@ -71,7 +72,14 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
     saveProviderConfig(localConfig.provider, localConfig);
     setHasStoredConfig(true);
     setConfigSaveTime(new Date());
-    onClose();
+    
+    // 显示保存成功提示
+    setShowSaveSuccess(true);
+    
+    // 3秒后自动隐藏提示
+    setTimeout(() => {
+      setShowSaveSuccess(false);
+    }, 3000);
   };
 
   const handleClearSavedConfig = () => {
@@ -119,7 +127,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json(); // 解析响应但不需要使用
         setTestResult({
           success: true,
           message: `API连接成功！模型响应正常`,
@@ -212,13 +220,31 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
   const canTestApi = localConfig.apiKey && localConfig.provider && localConfig.model;
 
   return (
-    <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-slate-600" />
-          <CardTitle className="text-xl font-bold text-slate-800">模型配置</CardTitle>
+    <div className="relative">
+      {/* 保存成功提示覆盖层 */}
+      {showSaveSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl border border-green-200 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">配置保存成功</h3>
+                <p className="text-sm text-gray-600">AI模型配置已成功保存</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </CardHeader>
+      )}
+      
+      <Card className="w-full max-w-2xl bg-white shadow-lg border-slate-200">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-slate-600" />
+            <CardTitle className="text-xl font-bold text-slate-800">模型配置</CardTitle>
+          </div>
+        </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <ProviderSelector
@@ -363,7 +389,8 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
           </Button>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
