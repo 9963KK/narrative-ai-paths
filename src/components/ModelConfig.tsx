@@ -396,7 +396,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
             variant="outline"
             className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-all duration-300"
           >
-            取消
+            返回
           </Button>
         </div>
       </CardContent>

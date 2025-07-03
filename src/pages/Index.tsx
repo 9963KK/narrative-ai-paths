@@ -1,28 +1,29 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import StoryManager from '@/components/StoryManager';
-import { UserHeader } from '@/components/auth/UserHeader';
 
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
-    // 如果是管理员且不是从/admin返回的，直接跳转到管理后台
-    if (user && user.role === 'admin' && !location.state?.fromAdmin) {
-      navigate('/admin');
+    // 根据用户状态重定向到合适的页面
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/app', { replace: true });
+      }
+    } else {
+      navigate('/login', { replace: true });
     }
-  }, [user, location.state, navigate]);
+  }, [user, navigate]);
 
+  // 显示加载状态，等待重定向
   return (
-    <div className="min-h-screen bg-gray-50">
-      <UserHeader />
-      <div className="container mx-auto">
-        <StoryManager />
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
     </div>
   );
 };
