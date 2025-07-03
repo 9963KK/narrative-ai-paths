@@ -82,6 +82,11 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
     }, 3000);
   };
 
+  // 关闭成功提示
+  const handleCloseSuccessToast = () => {
+    setShowSaveSuccess(false);
+  };
+
   const handleClearSavedConfig = () => {
     // 清除本地存储的配置
     clearSavedConfig();
@@ -220,18 +225,24 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
   const canTestApi = localConfig.apiKey && localConfig.provider && localConfig.model;
 
   return (
-    <div className="relative">
-      {/* 保存成功提示覆盖层 */}
+    <>
+      {/* 保存成功提示覆盖层 - 独立渲染，不影响主界面布局 */}
       {showSaveSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-xl border border-green-200 animate-in fade-in duration-300">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleCloseSuccessToast}
+        >
+          <div 
+            className="bg-white rounded-lg p-6 shadow-xl border border-green-200 animate-in fade-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <Check className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">配置保存成功</h3>
-                <p className="text-sm text-gray-600">AI模型配置已成功保存</p>
+                <p className="text-sm text-gray-600">AI模型配置已成功保存，点击任意地方关闭</p>
               </div>
             </div>
           </div>
@@ -390,7 +401,7 @@ const ModelConfigComponent: React.FC<ModelConfigProps> = ({ config, onConfigChan
         </div>
       </CardContent>
       </Card>
-    </div>
+    </>
   );
 };
 
