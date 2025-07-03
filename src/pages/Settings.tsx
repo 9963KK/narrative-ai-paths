@@ -16,7 +16,7 @@ import { loadModelConfig, saveModelConfig, hasSavedConfig } from '@/services/con
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
-  const [activeTab, setActiveTab] = useState<'model' | 'account' | 'notifications' | 'privacy'>('model');
+  const [activeTab, setActiveTab] = useState<'model' | 'account' | 'notifications' | 'privacy'>('account');
   const [modelConfig, setModelConfig] = useState<ModelConfigType>({
     provider: 'openai',
     model: 'gpt-4',
@@ -84,8 +84,8 @@ const Settings: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'model' as const, label: 'AI模型配置', icon: Bot, description: '配置AI模型和API' },
     { id: 'account' as const, label: '账户设置', icon: User, description: '个人信息和偏好' },
+    { id: 'model' as const, label: 'AI模型配置', icon: Bot, description: '配置AI模型和API' },
     { id: 'notifications' as const, label: '通知设置', icon: Bell, description: '通知和提醒配置' },
     { id: 'privacy' as const, label: '隐私安全', icon: Shield, description: '数据和隐私设置' }
   ];
