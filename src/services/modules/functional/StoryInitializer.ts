@@ -212,7 +212,7 @@ export class StoryInitializer implements IStoryInitializer {
 3. 为指定的故事长度做好章节规划
 4. 考虑期望结局类型，在开场中埋下相应伏笔
 5. 创建立体的角色形象，包含详细外貌和背景
-6. 提供3-4个高质量的选择项，每个都有明确的后果
+6. 设置引人入胜的故事开场，为后续选择项生成做好铺垫
 
 **重要：必须严格按照以下JSON格式返回，不要返回其他格式：**
 
@@ -227,15 +227,6 @@ export class StoryInitializer implements IStoryInitializer {
       "backstory": "背景故事"
     }
   ],
-  "choices": [
-    {
-      "id": 1,
-      "text": "选择标题",
-      "description": "详细行动描述",
-      "consequences": "可能的后果",
-      "difficulty": 3
-    }
-  ],
   "chapter_title": "章节标题（8-15字，引人入胜）",
   "mood": "当前氛围（与故事基调匹配，8-12字）",
   "tension_level": 5,
@@ -244,7 +235,7 @@ export class StoryInitializer implements IStoryInitializer {
   "setting_details": "详细设定描述"
 }
 
-请确保返回的是一个完整的JSON对象，不是数组或其他格式。`;
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
     } else {
       // 简单配置的提示词
       return `请基于以下信息创建一个引人入胜的故事开头：
@@ -257,7 +248,7 @@ export class StoryInitializer implements IStoryInitializer {
 1. 创建一个吸引人的开场场景（400-600字）
 2. 介绍主要角色和背景设定，塑造生动的角色形象
 3. 设置初始的情况和挑战，建立故事冲突
-4. 为玩家提供3-4个有意义的选择，推动故事发展
+4. 设置开放性的情况，为后续选择项生成创造良好基础
 5. 建立适当的故事氛围和紧张感
 6. 发挥创意，将简单想法转化为完整的故事世界
 
@@ -274,22 +265,13 @@ export class StoryInitializer implements IStoryInitializer {
       "backstory": "背景故事"
     }
   ],
-  "choices": [
-    {
-      "id": 1,
-      "text": "选择标题",
-      "description": "详细行动描述",
-      "consequences": "可能的后果",
-      "difficulty": 3
-    }
-  ],
   "chapter_title": "章节标题（8-15字）",
   "mood": "当前氛围（8-12字）",
   "tension_level": 5,
   "setting_details": "详细设定描述"
 }
 
-请确保返回的是一个完整的JSON对象，不是数组或其他格式。`;
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
     }
   }
 
@@ -378,11 +360,11 @@ export class StoryInitializer implements IStoryInitializer {
    - 制造适度的悬念和期待感
    - 确保开场与期望结局类型呼应
 
-4. 选择设计原则：
-   - 每个选择都有明确的行动描述和可能后果
-   - 选择之间形成有意义的分支和对比
-   - 难度设计合理，体现不同的风险收益
-   - 选择推动角色发展和情节前进
+4. 故事开场设计：
+   - 创造开放性的故事局面，为后续交互做好准备
+   - 设置适当的悬念和冲突点
+   - 为玩家的选择和行动留出合理空间
+   - 确保故事具有良好的发展潜力
 
 5. 文学表达技巧：
    - 使用丰富的修辞手法：比喻、象征、对比、排比等
@@ -393,7 +375,7 @@ export class StoryInitializer implements IStoryInitializer {
 6. JSON格式要求：
    - **绝对必须**返回完整、有效的JSON对象格式
    - **禁止**返回数组、字符串或其他格式
-   - 必须包含 scene、characters、choices 等所有必需字段
+   - 必须包含 scene、characters、chapter_title 等所有必需字段
    - 确保JSON语法正确，字符转义正确
    - 如果不确定格式，请参考用户提示中的JSON示例
 
@@ -424,11 +406,11 @@ export class StoryInitializer implements IStoryInitializer {
    - 创造多层次的故事含义和隐喻
    - 确保每个场景都推进人物关系和情节发展
 
-4. 选择设计艺术：
-   - 创造3-4个各具特色的选择选项
-   - 每个选择有清晰的描述、后果和难度评估
-   - 选择之间形成有意义的道德和策略考量
-   - 为不同类型的玩家提供多样化的游戏路径
+4. 交互准备设计：
+   - 创造引人入胜的故事局面，激发玩家参与欲望
+   - 设置多个潜在的发展方向和可能性
+   - 为玩家的后续选择创造合理的场景基础
+   - 建立有趣的冲突和机会点
 
 5. 文学美学追求：
    - 运用丰富的修辞手法增强表达力
@@ -438,7 +420,7 @@ export class StoryInitializer implements IStoryInitializer {
 
 6. 格式规范要求：
    - **绝对必须**返回有效的JSON对象格式，禁止返回数组
-   - 必须包含 scene、characters、choices 等所有字段
+   - 必须包含 scene、characters、chapter_title 等所有字段
    - 所有字段内容详实，避免空值
    - 确保JSON结构完整，语法正确
    - 如果不确定格式，请严格参考用户提示中的JSON示例
