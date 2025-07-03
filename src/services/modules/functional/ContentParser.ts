@@ -61,7 +61,7 @@ export class ContentParser implements IContentParser {
         success: true,
         content: {
           scene: parsed.scene || '',
-          choices: parsed.choices && parsed.choices.length > 0 ? parsed.choices : this.getDefaultChoices(),
+          choices: this.getDefaultChoices(), // 故事生成不包含choices，由ChoiceGenerator专门生成
           characters: parsed.characters || [],
           new_characters: parsed.new_characters || [],
           chapter_title: parsed.chapter_title || '序章',
@@ -221,20 +221,9 @@ export class ContentParser implements IContentParser {
       return false;
     }
 
-    // 选择项验证（初始故事可能没有选择项）
-    if (content.choices) {
-      if (!Array.isArray(content.choices)) {
-        console.warn('⚠️ choices 字段类型错误，应为数组');
-        return false;
-      }
-      
-      if (content.choices.length > 0 && !this.validateChoiceFormat(content.choices)) {
-        console.warn('⚠️ choices 字段格式错误');
-        return false;
-      }
-    } else {
-      console.log('📝 choices 字段不存在，将使用默认选择项');
-    }
+    // 选择项验证（故事生成不包含choices，由专门的ChoiceGenerator生成）
+    // 不验证choices字段，因为StoryInitializer不负责生成选择项
+    console.log('📝 故事生成不包含choices字段，选择项由ChoiceGenerator专门生成');
 
     // 角色验证（如果存在）
     if (content.characters && Array.isArray(content.characters)) {
@@ -514,16 +503,16 @@ export class ContentParser implements IContentParser {
       content = jsonArrayMatch[1];
       console.log('📄 从代码块提取JSON数组');
     } else {
-      // 如果没有代码块，尝试直接提取JSON对象或数组
-      const directArrayMatch = content.match(/\[[\s\S]*\]/);
+      // 如果没有代码块，优先提取JSON对象，避免错误提取对象中的数组部分
       const directObjectMatch = content.match(/\{[\s\S]*\}/);
+      const directArrayMatch = content.match(/^\s*\[[\s\S]*\]\s*$/);  // 只匹配整个内容为数组的情况
       
-      if (directArrayMatch) {
-        content = directArrayMatch[0];
-        console.log('📄 直接提取JSON数组');
-      } else if (directObjectMatch) {
+      if (directObjectMatch) {
         content = directObjectMatch[0];
         console.log('📄 直接提取JSON对象');
+      } else if (directArrayMatch) {
+        content = directArrayMatch[0];
+        console.log('📄 直接提取JSON数组');
       } else {
         console.warn('📄 未找到JSON格式，使用原始内容');
       }
