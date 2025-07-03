@@ -10,6 +10,10 @@ import Login from "./pages/Login";
 import AppMain from "./pages/AppMain";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import QuickStart from "./pages/QuickStart";
+import Advanced from "./pages/Advanced";
+import DocumentAnalysis from "./pages/DocumentAnalysis";
+import Story from "./pages/Story";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +37,46 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppMain />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 快速开始页面 - 需要登录 */}
+            <Route 
+              path="/app/quick-start" 
+              element={
+                <ProtectedRoute>
+                  <QuickStart />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 专业模式页面 - 需要登录 */}
+            <Route 
+              path="/app/advanced" 
+              element={
+                <ProtectedRoute>
+                  <Advanced />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 文档分析页面 - 需要登录 */}
+            <Route 
+              path="/app/document" 
+              element={
+                <ProtectedRoute>
+                  <DocumentAnalysis />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 故事界面 - 需要登录 */}
+            <Route 
+              path="/app/story" 
+              element={
+                <ProtectedRoute>
+                  <Story />
                 </ProtectedRoute>
               } 
             />

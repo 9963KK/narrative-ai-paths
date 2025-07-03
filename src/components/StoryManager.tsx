@@ -76,6 +76,26 @@ const StoryManager: React.FC = () => {
     }
   }, []);
 
+  // 检查是否有待处理的故事配置
+  useEffect(() => {
+    const pendingConfigStr = localStorage.getItem('pendingStoryConfig');
+    if (pendingConfigStr) {
+      try {
+        const pendingConfig = JSON.parse(pendingConfigStr);
+        console.log('🚀 发现待处理的故事配置，开始初始化故事...');
+        
+        // 清除待处理的配置
+        localStorage.removeItem('pendingStoryConfig');
+        
+        // 初始化故事
+        initializeStory(pendingConfig.config, pendingConfig.modelConfig, pendingConfig.isAdvanced);
+      } catch (error) {
+        console.error('解析待处理的故事配置失败:', error);
+        localStorage.removeItem('pendingStoryConfig');
+      }
+    }
+  }, []);
+
   const initializeStory = async (config: StoryConfig, modelConfig: ModelConfig, isAdvanced: boolean) => {
     setIsLoading(true);
     setAiError(null);

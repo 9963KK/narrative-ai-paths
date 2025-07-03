@@ -37,6 +37,7 @@ interface DocumentAnalysisResultViewProps {
   onCreateStory: (selectedSeed?: any) => void;
   onExportResult?: () => void;
   onSaveChanges?: (updatedResult: DocumentAnalysisResult) => void;
+  onGoToAdvanced?: () => void;
 }
 
 const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
@@ -44,7 +45,8 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
   onBack,
   onCreateStory,
   onExportResult,
-  onSaveChanges
+  onSaveChanges,
+  onGoToAdvanced
 }) => {
   const [selectedSeedIndex, setSelectedSeedIndex] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -850,19 +852,33 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
               </div>
             )}
             
-            <Button
-              size="lg"
-              disabled={selectedSeedIndex === null}
-              onClick={() => onCreateStory(selectedSeedIndex !== null ? data.suggestedStorySeeds[selectedSeedIndex] : undefined)}
-              className={`flex items-center gap-3 px-8 py-4 text-base font-medium transition-all duration-200 shadow-lg ${
-                selectedSeedIndex !== null 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl cursor-pointer' 
-                  : 'bg-gray-400 cursor-not-allowed opacity-60'
-              }`}
-            >
-              <Play className="h-5 w-5" />
-              开始创作
-            </Button>
+            <div className="flex gap-4">
+              <Button
+                size="lg"
+                disabled={selectedSeedIndex === null}
+                onClick={() => onCreateStory(selectedSeedIndex !== null ? data.suggestedStorySeeds[selectedSeedIndex] : undefined)}
+                className={`flex items-center gap-3 px-8 py-4 text-base font-medium transition-all duration-200 shadow-lg ${
+                  selectedSeedIndex !== null 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl cursor-pointer' 
+                    : 'bg-gray-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <Play className="h-5 w-5" />
+                开始创作
+              </Button>
+              
+              {onGoToAdvanced && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={onGoToAdvanced}
+                  className="flex items-center gap-3 px-8 py-4 text-base font-medium border-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+                >
+                  <Edit className="h-5 w-5" />
+                  进入专业模式
+                </Button>
+              )}
+            </div>
             
             {selectedSeedIndex === null && (
               <p className="text-xs text-red-500 text-center max-w-md font-medium">

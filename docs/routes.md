@@ -67,7 +67,49 @@
   - 后台管理功能
 - **特点**: 管理员专用页面
 
-### 5. 404 页面 `*`
+### 5. 快速开始页面 `/app/quick-start`
+- **组件**: `src/pages/QuickStart.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - 分步向导配置故事
+  - 选择故事类型
+  - 描述故事想法
+  - 设定主要目标
+  - AI自动生成故事梗概
+- **特点**: 3步配置流程，适合新手用户
+
+### 6. 专业模式页面 `/app/advanced`
+- **组件**: `src/pages/Advanced.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - 详细故事配置
+  - 角色设定管理
+  - 故事目标配置
+  - 环境和特殊要求
+  - 文档分析结果集成
+- **特点**: 手风琴式布局，适合有经验的用户
+
+### 7. 文档分析页面 `/app/document`
+- **组件**: `src/pages/DocumentAnalysis.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - 文档上传和分析
+  - AI提取角色、背景、主题
+  - 生成创意种子
+  - 导出分析结果
+  - 跳转到专业模式
+- **特点**: 创新功能，基于现有文档创作
+
+### 8. 故事界面 `/app/story`
+- **组件**: `src/pages/Story.tsx`
+- **权限**: 需要登录 (ProtectedRoute)
+- **功能**:
+  - 显示 StoryManager 组件
+  - 处理故事初始化
+  - 故事阅读和交互
+- **特点**: 承载主要故事功能
+
+### 9. 404 页面 `*`
 - **组件**: `src/pages/NotFound.tsx`
 - **权限**: 公开访问
 - **功能**:
@@ -112,7 +154,7 @@
 
 ### 权限控制
 - **公开页面**: `/`, `/login`, `404`
-- **需要登录**: `/app`
+- **需要登录**: `/app`, `/app/quick-start`, `/app/advanced`, `/app/document`, `/app/story`
 - **需要管理员权限**: `/admin`
 
 ## 页面组件详情
@@ -141,6 +183,30 @@
 - **功能**: 管理员后台
 - **权限**: 需要管理员角色
 
+### QuickStart 页面
+- **路径**: `/app/quick-start`
+- **文件**: `src/pages/QuickStart.tsx`
+- **功能**: 快速故事配置
+- **特点**: 3步向导流程
+
+### Advanced 页面
+- **路径**: `/app/advanced`
+- **文件**: `src/pages/Advanced.tsx`
+- **功能**: 专业故事配置
+- **特点**: 手风琴式详细配置
+
+### DocumentAnalysis 页面
+- **路径**: `/app/document`
+- **文件**: `src/pages/DocumentAnalysis.tsx`
+- **功能**: 文档分析和处理
+- **特点**: AI文档分析功能
+
+### Story 页面
+- **路径**: `/app/story`
+- **文件**: `src/pages/Story.tsx`
+- **功能**: 故事阅读和交互
+- **特点**: 承载StoryManager组件
+
 ### NotFound 页面
 - **路径**: `*` (通配符)
 - **文件**: `src/pages/NotFound.tsx`
@@ -167,7 +233,17 @@
 
 ## 版本历史
 
-### v2.1.13 (最新)
+### v2.1.15 (最新)
+- 将主界面三个模块分离为独立路由
+- 添加 `/app/quick-start` 快速开始页面
+- 添加 `/app/advanced` 专业模式页面  
+- 添加 `/app/document` 文档分析页面
+- 添加 `/app/story` 故事界面页面
+- 更新 AppMain 页面为导航选择界面
+- 实现配置通过 localStorage 传递机制
+- 优化用户体验和页面导航
+
+### v2.1.13
 - 添加完整的路由系统和页面结构
 - 创建独立的登录页面 `/login`
 - 创建主应用功能页面 `/app`
