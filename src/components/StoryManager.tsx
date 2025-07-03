@@ -56,6 +56,17 @@ const StoryManager: React.FC = () => {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // 自动保存状态
   const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
 
+  // 标准化角色数据，确保所有字段都有值
+  const normalizeCharacters = (characters: any[]): any[] => {
+    return characters.map(character => ({
+      name: character.name || '未知角色',
+      role: character.role || '神秘角色',
+      traits: character.traits || '神秘的角色',
+      appearance: character.appearance || '待描述',
+      backstory: character.backstory || '背景故事待补充'
+    }));
+  };
+
   // 组件加载时尝试加载保存的模型配置
   useEffect(() => {
     const savedConfig = loadModelConfig();
@@ -85,7 +96,7 @@ const StoryManager: React.FC = () => {
     const initialStory: StoryState = {
           story_id: `ST${Date.now()}`,
           current_scene: response.content.scene,
-          characters: response.content.characters || [],
+          characters: normalizeCharacters(response.content.characters || []),
           setting: response.content.setting_details || config.setting || '未知世界',
           chapter: 1,
           chapter_title: response.content.chapter_title || '序章',
@@ -165,9 +176,27 @@ const StoryManager: React.FC = () => {
     } else {
       // 简单配置，生成默认角色
       characters = [
-        { name: '主角', role: '主角', traits: '勇敢而充满好奇心' },
-        { name: '神秘向导', role: '导师', traits: '智慧且经验丰富' },
-        { name: '未知敌人', role: '反派', traits: '强大而危险' }
+        { 
+          name: '主角', 
+          role: '主角', 
+          traits: '勇敢而充满好奇心',
+          appearance: '年轻而充满活力的外表',
+          backstory: '一个寻求真相的冒险者'
+        },
+        { 
+          name: '神秘向导', 
+          role: '导师', 
+          traits: '智慧且经验丰富',
+          appearance: '长者的风貌，眼中闪烁着智慧的光芒',
+          backstory: '掌握古老知识的智者'
+        },
+        { 
+          name: '未知敌人', 
+          role: '反派', 
+          traits: '强大而危险',
+          appearance: '笼罩在阴影中的神秘身影',
+          backstory: '隐藏在黑暗中的威胁'
+        }
       ];
       setting = '神秘的世界';
       scene = `基于您的想法"${config.story_idea}"，故事在一个充满可能性的世界中展开。主角的冒险即将开始，每一个决定都可能改变故事的走向。`;
@@ -178,7 +207,7 @@ const StoryManager: React.FC = () => {
     return {
       story_id: `ST${Date.now()}`,
       current_scene: scene,
-      characters,
+      characters: normalizeCharacters(characters),
       setting,
       chapter: 1,
       choices_made: [],

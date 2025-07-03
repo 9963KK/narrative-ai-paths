@@ -62,8 +62,8 @@ export class ContentParser implements IContentParser {
         content: {
           scene: parsed.scene || '',
           choices: this.getDefaultChoices(), // 故事生成不包含choices，由ChoiceGenerator专门生成
-          characters: parsed.characters || [],
-          new_characters: parsed.new_characters || [],
+          characters: this.normalizeCharacters(parsed.characters || []),
+          new_characters: this.normalizeCharacters(parsed.new_characters || []),
           chapter_title: parsed.chapter_title || '序章',
           mood: this.truncateMood(parsed.mood || '神秘'),
           tension_level: parsed.tension_level || 3,
@@ -145,7 +145,7 @@ export class ContentParser implements IContentParser {
         }
       }
 
-      return characters;
+      return this.normalizeCharacters(characters);
     } catch (error) {
       console.error('❌ 角色解析失败:', error);
       return null;
@@ -722,6 +722,19 @@ export class ContentParser implements IContentParser {
     };
     
     return JSON.stringify(fallbackData, null, 2);
+  }
+
+  /**
+   * 标准化角色数据，确保所有字段都有值
+   */
+  normalizeCharacters(characters: any[]): Character[] {
+    return characters.map(character => ({
+      name: character.name || '未知角色',
+      role: character.role || '神秘角色',
+      traits: character.traits || '神秘的角色',
+      appearance: character.appearance || '待描述',
+      backstory: character.backstory || '背景故事待补充'
+    }));
   }
 }
 
