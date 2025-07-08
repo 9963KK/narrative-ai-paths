@@ -9,9 +9,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    // OAuth配置
+    redirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
+    persistSession: true,
+    storageKey: 'supabase.auth.token'
   }
 });
+
+// OAuth提供商类型
+export type OAuthProvider = 'google' | 'github' | 'apple' | 'azure' | 'discord' | 'linkedin' | 'facebook';
 
 // 数据库类型定义
 export interface User {
@@ -286,6 +293,110 @@ export class SupabaseService {
     } catch (error) {
       console.error('创建默认管理员失败:', error);
       return false;
+    }
+  }
+
+  // OAuth 登录
+  async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+
+      if (error) {
+        console.error(`${provider} OAuth登录失败:`, error);
+        return { data: null, error };
+      }
+
+      console.log(`✅ ${provider} OAuth登录已启动`);
+      return { data, error: null };
+    } catch (error) {
+      console.error(`${provider} OAuth登录出错:`, error);
+      return { data: null, error };
+    }
+  }
+
+  // 获取当前 Supabase 用户会话
+  async getCurrentSession(): Promise<any> {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('获取用户会话失败:', error);
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('获取用户会话出错:', error);
+      return null;
+    }
+  }
+
+  // 监听认证状态变化
+  onAuthStateChange(callback: (event: string, session: any) => void) {
+    return supabase.auth.onAuthStateChange(callback);
+  }
+
+  // 登出
+  async signOut(): Promise<{ error: any }> {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('登出失败:', error);
+        return { error };
+      }
+
+      console.log('✅ 用户已登出');
+      return { error: null };
+    } catch (error) {
+      console.error('登出出错:', error);
+      return { error };
+    }
+  }
+
+  // 从OAuth会话创建或获取用户
+  async getOrCreateUserFromSession(session: any): Promise<User | null> {
+    if (!session?.user) return null;
+
+    try {
+      const { user: authUser } = session;
+      
+      // 首先尝试通过邮箱查找现有用户
+      let existingUser = await this.findUserByEmailOrUsername(authUser.email);
+      
+      if (existingUser) {
+        console.log('✅ 找到现有用户，使用OAuth登录');
+        return existingUser;
+      }
+
+      // 如果用户不存在，创建新用户
+      const newUser = {
+        username: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'user',
+        email: authUser.email,
+        password_hash: 'oauth_user', // OAuth用户不需要密码
+        role: 'user' as const
+      };
+
+      const createdUser = await this.createUser(newUser);
+      
+      if (createdUser) {
+        console.log('✅ OAuth用户已创建');
+        return createdUser;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('处理OAuth用户失败:', error);
+      return null;
     }
   }
 }

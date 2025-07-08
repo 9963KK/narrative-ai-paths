@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
 const Login: React.FC = () => {
-  const { user, isLoading, login, register, loginAsGuest } = useAuth();
+  const { user, isLoading, login, register, loginAsGuest, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AuthForm onLogin={login} onRegister={register} onGuestLogin={loginAsGuest} />
+      <AuthForm onLogin={login} onRegister={register} onGuestLogin={loginAsGuest} onOAuthLogin={signInWithOAuth} />
     </div>
   );
 };

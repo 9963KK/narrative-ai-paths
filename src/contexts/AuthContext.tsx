@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { unifiedAuthService, AuthUser } from '@/services/unifiedAuthService';
 import { userStorage } from '@/services/userStorage';
+import type { OAuthProvider } from '@/lib/supabase';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -9,12 +10,13 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<boolean>;
   registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
   isGuest: boolean;
-  connectionStatus: () => Promise<{ isProduction: boolean; supabaseConnected: boolean; storageMode: 'supabase' | 'local' }>;
+  connectionStatus: () => Promise<{ isProduction: boolean; supabaseConnected: boolean; storageMode: 'supabase' | 'local'; oauthSupported: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -173,6 +175,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signInWithOAuth = async (provider: OAuthProvider): Promise<boolean> => {
+    try {
+      const result = await unifiedAuthService.signInWithOAuth(provider);
+      
+      if (result.error) {
+        console.error(`OAuth登录失败 (${provider}):`, result.error);
+        return false;
+      }
+      
+      // OAuth 登录成功后，页面会重定向到回调地址
+      // 实际的用户设置会在回调处理中完成
+      return true;
+    } catch (error) {
+      console.error(`OAuth登录出错 (${provider}):`, error);
+      return false;
+    }
+  };
+
   const connectionStatus = async () => {
     return await unifiedAuthService.getConnectionStatus();
   };
@@ -184,6 +204,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     registerFromGuest,
     loginAsGuest,
+    signInWithOAuth,
     logout,
     updateUser,
     changePassword,

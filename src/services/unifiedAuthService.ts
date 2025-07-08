@@ -1,4 +1,4 @@
-import { supabaseService, type User, type UserProfile } from '@/lib/supabase';
+import { supabaseService, type User, type UserProfile, type OAuthProvider, supabase } from '@/lib/supabase';
 
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -443,24 +443,113 @@ export class UnifiedAuthService {
     }
   }
 
+  // OAuth 登录
+  async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
+    console.log(`🔐 开始${provider} OAuth登录流程...`);
+    console.log('🌍 环境检测:', isProduction ? '生产环境' : '开发环境');
+    
+    if (isProduction) {
+      // 生产环境使用Supabase OAuth
+      console.log('🔗 生产环境：使用Supabase OAuth...');
+      try {
+        const isConnected = await this.checkSupabaseConnection();
+        console.log('📡 Supabase连接状态:', isConnected);
+        
+        const result = await supabaseService.signInWithOAuth(provider);
+        
+        if (result.error) {
+          console.error(`❌ ${provider} OAuth登录失败:`, result.error);
+          return result;
+        }
+        
+        console.log(`✅ ${provider} OAuth登录已启动（生产环境）`);
+        return result;
+      } catch (error) {
+        console.error(`❌ ${provider} OAuth登录出错:`, error);
+        return { data: null, error };
+      }
+    } else {
+      // 开发环境提示用户OAuth需要生产环境
+      console.log('⚠️ 开发环境：OAuth登录需要生产环境配置');
+      return { 
+        data: null, 
+        error: new Error('OAuth登录需要在生产环境中配置Supabase。开发环境请使用邮箱密码登录或游客模式。') 
+      };
+    }
+  }
+
+  // 处理OAuth回调
+  async handleOAuthCallback(): Promise<AuthUser | null> {
+    console.log('🔄 处理OAuth回调...');
+    
+    if (!isProduction) {
+      console.log('⚠️ 开发环境不支持OAuth回调');
+      return null;
+    }
+
+    try {
+      const session = await supabaseService.getCurrentSession();
+      
+      if (!session) {
+        console.log('❌ 未找到有效的OAuth会话');
+        return null;
+      }
+
+      console.log('✅ 找到OAuth会话，处理用户信息...');
+      
+      // 从会话中获取或创建用户
+      const user = await supabaseService.getOrCreateUserFromSession(session);
+      
+      if (user) {
+        const authUser: AuthUser = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          created_at: user.created_at,
+          role: user.role
+        };
+
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
+        console.log('✅ OAuth登录成功，用户信息已保存');
+        return authUser;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ 处理OAuth回调失败:', error);
+      return null;
+    }
+  }
+
+  // 监听认证状态变化
+  onAuthStateChange(callback: (event: string, session: any) => void) {
+    if (isProduction) {
+      return supabaseService.onAuthStateChange(callback);
+    }
+    return { data: { subscription: null } };
+  }
+
   // 获取连接状态
   async getConnectionStatus(): Promise<{
     isProduction: boolean;
     supabaseConnected: boolean;
     storageMode: 'supabase' | 'local';
+    oauthSupported: boolean;
   }> {
     if (isProduction) {
       const supabaseConnected = await this.checkSupabaseConnection();
       return {
         isProduction,
         supabaseConnected,
-        storageMode: 'supabase'
+        storageMode: 'supabase',
+        oauthSupported: true
       };
     } else {
       return {
         isProduction,
         supabaseConnected: false,
-        storageMode: 'local'
+        storageMode: 'local',
+        oauthSupported: false
       };
     }
   }

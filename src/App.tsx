@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { OAuthCallback } from "@/components/auth/OAuthCallback";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AppMain from "./pages/AppMain";
@@ -32,6 +33,9 @@ const App = () => (
             
             {/* 登录页面 - 公开访问 */}
             <Route path="/login" element={<Login />} />
+            
+            {/* OAuth 回调处理 - 公开访问 */}
+            <Route path="/auth/callback" element={<OAuthCallback />} />
             
             {/* 主应用功能页面 - 需要登录 */}
             <Route 
