@@ -188,12 +188,15 @@ const Home: React.FC = () => {
                 <Star className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-medium transition-all duration-300">
-                游客体验
-                <Zap className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              onClick={handleQuickStart}
+              className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-medium transition-all duration-300"
+            >
+              游客体验
+              <Zap className="ml-2 w-5 h-5" />
+            </Button>
           </div>
         </div>
       </section>
