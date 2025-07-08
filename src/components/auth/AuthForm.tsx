@@ -88,12 +88,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     try {
       const success = await onLogin(data.email, data.password);
       if (success) {
-        // 登录成功后，检查是否为管理员
-        const currentUser = unifiedAuthService.getCurrentUser();
-        if (currentUser && currentUser.role === 'admin') {
-          navigate('/admin');
-        }
-        // 普通用户会由ProtectedRoute正常处理
+        // 登录成功后，跳转到智能重定向页面
+        navigate('/app/index');
       } else {
         setError('邮箱或密码错误');
       }
