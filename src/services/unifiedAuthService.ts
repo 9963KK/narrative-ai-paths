@@ -74,7 +74,7 @@ export class UnifiedAuthService {
   }
 
   // 用户注册
-  async register(username: string, email: string, password: string, role: 'user' | 'admin' = 'user'): Promise<boolean> {
+  async register(username: string, email: string, password: string, role: 'user' | 'admin' = 'user'): Promise<{ success: boolean; error?: string }> {
     if (isProduction) {
       // 生产环境使用Supabase
       const isConnected = await this.checkSupabaseConnection();
@@ -83,8 +83,12 @@ export class UnifiedAuthService {
         const emailExists = await supabaseService.isEmailExists(email);
         const usernameExists = await supabaseService.isUsernameExists(username);
         
-        if (emailExists || usernameExists) {
-          return false;
+        if (emailExists && usernameExists) {
+          return { success: false, error: '邮箱和用户名均已被使用' };
+        } else if (emailExists) {
+          return { success: false, error: '邮箱已被使用' };
+        } else if (usernameExists) {
+          return { success: false, error: '用户名已被使用' };
         }
 
         const user = await supabaseService.createUser({
@@ -96,22 +100,26 @@ export class UnifiedAuthService {
 
         if (user) {
           console.log('✅ 用户已注册到Supabase（生产环境）');
-          return true;
+          return { success: true };
         }
-        return false;
+        return { success: false, error: '注册失败，请稍后重试' };
       } catch (error) {
         console.error('Supabase注册失败:', error);
-        throw error; // 生产环境必须成功
+        return { success: false, error: '服务器错误，请稍后重试' };
       }
     } else {
       // 开发环境使用本地存储
       const users = this.getLocalUsers();
       
-      const existingUser = users.find((user: any) => 
-        user.email === email || user.username === username
-      );
-      if (existingUser) {
-        return false;
+      const emailExists = users.some((user: any) => user.email === email);
+      const usernameExists = users.some((user: any) => user.username === username);
+      
+      if (emailExists && usernameExists) {
+        return { success: false, error: '邮箱和用户名均已被使用' };
+      } else if (emailExists) {
+        return { success: false, error: '邮箱已被使用' };
+      } else if (usernameExists) {
+        return { success: false, error: '用户名已被使用' };
       }
 
       const newUser = {
@@ -126,7 +134,7 @@ export class UnifiedAuthService {
       users.push(newUser);
       this.saveLocalUsers(users);
       console.log('💾 用户已注册到本地存储（开发环境）');
-      return true;
+      return { success: true };
     }
   }
 

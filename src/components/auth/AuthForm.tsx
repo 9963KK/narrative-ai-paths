@@ -34,7 +34,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 interface AuthFormProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
-  onRegister: (username: string, email: string, password: string) => Promise<boolean>;
+  onRegister: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   onGuestLogin: () => Promise<boolean>;
   onOAuthLogin?: (provider: OAuthProvider) => Promise<boolean>;
 }
@@ -109,13 +109,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     setError('');
     
     try {
-      const success = await onRegister(data.username, data.email, data.password);
-      if (success) {
+      const result = await onRegister(data.username, data.email, data.password);
+      if (result.success) {
         resetRegister();
         setActiveTab('login');
         setError('');
       } else {
-        setError('注册失败，邮箱可能已被使用');
+        setError(result.error || '注册失败，请稍后重试');
       }
     } catch (err) {
       setError('注册失败，请稍后重试');

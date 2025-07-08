@@ -7,7 +7,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
   signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
@@ -73,12 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (username: string, email: string, password: string): Promise<boolean> => {
+  const register = async (username: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       return await unifiedAuthService.register(username, email, password);
     } catch (error) {
       console.error('Register error:', error);
-      return false;
+      return { success: false, error: '注册失败，请稍后重试' };
     }
   };
 
@@ -152,8 +152,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // 注册新用户
-      const success = await unifiedAuthService.register(username, email, password);
-      if (!success) {
+      const result = await unifiedAuthService.register(username, email, password);
+      if (!result.success) {
         return false;
       }
 
