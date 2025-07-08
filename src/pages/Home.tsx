@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,21 @@ import {
 } from 'lucide-react';
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { loginAsGuest } = useAuth();
+
+  // 快速开始游客体验
+  const handleQuickStart = async () => {
+    try {
+      const success = await loginAsGuest();
+      if (success) {
+        navigate('/app/quick-start');
+      }
+    } catch (error) {
+      console.error('游客登录失败:', error);
+    }
+  };
+
   const features = [
     {
       icon: <Brain className="w-7 h-7 text-white" />,
