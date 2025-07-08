@@ -557,7 +557,7 @@ export class UnifiedAuthService {
         isProduction,
         supabaseConnected: false,
         storageMode: 'local',
-        oauthSupported: false
+        oauthSupported: true  // 开发环境也显示OAuth按钮，点击时显示提示
       };
     }
   }
