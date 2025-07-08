@@ -269,23 +269,28 @@ export class UnifiedAuthService {
     } else {
       // 开发环境使用本地存储
       const users = this.getLocalUsers();
-      const existingAdmin = users.find((user: any) => user.username === 'admin');
-      if (existingAdmin) {
-        return false;
-      }
-
+      const existingAdminIndex = users.findIndex((user: any) => user.username === 'admin');
+      
       const adminUser = {
         id: 'admin_' + Date.now(),
         username: 'admin',
-        email: 'admin@narrative-ai.com',
-        password: this.hashPassword('AINOVEL@cjh180498'),
+        email: 'admin@ainovel.com',
+        password: this.hashPassword('cjh180498'),
         createdAt: new Date().toISOString(),
         role: 'admin'
       };
 
-      users.push(adminUser);
+      if (existingAdminIndex !== -1) {
+        // 更新现有管理员账户
+        users[existingAdminIndex] = { ...users[existingAdminIndex], ...adminUser };
+        console.log('🔄 默认管理员账户已更新（开发环境本地存储）');
+      } else {
+        // 创建新的管理员账户
+        users.push(adminUser);
+        console.log('🔑 默认管理员账户已创建（开发环境本地存储）');
+      }
+
       this.saveLocalUsers(users);
-      console.log('🔑 默认管理员账户已创建（开发环境本地存储）');
       return true;
     }
   }
