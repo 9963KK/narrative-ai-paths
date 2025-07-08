@@ -348,8 +348,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
               </TabsContent>
             </Tabs>
             
-            {/* OAuth社交登录 */}
-            {oauthSupported && onOAuthLogin && (
+            {/* OAuth社交登录 - 仅在登录时显示 */}
+            {oauthSupported && onOAuthLogin && activeTab === 'login' && (
               <div className="flex flex-col items-center space-y-3 pt-4 border-t mt-4">
                 <p className="text-sm text-gray-500 text-center">
                   或使用第三方账户登录
@@ -386,7 +386,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
             )}
 
             {/* 游客模式按钮 */}
-            <div className={`flex flex-col items-center space-y-3 pt-4 mt-4 ${oauthSupported && onOAuthLogin ? '' : 'border-t'}`}>
+            <div className={`flex flex-col items-center space-y-3 pt-4 mt-4 ${(oauthSupported && onOAuthLogin && activeTab === 'login') ? '' : 'border-t'}`}>
               <p className="text-sm text-gray-500 text-center">
                 想要快速体验？无需注册
               </p>
