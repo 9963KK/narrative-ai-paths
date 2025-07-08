@@ -169,19 +169,37 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">叙事AI路径</h1>
-          <p className="text-sm text-gray-600">登录您的账户或创建新账户开始使用</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="w-full max-w-md">
+        {/* 品牌标识 */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">
+            叙事AI路径
+          </h1>
+          <p className="text-gray-600">开启您的创作之旅</p>
         </div>
         
-        <Card className="shadow-md">
-          <CardContent className="p-6">
+        <Card className="backdrop-blur-xl bg-white/70 border-0 shadow-2xl shadow-black/10">
+          <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login">登录</TabsTrigger>
-                <TabsTrigger value="register">注册</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/60 p-1 h-12 rounded-xl">
+                <TabsTrigger 
+                  value="login" 
+                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-gray-900 font-medium transition-all duration-300"
+                >
+                  登录
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-gray-900 font-medium transition-all duration-300"
+                >
+                  注册
+                </TabsTrigger>
               </TabsList>
               
               {error && (
@@ -193,14 +211,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
               <TabsContent value="login" className="space-y-4 mt-0">
               <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">邮箱</Label>
+                  <Label htmlFor="login-email" className="text-sm font-medium text-gray-700">邮箱</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="login-email"
                       type="email"
                       placeholder="请输入邮箱"
-                      className="pl-9"
+                      className="pl-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...loginForm('email')}
                     />
                   </div>
@@ -210,14 +228,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">密码</Label>
+                  <Label htmlFor="login-password" className="text-sm font-medium text-gray-700">密码</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="login-password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="请输入密码"
-                      className="pl-9 pr-9"
+                      className="pl-9 pr-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...loginForm('password')}
                     />
                     <Button
@@ -228,9 +246,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       )}
                     </Button>
                   </div>
@@ -239,7 +257,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                   )}
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
                   {isLoading ? '登录中...' : '登录'}
                 </Button>
                 </form>
@@ -248,14 +266,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
               <TabsContent value="register" className="space-y-4 mt-0">
               <form onSubmit={handleRegisterSubmit(handleRegister)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="register-username">用户名</Label>
+                  <Label htmlFor="register-username" className="text-sm font-medium text-gray-700">用户名</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-username"
                       type="text"
                       placeholder="请输入用户名"
-                      className="pl-9"
+                      className="pl-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...registerForm('username')}
                     />
                   </div>
@@ -265,14 +283,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-email">邮箱</Label>
+                  <Label htmlFor="register-email" className="text-sm font-medium text-gray-700">邮箱</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-email"
                       type="email"
                       placeholder="请输入邮箱"
-                      className="pl-9"
+                      className="pl-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...registerForm('email')}
                     />
                   </div>
@@ -282,14 +300,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="register-password">密码</Label>
+                  <Label htmlFor="register-password" className="text-sm font-medium text-gray-700">密码</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="请输入密码"
-                      className="pl-9 pr-9"
+                      className="pl-9 pr-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...registerForm('password')}
                     />
                     <Button
@@ -300,9 +318,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       )}
                     </Button>
                   </div>
@@ -312,14 +330,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-confirm-password">确认密码</Label>
+                  <Label htmlFor="register-confirm-password" className="text-sm font-medium text-gray-700">确认密码</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="请再次输入密码"
-                      className="pl-9 pr-9"
+                      className="pl-9 pr-9 h-11 bg-white/80 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                       {...registerForm('confirmPassword')}
                     />
                     <Button
@@ -330,9 +348,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
                       )}
                     </Button>
                   </div>
@@ -341,7 +359,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                   )}
                 </div>
                 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
                     {isLoading ? '注册中...' : '注册'}
                   </Button>
                 </form>
@@ -350,15 +368,18 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
             
             {/* OAuth社交登录 - 仅在登录时显示 */}
             {oauthSupported && onOAuthLogin && activeTab === 'login' && (
-              <div className="flex flex-col items-center space-y-3 pt-4 border-t mt-4">
-                <p className="text-sm text-gray-500 text-center">
-                  或使用第三方账户登录
-                </p>
-                <div className="flex items-center justify-center space-x-3">
+              <div className="flex flex-col items-center space-y-4 pt-6 mt-6">
+                <div className="relative w-full">
+                  <hr className="border-gray-200" />
+                  <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-white px-4 text-sm text-gray-500">
+                    或使用第三方账户登录
+                  </span>
+                </div>
+                <div className="flex items-center justify-center space-x-4">
                   <Button 
                     variant="outline" 
                     size="icon"
-                    className="w-10 h-10 rounded-full" 
+                    className="w-12 h-12 rounded-full border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105" 
                     onClick={() => handleOAuthLogin('google')}
                     disabled={isLoading}
                     title="Google 登录"
@@ -374,25 +395,35 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                   <Button 
                     variant="outline" 
                     size="icon"
-                    className="w-10 h-10 rounded-full" 
+                    className="w-12 h-12 rounded-full border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105" 
                     onClick={() => handleOAuthLogin('github')}
                     disabled={isLoading}
                     title="GitHub 登录"
                   >
-                    <Github className="w-5 h-5" />
+                    <Github className="w-5 h-5 text-gray-700" />
                   </Button>
                 </div>
               </div>
             )}
 
             {/* 游客模式按钮 */}
-            <div className={`flex flex-col items-center space-y-3 pt-4 mt-4 ${(oauthSupported && onOAuthLogin && activeTab === 'login') ? '' : 'border-t'}`}>
-              <p className="text-sm text-gray-500 text-center">
-                想要快速体验？无需注册
-              </p>
+            <div className={`flex flex-col items-center space-y-4 pt-6 mt-6 ${(oauthSupported && onOAuthLogin && activeTab === 'login') ? '' : 'relative'}`}>
+              {!(oauthSupported && onOAuthLogin && activeTab === 'login') && (
+                <div className="relative w-full">
+                  <hr className="border-gray-200" />
+                  <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-white px-4 text-sm text-gray-500">
+                    想要快速体验？
+                  </span>
+                </div>
+              )}
+              {(oauthSupported && onOAuthLogin && activeTab === 'login') && (
+                <p className="text-sm text-gray-500 text-center">
+                  想要快速体验？无需注册
+                </p>
+              )}
               <Button 
                 variant="outline" 
-                className="w-full" 
+                className="w-full h-11 border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]" 
                 onClick={handleGuestLogin}
                 disabled={isLoading}
               >
