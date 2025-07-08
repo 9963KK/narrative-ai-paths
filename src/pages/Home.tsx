@@ -13,34 +13,41 @@ import {
   ArrowRight,
   Star,
   Globe,
-  Brain
+  Brain,
+  Layers,
+  FileText,
+  Share2
 } from 'lucide-react';
 
 const Home: React.FC = () => {
   const features = [
     {
-      icon: <Brain className="w-8 h-8 text-blue-600" />,
+      icon: <Brain className="w-7 h-7 text-white" />,
       title: "AI 智能创作",
       description: "基于先进AI技术，帮助您生成引人入胜的故事内容和创意灵感。",
-      color: "from-blue-500 to-cyan-500"
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-gradient-to-br from-blue-500 to-cyan-500"
     },
     {
-      icon: <PenTool className="w-8 h-8 text-purple-600" />,
+      icon: <Layers className="w-7 h-7 text-white" />,
       title: "故事路径设计",
       description: "创建多分支叙事路径，让读者参与到故事的发展中来。",
-      color: "from-purple-500 to-pink-500"
+      color: "from-purple-500 to-pink-500",
+      bgColor: "bg-gradient-to-br from-purple-500 to-pink-500"
     },
     {
-      icon: <BookOpen className="w-8 h-8 text-green-600" />,
+      icon: <FileText className="w-7 h-7 text-white" />,
       title: "内容管理",
       description: "高效管理您的创作内容，支持多种格式和组织方式。",
-      color: "from-green-500 to-emerald-500"
+      color: "from-green-500 to-emerald-500",
+      bgColor: "bg-gradient-to-br from-green-500 to-emerald-500"
     },
     {
-      icon: <Users className="w-8 h-8 text-orange-600" />,
+      icon: <Share2 className="w-7 h-7 text-white" />,
       title: "协作平台",
       description: "支持多用户协作，与团队成员共享创意和作品。",
-      color: "from-orange-500 to-red-500"
+      color: "from-orange-500 to-red-500",
+      bgColor: "bg-gradient-to-br from-orange-500 to-red-500"
     }
   ];
 
@@ -154,7 +161,7 @@ const Home: React.FC = () => {
             {features.map((feature, index) => (
               <Card key={index} className="group bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-2">
                 <CardHeader className="text-center pb-4">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl mx-auto mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                  <div className={`inline-flex items-center justify-center w-20 h-20 ${feature.bgColor} rounded-3xl mx-auto mb-6 shadow-xl group-hover:shadow-2xl transform group-hover:scale-110 transition-all duration-500`}>
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl font-semibold text-gray-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
