@@ -12,7 +12,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     // OAuth配置
     redirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
-    persistSession: true,
     storageKey: 'supabase.auth.token'
   }
 });
@@ -80,7 +79,32 @@ export class SupabaseService {
     }
   }
 
-  // 通过邮箱或用户名查找用户
+  // 通过邮箱查找用户
+  async findUserByEmail(email: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // 没有找到记录
+          return null;
+        }
+        console.error('查找用户失败:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('查找用户出错:', error);
+      return null;
+    }
+  }
+
+  // 通过邮箱或用户名查找用户（保留用于 OAuth 功能）
   async findUserByEmailOrUsername(emailOrUsername: string): Promise<User | null> {
     try {
       const { data, error } = await supabase

@@ -6,7 +6,7 @@ import type { OAuthProvider } from '@/lib/supabase';
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (emailOrUsername: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
@@ -59,9 +59,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (emailOrUsername: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const loggedInUser = await unifiedAuthService.login(emailOrUsername, password);
+      const loggedInUser = await unifiedAuthService.login(email, password);
       if (loggedInUser) {
         setUser(loggedInUser);
         return true;

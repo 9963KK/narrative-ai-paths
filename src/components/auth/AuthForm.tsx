@@ -25,7 +25,7 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  emailOrUsername: z.string().min(1, '请输入邮箱或用户名'),
+  email: z.string().email('请输入有效的邮箱地址'),
   password: z.string().min(1, '请输入密码')
 });
 
@@ -33,7 +33,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 type LoginForm = z.infer<typeof loginSchema>;
 
 interface AuthFormProps {
-  onLogin: (emailOrUsername: string, password: string) => Promise<boolean>;
+  onLogin: (email: string, password: string) => Promise<boolean>;
   onRegister: (username: string, email: string, password: string) => Promise<boolean>;
   onGuestLogin: () => Promise<boolean>;
   onOAuthLogin?: (provider: OAuthProvider) => Promise<boolean>;
@@ -86,7 +86,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     setError('');
     
     try {
-      const success = await onLogin(data.emailOrUsername, data.password);
+      const success = await onLogin(data.email, data.password);
       if (success) {
         // 登录成功后，检查是否为管理员
         const currentUser = unifiedAuthService.getCurrentUser();
@@ -95,7 +95,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
         }
         // 普通用户会由ProtectedRoute正常处理
       } else {
-        setError('用户名/邮箱或密码错误');
+        setError('邮箱或密码错误');
       }
     } catch (err) {
       setError('登录失败，请稍后重试');
@@ -202,19 +202,19 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 >
               <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-emailOrUsername">邮箱或用户名</Label>
+                  <Label htmlFor="login-email">邮箱</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      id="login-emailOrUsername"
-                      type="text"
-                      placeholder="请输入邮箱或用户名"
+                      id="login-email"
+                      type="email"
+                      placeholder="请输入邮箱"
                       className="pl-9"
-                      {...loginForm('emailOrUsername')}
+                      {...loginForm('email')}
                     />
                   </div>
-                  {loginErrors.emailOrUsername && (
-                    <p className="text-sm text-red-500">{loginErrors.emailOrUsername.message}</p>
+                  {loginErrors.email && (
+                    <p className="text-sm text-red-500">{loginErrors.email.message}</p>
                   )}
                 </div>
                 

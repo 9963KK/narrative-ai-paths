@@ -131,10 +131,10 @@ export class UnifiedAuthService {
   }
 
   // 用户登录
-  async login(emailOrUsername: string, password: string): Promise<AuthUser | null> {
+  async login(email: string, password: string): Promise<AuthUser | null> {
     console.log('🔐 开始登录流程...');
     console.log('🌍 环境检测:', isProduction ? '生产环境' : '开发环境');
-    console.log('👤 登录用户:', emailOrUsername);
+    console.log('👤 登录邮箱:', email);
     
     if (isProduction) {
       // 生产环境使用Supabase
@@ -143,8 +143,8 @@ export class UnifiedAuthService {
       console.log('📡 Supabase连接状态:', isConnected);
       
       try {
-        console.log('🔍 查找用户:', emailOrUsername);
-        const user = await supabaseService.findUserByEmailOrUsername(emailOrUsername);
+        console.log('🔍 查找用户:', email);
+        const user = await supabaseService.findUserByEmail(email);
         console.log('👤 找到用户:', user ? user.username : '用户不存在');
         
         if (user) {
@@ -181,7 +181,7 @@ export class UnifiedAuthService {
       console.log('👥 本地用户数量:', users.length);
       
       const user = users.find((u: any) => 
-        (u.email === emailOrUsername || u.username === emailOrUsername) &&
+        u.email === email &&
         this.verifyPassword(password, u.password)
       );
       
