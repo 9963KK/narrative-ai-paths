@@ -156,136 +156,152 @@ const SaveManager: React.FC<SaveManagerProps> = ({
               </h2>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {sortedContexts.map((context) => (
-                <Card key={context.id} className="border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group">
-                  <CardContent className="p-4" onClick={() => handleLoadContext(context.id)}>
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1">
-                            {context.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            {context.isAutoSave && (
-                              <Badge variant="secondary" className="text-xs">
-                                自动保存
-                              </Badge>
-                            )}
-                            {context.genre && (
-                              <Badge variant="outline" className="text-xs">
-                                {context.genre}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="text-sm text-slate-600 line-clamp-2">
-                        {context.thumbnail}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-slate-500">
-                          <div className="flex items-center gap-1">
-                            <BookOpen className="h-3 w-3" />
-                            第 {context.storyState.chapter} 章
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Gamepad2 className="h-3 w-3" />
-                            {formatPlayTime(context.playTime)}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-xs text-slate-500">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(context.lastPlayTime).toLocaleDateString()}
-                          </div>
-                          <div>
-                            {context.storyState.characters?.length || 0} 个角色
-                          </div>
-                        </div>
-                        
-                        {/* 故事进度条 */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-slate-500">
-                            <span>故事进度</span>
-                            <span>{Math.round(context.storyState.story_progress || 0)}%</span>
-                          </div>
-                          <div className="w-full bg-slate-200 rounded-full h-1.5">
-                            <div 
-                              className={`h-1.5 rounded-full transition-all duration-300 ${
-                                (context.storyState.story_progress || 0) >= 100 
-                                  ? 'bg-green-500' 
-                                  : 'bg-blue-500'
-                              }`}
-                              style={{ width: `${context.storyState.story_progress || 0}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                className="flex-1 text-xs"
-                                disabled={(context.storyState.story_progress || 0) >= 100}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLoadContext(context.id);
-                                }}
-                              >
-                                {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续游戏'}
-                              </Button>
-                            </TooltipTrigger>
-                            {(context.storyState.story_progress || 0) >= 100 && (
-                              <TooltipContent>
-                                <p>此功能正在开发中，敬请期待！</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>确认删除</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                确定要删除存档 "{context.title}" 吗？此操作不可撤销。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                                取消
-                              </AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteContext(context.id);
-                                }}
-                              >
-                                删除
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sortedContexts.map((context, index) => (
+                <div 
+                  key={context.id} 
+                  className="group bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50"
+                  onClick={() => handleLoadContext(context.id)}
+                >
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className={`p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${
+                      index % 4 === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
+                      index % 4 === 1 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
+                      index % 4 === 2 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                      'bg-gradient-to-br from-orange-500 to-red-600'
+                    }`}>
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-800 text-lg mb-1 line-clamp-1 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                        {context.title}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {context.isAutoSave && (
+                          <span className="text-xs font-medium bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                            自动保存
+                          </span>
+                        )}
+                        {context.genre && (
+                          <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                            {context.genre}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-[2.5rem]">
+                    {context.thumbnail}
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        第 {context.storyState.chapter} 章
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Gamepad2 className="h-3 w-3" />
+                        {formatPlayTime(context.playTime)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(context.lastPlayTime).toLocaleDateString()}
+                      </div>
+                      <div>
+                        {context.storyState.characters?.length || 0} 个角色
+                      </div>
+                    </div>
+                    
+                    {/* 故事进度条 */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>故事进度</span>
+                        <span>{Math.round(context.storyState.story_progress || 0)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            (context.storyState.story_progress || 0) >= 100 
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                              : index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
+                                index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' :
+                                index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600' :
+                                'bg-gradient-to-r from-orange-500 to-red-600'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(5, context.storyState.story_progress || 0))}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            className={`flex-1 text-xs font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                              index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700' :
+                              index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' :
+                              index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' :
+                              'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
+                            }`}
+                            disabled={(context.storyState.story_progress || 0) >= 100}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLoadContext(context.id);
+                            }}
+                          >
+                            {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续游戏'}
+                          </Button>
+                        </TooltipTrigger>
+                        {(context.storyState.story_progress || 0) >= 100 && (
+                          <TooltipContent>
+                            <p>此功能正在开发中，敬请期待！</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-xs bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认删除</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            确定要删除存档 "{context.title}" 吗？此操作不可撤销。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                            取消
+                          </AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteContext(context.id);
+                            }}
+                          >
+                            删除
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
               ))}
             </div>
           </>
@@ -295,17 +311,25 @@ const SaveManager: React.FC<SaveManagerProps> = ({
   }
 
   return (
-    <Card className="w-full max-w-4xl bg-white shadow-lg border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5 text-slate-600" />
-          <CardTitle className="text-xl font-bold text-slate-800">存档管理</CardTitle>
+    <div className="w-full space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl shadow-lg">
+            <FolderOpen className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            存档管理
+          </h2>
         </div>
         <div className="flex gap-2">
           {currentStoryExists && (
             <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+                >
                   <Save className="h-4 w-4" />
                   保存当前进度
                 </Button>
@@ -338,135 +362,188 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             </Dialog>
           )}
           {onClose && (
-            <Button variant="outline" onClick={onClose}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+            >
               关闭
             </Button>
           )}
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="space-y-4">
+      <div className="space-y-4">
         {sortedContexts.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>还没有保存的故事</p>
-            <p className="text-sm mt-2">开始一个新故事并保存进度吧！</p>
+          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl mb-6 shadow-lg">
+              <BookOpen className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-3">还没有保存的故事</h3>
+            <p className="text-gray-600">开始一个新故事并保存进度，它就会出现在这里！</p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {sortedContexts.map((context) => (
-              <Card key={context.id} className="border border-slate-200 hover:border-slate-300 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{context.title}</h3>
-                        {context.isAutoSave && (
-                          <Badge variant="secondary" className="text-xs">
-                            自动保存
-                          </Badge>
-                        )}
-                        {context.genre && (
-                          <Badge variant="outline" className="text-xs">
-                            {context.genre}
-                          </Badge>
-                        )}
+          <div className="grid gap-6">
+            {sortedContexts.map((context, index) => (
+              <div key={context.id} className="group bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${
+                        index % 4 === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
+                        index % 4 === 1 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
+                        index % 4 === 2 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                        'bg-gradient-to-br from-orange-500 to-red-600'
+                      }`}>
+                        <BookOpen className="w-6 h-6 text-white" />
                       </div>
-                      
-                      <div className="text-sm text-slate-600 mb-3 line-clamp-2">
-                        {context.thumbnail}
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          第 {context.storyState.chapter} 章
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatPlayTime(context.playTime)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(context.lastPlayTime).toLocaleDateString()}
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-800 text-xl mb-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                          {context.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {context.isAutoSave && (
+                            <span className="text-xs font-medium bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
+                              自动保存
+                            </span>
+                          )}
+                          {context.genre && (
+                            <span className="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                              {context.genre}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex gap-2 ml-4">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={() => handleLoadContext(context.id)}
-                              size="sm"
-                              className="flex items-center gap-1"
-                              disabled={(context.storyState.story_progress || 0) >= 100}
-                            >
-                              <Gamepad2 className="h-3 w-3" />
-                              {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续'}
-                            </Button>
-                          </TooltipTrigger>
-                          {(context.storyState.story_progress || 0) >= 100 && (
-                            <TooltipContent>
-                              <p>此功能正在开发中，敬请期待！</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                      
-                      <Button
-                        onClick={() => {
-                          setRenameId(context.id);
-                          setRenameTitle(context.title);
-                        }}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                      
-                      <Button
-                        onClick={() => handleExportContext(context.id)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>确认删除</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              确定要删除存档 "{context.title}" 吗？此操作无法撤销。
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                              取消
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteContext(context.id);
-                              }}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              删除
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                    <div className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      {context.thumbnail}
+                    </div>
+                    
+                    <div className="flex items-center gap-6 text-xs text-gray-500 mb-4">
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="h-4 w-4" />
+                        第 {context.storyState.chapter} 章
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {formatPlayTime(context.playTime)}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {new Date(context.lastPlayTime).toLocaleDateString()}
+                      </div>
+                      <div>
+                        {context.storyState.characters?.length || 0} 个角色
+                      </div>
+                    </div>
+
+                    {/* 故事进度条 */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm text-gray-500">
+                        <span>故事进度</span>
+                        <span>{Math.round(context.storyState.story_progress || 0)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            (context.storyState.story_progress || 0) >= 100 
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                              : index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
+                                index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' :
+                                index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600' :
+                                'bg-gradient-to-r from-orange-500 to-red-600'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(5, context.storyState.story_progress || 0))}%` }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <div className="flex gap-2 ml-6">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={() => handleLoadContext(context.id)}
+                            size="sm"
+                            className={`flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                              index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700' :
+                              index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' :
+                              index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' :
+                              'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
+                            }`}
+                            disabled={(context.storyState.story_progress || 0) >= 100}
+                          >
+                            <Gamepad2 className="h-4 w-4" />
+                            {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续'}
+                          </Button>
+                        </TooltipTrigger>
+                        {(context.storyState.story_progress || 0) >= 100 && (
+                          <TooltipContent>
+                            <p>此功能正在开发中，敬请期待！</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <Button
+                      onClick={() => {
+                        setRenameId(context.id);
+                        setRenameTitle(context.title);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      onClick={() => handleExportContext(context.id)}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认删除</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            确定要删除存档 "{context.title}" 吗？此操作无法撤销。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                            取消
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteContext(context.id);
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            删除
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -500,8 +577,8 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             </DialogContent>
           </Dialog>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
