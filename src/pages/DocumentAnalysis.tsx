@@ -241,9 +241,9 @@ const DocumentAnalysis: React.FC = () => {
           <div className="text-center">
             <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3 mb-2">
               <Upload className="h-8 w-8 text-teal-600" />
-              文档分析
+              文档基础创作
             </h1>
-            <p className="text-slate-600">上传您的小说草稿，AI 提取核心元素，激发续写灵感</p>
+            <p className="text-slate-600">上传您的小说草稿，AI 提取核心元素，基于现有内容激发创作灵感</p>
           </div>
           <Button
             type="button"

@@ -29,7 +29,7 @@ const Home: React.FC = () => {
     try {
       const success = await loginAsGuest();
       if (success) {
-        navigate('/app/quick-start');
+        navigate('/app/quick');
       }
     } catch (error) {
       console.error('游客登录失败:', error);

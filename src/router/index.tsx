@@ -49,7 +49,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/app/quick-start",
+    path: "/app/quick",
     element: (
       <ProtectedRoute>
         <QuickStart />
@@ -65,7 +65,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/app/document",
+    path: "/app/filebase",
     element: (
       <ProtectedRoute>
         <DocumentAnalysis />

@@ -185,7 +185,7 @@ const Story: React.FC = () => {
                 {/* 如果只有一个故事，显示占位符 */}
                 {recentStories && recentStories.length === 1 && (
                   <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-blue-200/50"
-                       onClick={() => navigate('/app/quick-start')}>
+                       onClick={() => navigate('/app/quick')}>
                     <div className="flex items-center space-x-5">
                       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
                         <Sparkles className="w-6 h-6 text-white" />
@@ -205,7 +205,7 @@ const Story: React.FC = () => {
                 {(!recentStories || recentStories.length === 0) && (
                   <>
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                         onClick={() => navigate('/app/quick-start')}>
+                         onClick={() => navigate('/app/quick')}>
                       <div className="flex items-center space-x-4">
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                           <Wand2 className="w-6 h-6 text-white" />
@@ -256,14 +256,14 @@ const Story: React.FC = () => {
             {/* Card 1: Quick Start */}
             <div 
               className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-500 border border-gray-200/50 hover:transform hover:-translate-y-3 hover:shadow-2xl hover:bg-white"
-              onClick={() => navigate('/app/quick-start')}
+              onClick={() => navigate('/app/quick')}
             >
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Wand2 className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">快速开始</h3>
-              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">提供一个想法，AI补全所有细节。最适合寻找灵感的你。</p>
-              <span className="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">推荐新手使用</span>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">快速创作</h3>
+              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">提供一个想法，AI自动补全所有细节。快速开始，轻松创作。</p>
+              <span className="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">新手首选</span>
             </div>
 
             {/* Card 2: Advanced */}
@@ -274,22 +274,22 @@ const Story: React.FC = () => {
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Settings className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text transition-all duration-300">专业模式</h3>
-              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">全面掌控故事的每个细节，精雕细琢，打造完美篇章。</p>
-              <span className="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">适合有经验的用户</span>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text transition-all duration-300">高级定制</h3>
+              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">全面掌控故事的每个细节，自定义角色、情节、世界观。</p>
+              <span className="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">专业创作者</span>
             </div>
 
             {/* Card 3: Document Analysis */}
             <div 
               className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-500 border border-gray-200/50 hover:transform hover:-translate-y-3 hover:shadow-2xl hover:bg-white"
-              onClick={() => navigate('/app/document')}
+              onClick={() => navigate('/app/filebase')}
             >
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Upload className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:bg-clip-text transition-all duration-300">文档分析</h3>
-              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">上传您的小说草稿，AI 提取核心元素，激发续写灵感。</p>
-              <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">创新功能</span>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:bg-clip-text transition-all duration-300">文档基础创作</h3>
+              <p className="text-gray-600 mt-3 mb-6 leading-relaxed">上传您的小说草稿，AI 提取核心元素，基于现有内容激发续写灵感。</p>
+              <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">基于文档创作</span>
             </div>
           </section>
         </div>
