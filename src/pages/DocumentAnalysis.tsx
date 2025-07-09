@@ -227,48 +227,66 @@ const DocumentAnalysis: React.FC = () => {
 
   // 主要的文档分析界面
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/app')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            返回主页
-          </Button>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3 mb-2">
-              <Upload className="h-8 w-8 text-teal-600" />
+    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+      <div className="container mx-auto p-4 sm:p-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <header className="text-center mb-12">
+            <div className="flex items-center justify-between mb-8">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/app')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回主页
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModelConfig(true)}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
+            </div>
+            
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl">
+              <Upload className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
               文档基础创作
             </h1>
-            <p className="text-slate-600">上传您的小说草稿，AI 提取核心元素，基于现有内容激发创作灵感</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowModelConfig(true)}
-            className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-          >
-            <Settings className="h-4 w-4" />
-            模型配置
-          </Button>
-        </div>
-        
-        {!modelConfig.apiKey && !hasValidConfig && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="text-amber-800 text-sm text-center">
-              ⚠️ 请先配置AI模型才能进行文档分析
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              上传您的小说草稿，AI 智能提取核心元素，基于现有内容激发无限创作灵感
             </p>
-          </div>
-        )}
+          </header>
+          
+          {!modelConfig.apiKey && !hasValidConfig && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/50 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">!</span>
+                  </div>
+                  <h3 className="text-amber-800 font-semibold">配置提醒</h3>
+                </div>
+                <p className="text-amber-700 text-center">
+                  请先配置AI模型才能进行文档分析和创作
+                </p>
+              </div>
+            </div>
+          )}
 
-        <DocumentAnalyzer
-          modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
-          onAnalysisComplete={handleDocumentAnalysisComplete}
-          onClose={() => navigate('/app')}
-        />
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
+            <DocumentAnalyzer
+              modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
+              onAnalysisComplete={handleDocumentAnalysisComplete}
+              onClose={() => navigate('/app')}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

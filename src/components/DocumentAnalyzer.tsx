@@ -426,20 +426,20 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="p-8">
       {/* 标题区域 */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-3">文档智能分析</h1>
-        <p className="text-slate-600 text-lg">上传小说文档，AI将为您提供创作灵感</p>
+      <div className="text-center mb-12">
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
+        <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
       </div>
 
       {/* 文件上传区域 */}
       <div className="mb-8">
         <div
-          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
             selectedFile 
-              ? 'border-green-400 bg-green-50/50' 
-              : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
+              ? 'border-emerald-400 bg-emerald-50/50' 
+              : 'border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/20'
           }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -455,18 +455,18 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             {selectedFile ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-center">
-                  <CheckCircle className="w-16 h-16 text-green-500" />
+                  <CheckCircle className="w-16 h-16 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-1">上传成功</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-1">上传成功</h3>
                 </div>
                 
                 {/* 文件信息 */}
-                <div className="bg-slate-100 rounded-lg p-4 flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-blue-500 flex-shrink-0" />
+                <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-emerald-500 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-semibold text-slate-800">{selectedFile.name}</p>
-                    <p className="text-sm text-slate-600">
+                    <p className="font-semibold text-gray-800">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-600">
                       文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
@@ -475,15 +475,15 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
                 {/* 文档统计信息 */}
                 {wordCount > 0 && (
                   <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-slate-800">分析预览</h4>
+                    <h4 className="text-lg font-semibold text-gray-800">分析预览</h4>
                     <div className="grid grid-cols-2 gap-6">
                       <div className="text-center">
-                        <div className="text-slate-600 text-sm mb-1">总字符数</div>
-                        <div className="text-2xl font-bold text-slate-900">{charCount.toLocaleString()}</div>
+                        <div className="text-gray-600 text-sm mb-1">总字符数</div>
+                        <div className="text-2xl font-bold text-emerald-600">{charCount.toLocaleString()}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-slate-600 text-sm mb-1">总词数</div>
-                        <div className="text-2xl font-bold text-slate-900">{wordCount.toLocaleString()}</div>
+                        <div className="text-gray-600 text-sm mb-1">总词数</div>
+                        <div className="text-2xl font-bold text-emerald-600">{wordCount.toLocaleString()}</div>
                       </div>
                     </div>
                     
@@ -510,22 +510,22 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
               </div>
             ) : (
               <div className="space-y-6">
-                <Upload className="w-16 h-16 text-slate-400 mx-auto" />
+                <Upload className="w-16 h-16 text-gray-400 mx-auto" />
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     拖拽文件到此处
                   </h3>
-                  <p className="text-slate-600 mb-1">或</p>
+                  <p className="text-gray-600 mb-1">或</p>
                 </div>
                 <Button 
                   variant="default" 
                   size="lg"
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-base font-medium"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-3 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
                   选择文件
                 </Button>
-                <div className="text-sm text-slate-500 space-y-1">
+                <div className="text-sm text-gray-500 space-y-1">
                   <p>{documentAnalyzer.getSupportedFileTypesDescription()}</p>
                   <p className="text-xs">(10MB以内)</p>
                 </div>
@@ -540,7 +540,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             <Button
               variant="outline"
               size="lg"
-              className="px-8 py-3 text-base font-medium border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="px-8 py-3 text-base font-medium border-gray-300 text-gray-700 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300"
               onClick={() => {
                 setSelectedFile(null);
                 setFileContent('');
@@ -560,7 +560,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
               onClick={handleAnalyze}
               disabled={uploading || analyzing || !fileContent || (isFileTooBig && wordCount > 20000)}
               size="lg"
-              className="px-8 py-3 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white"
+              className="px-8 py-3 text-base font-medium bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               {(uploading || analyzing) ? (
                 <>
@@ -579,13 +579,13 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
         {/* 进度条 */}
         {(uploading || analyzing) && (
-          <div className="mt-8 bg-white rounded-lg border border-slate-200 p-6">
+          <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-6 shadow-lg">
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600 font-medium">
+                <span className="text-gray-600 font-medium">
                   {uploading ? '正在读取文件...' : '正在分析内容...'}
                 </span>
-                <span className="text-slate-500">{progress}%</span>
+                <span className="text-gray-500">{progress}%</span>
               </div>
               <Progress value={progress} className="w-full h-2" />
             </div>
@@ -594,7 +594,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
         {/* 错误信息 */}
         {error && (
-          <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mt-8 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-4 shadow-lg">
             <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
               <p className="text-red-700">{error}</p>
