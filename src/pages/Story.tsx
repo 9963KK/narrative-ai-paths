@@ -5,7 +5,7 @@ import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { Settings, Wand2, Wrench, Upload, BookOpen, FolderOpen, Sparkles, TrendingUp, Clock, Star } from 'lucide-react';
-import { getSavedContexts, contextManager } from '@/services/contextManager';
+import { getSavedContexts, contextManager, SavedStoryContext } from '@/services/contextManager';
 
 const Story: React.FC = () => {
   const { user } = useAuth();
@@ -19,6 +19,7 @@ const Story: React.FC = () => {
     genre: string;
   }>>([]);
   const [showStoryManager, setShowStoryManager] = useState(false);
+  const [loadedStoryContext, setLoadedStoryContext] = useState<SavedStoryContext | null>(null);
 
   // 检查存档数量和获取最近故事
   useEffect(() => {
@@ -74,6 +75,10 @@ const Story: React.FC = () => {
         return;
       }
       
+      // 存储加载的故事数据
+      setLoadedStoryContext(context);
+      console.log('✅ 故事上下文已加载:', context.title);
+      
       // 显示故事管理器
       setShowStoryManager(true);
       
@@ -88,7 +93,13 @@ const Story: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         <UserHeader />
         <div className="container mx-auto">
-          <StoryManager />
+          <StoryManager 
+            preloadedContext={loadedStoryContext}
+            onReturnToHome={() => {
+              setShowStoryManager(false);
+              setLoadedStoryContext(null);
+            }}
+          />
         </div>
       </div>
     );

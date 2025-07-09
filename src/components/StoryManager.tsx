@@ -44,7 +44,12 @@ interface StoryState {
   }>; // 故事目标列表
 }
 
-const StoryManager: React.FC = () => {
+interface StoryManagerProps {
+  preloadedContext?: SavedStoryContext | null;
+  onReturnToHome?: () => void;
+}
+
+const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome }) => {
   const [currentStory, setCurrentStory] = useState<StoryState | null>(null);
   const [currentModelConfig, setCurrentModelConfig] = useState<ModelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,8 +81,32 @@ const StoryManager: React.FC = () => {
     }
   }, []);
 
-  // 检查是否有待处理的故事配置
+  // 处理预加载的故事上下文
   useEffect(() => {
+    if (preloadedContext) {
+      console.log('🎯 处理预加载的故事上下文:', preloadedContext.title);
+      
+      // 恢复故事状态
+      setCurrentStory(preloadedContext.storyState);
+      setCurrentModelConfig(preloadedContext.modelConfig);
+      setCurrentContextId(preloadedContext.id);
+      setHasSavedProgress(true);
+
+      // 恢复AI配置和对话历史
+      storyAI.setModelConfig(preloadedContext.modelConfig);
+      storyAI.setConversationHistory(preloadedContext.conversationHistory, preloadedContext.summaryState);
+
+      console.log('✅ 预加载故事已恢复到StoryManager');
+    }
+  }, [preloadedContext]);
+
+  // 检查是否有待处理的故事配置（仅在没有预加载数据时）
+  useEffect(() => {
+    // 如果有预加载的故事数据，跳过待处理配置检查
+    if (preloadedContext) {
+      return;
+    }
+    
     const pendingConfigStr = localStorage.getItem('pendingStoryConfig');
     if (pendingConfigStr) {
       try {
@@ -94,7 +123,7 @@ const StoryManager: React.FC = () => {
         localStorage.removeItem('pendingStoryConfig');
       }
     }
-  }, []);
+  }, [preloadedContext]);
 
   const initializeStory = async (config: StoryConfig, modelConfig: ModelConfig, isAdvanced: boolean) => {
     setIsLoading(true);
@@ -888,6 +917,11 @@ const StoryManager: React.FC = () => {
     setAiError(null);
     setCurrentContextId(null);
     storyAI.clearConversationHistory();
+    
+    // 如果有回调函数，调用它返回主页
+    if (onReturnToHome) {
+      onReturnToHome();
+    }
   };
 
   // 保存故事进度
