@@ -125,11 +125,9 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     setSelectedFile(file);
     setAnalysisResult(null);
     
-    console.log('📄 已选择文件:', file.name, '大小:', Math.round(file.size / 1024), 'KB');
     
     // 读取文件内容并统计字数
     try {
-      console.log('📄 正在读取文件内容进行字数统计...');
       const content = await documentAnalyzer.readFile(file);
       setFileContent(content);
       
@@ -166,15 +164,6 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         // 不设置error，只是警告
       }
       
-      console.log('📊 文件统计:', {
-        filename: file.name,
-        fileSize: `${Math.round(file.size / 1024)}KB`,
-        words: stats.words,
-        chars: stats.chars,
-        chineseChars: stats.chineseChars,
-        englishWords: stats.englishWords,
-        sizeCheck: sizeCheck
-      });
       
     } catch (err) {
       console.error('📄 读取文件失败:', err);
@@ -206,8 +195,6 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     });
 
     try {
-      console.log('📄 使用已读取的文件内容，开始AI分析...');
-      console.log('📊 文档统计信息:', { words: wordCount, chars: charCount });
       
       // 模拟分析进度
       const progressInterval = setInterval(() => {
@@ -227,7 +214,6 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       
       if (result.success) {
         setAnalysisResult(result);
-        console.log('📄 分析完成:', result.data);
         
         // 更新记录状态为已分析
         documentRecordManager.updateRecord(currentRecordId, {
@@ -308,8 +294,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             variant="outline"
             size="sm"
             onClick={() => {
-              console.log('📄 导出分析结果:', data);
-              // 可以在这里实现导出功能
+                // 可以在这里实现导出功能
             }}
           >
             <Download className="w-4 h-4 mr-2" />

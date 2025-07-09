@@ -33,7 +33,6 @@ const DocumentAnalysis: React.FC = () => {
     if (savedConfig && savedConfig.apiKey) {
       setModelConfig(savedConfig);
       setHasValidConfig(true);
-      console.log('📂 已从本地存储加载配置');
     } else {
       setHasValidConfig(hasSavedConfig());
     }
@@ -42,7 +41,6 @@ const DocumentAnalysis: React.FC = () => {
   // 处理文档分析完成
   const handleDocumentAnalysisComplete = (result: DocumentAnalysisResult) => {
     setDocumentAnalysisResult(result);
-    console.log('📄 文档分析完成，切换到结果展示界面', result);
     
     if (result.success && result.data) {
       setShowAnalysisResult(true);
@@ -189,7 +187,6 @@ const DocumentAnalysis: React.FC = () => {
   // 处理文档分析结果变更
   const handleAnalysisResultChange = (updatedResult: DocumentAnalysisResult) => {
     setDocumentAnalysisResult(updatedResult);
-    console.log('文档分析结果已更新:', updatedResult);
   };
 
   // 基于分析结果进入专业模式
