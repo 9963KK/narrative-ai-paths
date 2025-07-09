@@ -361,7 +361,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             <Button 
               variant="outline" 
               onClick={onClose}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <ArrowLeft className="h-4 w-4" />
               返回主页
