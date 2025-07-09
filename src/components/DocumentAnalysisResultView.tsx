@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -343,8 +342,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                 <p className="text-blue-100 text-sm mt-2">分析文档中的关键人物角色</p>
               </div>
               <CardContent className="p-6">
-                <ScrollArea className="h-96">
-                  <div className="space-y-4">
+                <div className="space-y-4">
                     {data.characters.map((character, index) => (
                       <div key={index} className="group p-4 border border-gray-200/50 rounded-2xl bg-gradient-to-r from-gray-50 to-blue-50/30 hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-300 shadow-sm hover:shadow-md">
                         <div className="flex items-start justify-between mb-3">
@@ -434,8 +432,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                         </div>
                       </div>
                     ))}
-                  </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
 
@@ -773,8 +770,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                 )}
               </div>
               <CardContent className="p-6">
-                <ScrollArea className="h-[600px]">
-                  <div className="space-y-6 p-2">
+                <div className="space-y-6 p-2">
                     {data.suggestedStorySeeds.map((seed, index) => (
                       <div 
                         key={index} 
@@ -896,8 +892,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                         </div>
                       </div>
                     ))}
-                  </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </div>
