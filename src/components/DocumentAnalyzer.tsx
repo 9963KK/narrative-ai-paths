@@ -427,11 +427,13 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
   return (
     <div className="p-8">
-      {/* 标题区域 */}
-      <div className="text-center mb-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
-        <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
-      </div>
+      {/* 标题区域 - 只在没有上传文件时显示 */}
+      {!selectedFile && (
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
+          <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
+        </div>
+      )}
 
       {/* 文件上传区域 */}
       <div className="mb-8">
@@ -454,59 +456,56 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
             
             {selectedFile ? (
               <div className="space-y-6">
-                <div className="flex items-center justify-center">
-                  <CheckCircle className="w-16 h-16 text-emerald-500" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-1">上传成功</h3>
-                </div>
-                
-                {/* 文件信息 */}
-                <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                  <FileText className="w-8 h-8 text-emerald-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{selectedFile.name}</p>
-                    <p className="text-sm text-gray-600">
-                      文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                </div>
-                
-                {/* 文档统计信息 */}
-                {wordCount > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-800">分析预览</h4>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="text-center">
-                        <div className="text-gray-600 text-sm mb-1">总字符数</div>
-                        <div className="text-2xl font-bold text-emerald-600">{charCount.toLocaleString()}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-gray-600 text-sm mb-1">总词数</div>
-                        <div className="text-2xl font-bold text-emerald-600">{wordCount.toLocaleString()}</div>
-                      </div>
+                {/* 文件信息 - 更紧凑的设计 */}
+                <div className="bg-gray-50 rounded-xl p-6 border border-emerald-200">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-6 h-6 text-white" />
                     </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 text-lg">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-600">
+                        文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  </div>
+                
+                  {/* 文档统计信息 */}
+                  {wordCount > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-700">分析预览</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center bg-white rounded-lg p-3">
+                          <div className="text-gray-600 text-xs mb-1">总字符数</div>
+                          <div className="text-xl font-bold text-emerald-600">{charCount.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center bg-white rounded-lg p-3">
+                          <div className="text-gray-600 text-xs mb-1">总词数</div>
+                          <div className="text-xl font-bold text-emerald-600">{wordCount.toLocaleString()}</div>
+                        </div>
+                      </div>
                     
-                    {/* AI处理建议 */}
-                    {(() => {
-                      const sizeCheck = checkFileSizeForAI(wordCount, charCount);
-                      if (sizeCheck.level === 'warning' || sizeCheck.level === 'error') {
-                        return (
-                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-                            <div className="flex items-center gap-3">
-                              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                              <div>
-                                <p className="font-medium text-yellow-800">文档篇幅较长</p>
-                                <p className="text-sm text-yellow-700 mt-1">{sizeCheck.message}</p>
+                      {/* AI处理建议 */}
+                      {(() => {
+                        const sizeCheck = checkFileSizeForAI(wordCount, charCount);
+                        if (sizeCheck.level === 'warning' || sizeCheck.level === 'error') {
+                          return (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="font-medium text-yellow-800 text-sm">文档篇幅较长</p>
+                                  <p className="text-xs text-yellow-700 mt-1">{sizeCheck.message}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                )}
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
