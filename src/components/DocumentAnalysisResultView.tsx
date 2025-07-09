@@ -774,11 +774,11 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
               </div>
               <CardContent className="p-6">
                 <ScrollArea className="h-[600px]">
-                  <div className="space-y-4">
+                  <div className="space-y-6 p-2">
                     {data.suggestedStorySeeds.map((seed, index) => (
                       <div 
                         key={index} 
-                        className={`group p-6 border-2 rounded-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 ${
+                        className={`group p-6 border-2 rounded-2xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:z-10 relative ${
                           selectedSeedIndex === index 
                             ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 shadow-xl ring-4 ring-orange-200/50' 
                             : 'border-gray-200/50 bg-white hover:border-orange-300 hover:shadow-lg hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-yellow-50/50'
