@@ -487,8 +487,15 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       {/* 标题区域 - 只在没有上传文件时显示 */}
       {!selectedFile && (
         <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
-          <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+              <Upload className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">文档基础创作</h2>
+              <p className="text-gray-600">AI智能分析与创作</p>
+            </div>
+          </div>
         </div>
       )}
 
