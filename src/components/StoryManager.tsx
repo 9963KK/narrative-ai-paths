@@ -47,9 +47,10 @@ interface StoryState {
 interface StoryManagerProps {
   preloadedContext?: SavedStoryContext | null;
   onReturnToHome?: () => void;
+  userId?: string;
 }
 
-const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome }) => {
+const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome, userId }) => {
   const [currentStory, setCurrentStory] = useState<StoryState | null>(null);
   const [currentModelConfig, setCurrentModelConfig] = useState<ModelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -143,7 +144,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         const storyGoals = processStoryGoals(config);
     
     const initialStory: StoryState = {
-          story_id: `ST${Date.now()}`,
+          story_id: `${userId || 'guest'}_ST${Date.now()}`,
           current_scene: response.content.scene,
           characters: normalizeCharacters(response.content.characters || []),
           setting: response.content.setting_details || config.setting || '未知世界',
@@ -254,7 +255,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     const storyGoals = processStoryGoals(config);
     
     return {
-      story_id: `ST${Date.now()}`,
+      story_id: `${userId || 'guest'}_ST${Date.now()}`,
       current_scene: scene,
       characters: normalizeCharacters(characters),
       setting,
@@ -1144,7 +1145,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     
     try {
       // 生成新的故事ID
-      const newStoryId = `ST${Date.now()}`;
+      const newStoryId = `${userId || 'guest'}_ST${Date.now()}`;
       
       // 创建续篇故事的初始状态
       const continuedStory: StoryState = {

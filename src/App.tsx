@@ -15,6 +15,8 @@ import QuickStart from "./pages/QuickStart";
 import Advanced from "./pages/Advanced";
 import DocumentAnalysis from "./pages/DocumentAnalysis";
 import Story from "./pages/Story";
+import StoryDetail from "./pages/StoryDetail";
+import SaveArchive from "./pages/SaveArchive";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 
@@ -80,6 +82,25 @@ const App = () => (
               } 
             />
             
+            {/* 故事详情页面 - 需要登录 */}
+            <Route 
+              path="/app/:userStoryId" 
+              element={
+                <ProtectedRoute>
+                  <StoryDetail />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* 存档管理页面 - 需要登录 */}
+            <Route 
+              path="/saves" 
+              element={
+                <ProtectedRoute>
+                  <SaveArchive />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* 设置页面 - 需要登录 */}
             <Route 
