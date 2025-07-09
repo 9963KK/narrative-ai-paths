@@ -80,7 +80,7 @@ const Story: React.FC = () => {
       const actualStoryId = context.storyState.story_id;
       
       // 导航到故事详情页面
-      navigate(`/app/${userId}&${actualStoryId}`);
+      navigate(`/app/story?userId=${userId}&storyId=${actualStoryId}`);
       
     } catch (error) {
       console.error('加载故事失败:', error);

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { contextManager, SavedStoryContext } from '@/services/contextManager';
 
 const StoryDetail: React.FC = () => {
-  const { userStoryId } = useParams<{ userStoryId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loadedStoryContext, setLoadedStoryContext] = useState<SavedStoryContext | null>(null);
@@ -14,14 +14,14 @@ const StoryDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userStoryId) {
-      setError('无效的故事ID');
+    const userId = searchParams.get('userId');
+    const storyId = searchParams.get('storyId');
+
+    if (!userId || !storyId) {
+      setError('无效的故事ID参数');
       setIsLoading(false);
       return;
     }
-
-    // 解析用户ID和故事ID
-    const [userId, storyId] = userStoryId.split('&');
     
     // 验证用户权限
     if (user && user.id !== userId && userId !== 'guest') {
@@ -44,7 +44,7 @@ const StoryDetail: React.FC = () => {
 
     setLoadedStoryContext(matchingContext);
     setIsLoading(false);
-  }, [userStoryId, user]);
+  }, [searchParams, user]);
 
   const handleReturnToHome = () => {
     navigate('/app');

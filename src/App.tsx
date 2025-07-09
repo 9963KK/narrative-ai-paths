@@ -84,7 +84,7 @@ const App = () => (
             
             {/* 故事详情页面 - 需要登录 */}
             <Route 
-              path="/app/:userStoryId" 
+              path="/app/story" 
               element={
                 <ProtectedRoute>
                   <StoryDetail />

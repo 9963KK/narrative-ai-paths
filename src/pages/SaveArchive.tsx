@@ -24,7 +24,7 @@ const SaveArchive: React.FC = () => {
     const storyId = context.storyState.story_id;
     
     // 导航到故事页面
-    navigate(`/app/${userId}&${storyId}`);
+    navigate(`/app/story?userId=${userId}&storyId=${storyId}`);
   };
 
   return (
