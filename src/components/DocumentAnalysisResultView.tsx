@@ -320,7 +320,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
 
         {/* 三列布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 左列：人物分析 */}
+          {/* 左列：人物分析 + 写作风格 */}
           <div className="space-y-6">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
@@ -438,9 +438,80 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                 </ScrollArea>
               </CardContent>
             </Card>
+
+            {/* 写作风格 */}
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+                <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Palette className="h-6 w-6 text-white" />
+                  </div>
+                  写作风格
+                </CardTitle>
+                <p className="text-indigo-100 text-sm mt-2">作品的独特表达方式</p>
+              </div>
+              <CardContent className="p-6 space-y-4">
+                <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-4 border-l-4 border-pink-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center">
+                      <Heart className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-pink-800 text-lg">语调风格</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.tone}
+                      onChange={(e) => updateWritingStyle('tone', e.target.value)}
+                      placeholder="语调风格"
+                      className="text-sm bg-white/80 border-pink-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-pink-700 text-sm font-medium pl-2">{data.writingStyle.tone}</p>
+                  )}
+                </div>
+                
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-4 border-l-4 border-teal-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-teal-400 rounded-full flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-teal-800 text-lg">叙述视角</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.narrativePerspective}
+                      onChange={(e) => updateWritingStyle('narrativePerspective', e.target.value)}
+                      placeholder="叙述视角"
+                      className="text-sm bg-white/80 border-teal-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-teal-700 text-sm font-medium pl-2">{data.writingStyle.narrativePerspective}</p>
+                  )}
+                </div>
+                
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-4 border-l-4 border-emerald-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-emerald-800 text-lg">文体类型</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.genre}
+                      onChange={(e) => updateWritingStyle('genre', e.target.value)}
+                      placeholder="文体类型"
+                      className="text-sm bg-white/80 border-emerald-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-emerald-700 text-sm font-medium pl-2">{data.writingStyle.genre}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* 中列：故事背景与情节 */}
+          {/* 中列：故事背景 + 主题情节 */}
           <div className="space-y-6">
             {/* 故事背景 */}
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
