@@ -177,12 +177,22 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
                         {context.title}
                       </h3>
-                      <div className="flex flex-wrap justify-center gap-1">
+                      <div className="flex items-center justify-between text-xs text-gray-500 w-full">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>第{context.storyState.chapter}章</span>
+                        </div>
+                        
                         {context.genre && (
                           <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                             {context.genre}
                           </span>
                         )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatPlayTime(context.playTime)}</span>
+                        </div>
                       </div>
                     </div>
                     
@@ -193,17 +203,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     
                     {/* 底部信息 */}
                     <div className="space-y-2 mt-auto">
-                      <div className="space-y-1 text-xs text-gray-500">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <BookOpen className="h-3 w-3" />
-                            <span>第{context.storyState.chapter}章</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatPlayTime(context.playTime)}</span>
-                          </div>
-                        </div>
+                      <div className="flex items-center justify-center text-xs text-gray-500">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           <span>{new Date(context.lastPlayTime).toLocaleDateString()}</span>
@@ -400,12 +400,22 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
                       {context.title}
                     </h3>
-                    <div className="flex flex-wrap justify-center gap-1">
+                    <div className="flex items-center justify-between text-xs text-gray-500 w-full">
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        <span>第{context.storyState.chapter}章</span>
+                      </div>
+                      
                       {context.genre && (
                         <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                           {context.genre}
                         </span>
                       )}
+                      
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{formatPlayTime(context.playTime)}</span>
+                      </div>
                     </div>
                   </div>
                   
@@ -416,17 +426,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                   
                   {/* 底部信息 */}
                   <div className="space-y-2 mt-auto">
-                    <div className="space-y-1 text-xs text-gray-500">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          <span>第{context.storyState.chapter}章</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatPlayTime(context.playTime)}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-center text-xs text-gray-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         <span>{new Date(context.lastPlayTime).toLocaleDateString()}</span>
