@@ -19,8 +19,7 @@ import {
   AlertCircle,
   Download,
   Eye,
-  Loader2,
-  Database
+  Loader2
 } from 'lucide-react';
 import { documentAnalyzer } from '@/services/modules';
 import { DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
@@ -31,14 +30,12 @@ interface DocumentAnalyzerProps {
   modelConfig: ModelConfig;
   onAnalysisComplete?: (result: DocumentAnalysisResult) => void;
   onClose?: () => void;
-  onViewRecords?: () => void;
 }
 
 const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({ 
   modelConfig, 
   onAnalysisComplete, 
-  onClose,
-  onViewRecords 
+  onClose 
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
@@ -492,21 +489,6 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         <div className="text-center mb-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
           <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
-          
-          {/* 快速访问记录管理 */}
-          {onViewRecords && (
-            <div className="mt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewRecords}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 border-gray-300 hover:bg-gray-50"
-              >
-                <Database className="h-4 w-4" />
-                查看历史记录
-              </Button>
-            </div>
-          )}
         </div>
       )}
 

@@ -358,7 +358,6 @@ const DocumentAnalysis: React.FC = () => {
               modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
               onAnalysisComplete={handleDocumentAnalysisComplete}
               onClose={() => navigate('/app')}
-              onViewRecords={() => setShowRecordManager(true)}
             />
           </div>
         </div>
