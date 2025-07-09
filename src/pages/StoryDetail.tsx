@@ -105,7 +105,10 @@ const StoryDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+    <div className="min-h-screen" style={{
+      background: 'radial-gradient(ellipse at top right, rgba(59, 130, 246, 0.1), rgb(249, 250, 251), rgb(249, 250, 251))',
+      backgroundColor: 'rgb(249, 250, 251)'
+    }}>
       <UserHeader />
       <StoryManager 
         preloadedContext={loadedStoryContext}
