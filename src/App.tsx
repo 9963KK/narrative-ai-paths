@@ -9,7 +9,6 @@ import { OAuthCallback } from "@/components/auth/OAuthCallback";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import AppMain from "./pages/AppMain";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import QuickStart from "./pages/QuickStart";
@@ -46,7 +45,7 @@ const App = () => (
               path="/app" 
               element={
                 <ProtectedRoute>
-                  <AppMain />
+                  <Story />
                 </ProtectedRoute>
               } 
             />
@@ -81,15 +80,6 @@ const App = () => (
               } 
             />
             
-            {/* 故事界面 - 需要登录 */}
-            <Route 
-              path="/app/story" 
-              element={
-                <ProtectedRoute>
-                  <Story />
-                </ProtectedRoute>
-              } 
-            />
             
             {/* 设置页面 - 需要登录 */}
             <Route 

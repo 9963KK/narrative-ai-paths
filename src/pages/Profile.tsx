@@ -299,7 +299,7 @@ const Profile: React.FC = () => {
                     showInHomePage={true}
                     onLoadStory={(contextId) => {
                       // 加载故事并导航
-                      navigate('/app/story');
+                      navigate('/app');
                     }}
                   />
                 </CardContent>
