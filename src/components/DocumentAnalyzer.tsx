@@ -19,22 +19,26 @@ import {
   AlertCircle,
   Download,
   Eye,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react';
 import { documentAnalyzer } from '@/services/modules';
 import { DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documentAnalyzer';
 import { ModelConfig } from '@/components/model-config/constants';
+import { documentRecordManager, DocumentRecord } from '@/services/documentRecordManager';
 
 interface DocumentAnalyzerProps {
   modelConfig: ModelConfig;
   onAnalysisComplete?: (result: DocumentAnalysisResult) => void;
   onClose?: () => void;
+  onViewRecords?: () => void;
 }
 
 const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({ 
   modelConfig, 
   onAnalysisComplete, 
-  onClose 
+  onClose,
+  onViewRecords 
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
@@ -46,6 +50,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   const [analysisResult, setAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFileTooBig, setIsFileTooBig] = useState(false);
+  const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 设置模型配置
@@ -135,11 +140,30 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       setWordCount(stats.words);
       setCharCount(stats.chars);
       
+      // 创建文档记录
+      const thumbnailContent = content.substring(0, 100) + (content.length > 100 ? '...' : '');
+      const record = documentRecordManager.addRecord({
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type || 'unknown',
+        status: 'uploaded',
+        wordCount: stats.words,
+        charCount: stats.chars,
+        thumbnailContent
+      });
+      
+      setCurrentRecordId(record.id);
+      
       // 检查文件大小是否适合AI处理
       const sizeCheck = checkFileSizeForAI(stats.words, stats.chars);
       if (sizeCheck.level === 'error') {
         setIsFileTooBig(true);
         setError(sizeCheck.message);
+        // 更新记录状态
+        documentRecordManager.updateRecord(record.id, {
+          status: 'failed',
+          errorMessage: sizeCheck.message
+        });
       } else if (sizeCheck.level === 'warning') {
         setIsFileTooBig(true);
         // 不设置error，只是警告
@@ -157,17 +181,32 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       
     } catch (err) {
       console.error('📄 读取文件失败:', err);
-      setError('读取文件内容失败，请检查文件格式是否正确');
+      const errorMessage = '读取文件内容失败，请检查文件格式是否正确';
+      setError(errorMessage);
+      
+      // 如果有记录ID，更新记录状态
+      if (currentRecordId) {
+        documentRecordManager.updateRecord(currentRecordId, {
+          status: 'failed',
+          errorMessage
+        });
+      }
     }
   }, []);
 
   const handleAnalyze = useCallback(async () => {
-    if (!selectedFile || !fileContent) return;
+    if (!selectedFile || !fileContent || !currentRecordId) return;
 
     setUploading(false);
     setAnalyzing(true);
     setProgress(0);
     setError(null);
+
+    // 更新记录状态为分析中
+    documentRecordManager.updateRecord(currentRecordId, {
+      status: 'analyzing',
+      analysisTime: new Date().toISOString()
+    });
 
     try {
       console.log('📄 使用已读取的文件内容，开始AI分析...');
@@ -192,18 +231,39 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       if (result.success) {
         setAnalysisResult(result);
         console.log('📄 分析完成:', result.data);
+        
+        // 更新记录状态为已分析
+        documentRecordManager.updateRecord(currentRecordId, {
+          status: 'analyzed',
+          analysisResult: result
+        });
+        
         onAnalysisComplete?.(result);
       } else {
-        setError(result.error || '分析失败');
+        const errorMessage = result.error || '分析失败';
+        setError(errorMessage);
+        
+        // 更新记录状态为失败
+        documentRecordManager.updateRecord(currentRecordId, {
+          status: 'failed',
+          errorMessage
+        });
       }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : '处理文件时发生错误');
+      const errorMessage = err instanceof Error ? err.message : '处理文件时发生错误';
+      setError(errorMessage);
       console.error('📄 文件处理错误:', err);
+      
+      // 更新记录状态为失败
+      documentRecordManager.updateRecord(currentRecordId, {
+        status: 'failed',
+        errorMessage
+      });
     } finally {
       setAnalyzing(false);
     }
-  }, [selectedFile, fileContent, wordCount, charCount, onAnalysisComplete]);
+  }, [selectedFile, fileContent, wordCount, charCount, currentRecordId, onAnalysisComplete]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -432,6 +492,21 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         <div className="text-center mb-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-3">文档智能分析</h2>
           <p className="text-gray-600">上传小说文档，AI将为您提供创作灵感</p>
+          
+          {/* 快速访问记录管理 */}
+          {onViewRecords && (
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onViewRecords}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 border-gray-300 hover:bg-gray-50"
+              >
+                <Database className="h-4 w-4" />
+                查看历史记录
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -548,6 +623,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
                 setIsFileTooBig(false);
                 setAnalysisResult(null);
                 setError(null);
+                setCurrentRecordId(null);
                 if (fileInputRef.current) {
                   fileInputRef.current.value = '';
                 }

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Settings, ArrowLeft, Upload, BookOpen } from 'lucide-react';
+import { Settings, ArrowLeft, Upload, BookOpen, Database } from 'lucide-react';
 import ModelConfig from '@/components/ModelConfig';
 import DocumentAnalyzer from '@/components/DocumentAnalyzer';
 import DocumentAnalysisResultView from '@/components/DocumentAnalysisResultView';
+import DocumentRecordManager from '@/components/DocumentRecordManager';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
+import { DocumentRecord } from '@/services/documentRecordManager';
 
 const DocumentAnalysis: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ const DocumentAnalysis: React.FC = () => {
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
   const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  const [showRecordManager, setShowRecordManager] = useState(false);
 
   const [modelConfig, setModelConfig] = useState<ModelConfigType>({
     provider: 'openai',
@@ -195,6 +198,24 @@ const DocumentAnalysis: React.FC = () => {
     navigate('/app/advanced', { state: { documentAnalysis: documentAnalysisResult } });
   };
 
+  // 处理从记录管理器选择记录
+  const handleSelectRecord = (record: DocumentRecord) => {
+    if (record.analysisResult) {
+      setDocumentAnalysisResult(record.analysisResult);
+      setShowAnalysisResult(true);
+      setShowRecordManager(false);
+    }
+  };
+
+  // 处理查看记录结果
+  const handleViewRecordResult = (record: DocumentRecord) => {
+    if (record.analysisResult) {
+      setDocumentAnalysisResult(record.analysisResult);
+      setShowAnalysisResult(true);
+      setShowRecordManager(false);
+    }
+  };
+
   // 模型配置界面
   if (showModelConfig) {
     return (
@@ -225,6 +246,48 @@ const DocumentAnalysis: React.FC = () => {
     );
   }
 
+  // 记录管理界面
+  if (showRecordManager) {
+    return (
+      <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+        <div className="container mx-auto p-4 sm:p-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <Button
+                variant="ghost"
+                onClick={() => setShowRecordManager(false)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回分析
+              </Button>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <Database className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-800">解析记录管理</h1>
+                  <p className="text-sm text-gray-600">查看和管理文档解析历史</p>
+                </div>
+              </div>
+              
+              <div className="w-[120px]"></div>
+            </div>
+            
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden p-6">
+              <DocumentRecordManager
+                onSelectRecord={handleSelectRecord}
+                onViewResult={handleViewRecordResult}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 主要的文档分析界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
@@ -252,15 +315,27 @@ const DocumentAnalysis: React.FC = () => {
               </div>
             </div>
             
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowModelConfig(true)}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
-            >
-              <Settings className="h-4 w-4" />
-              模型配置
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowRecordManager(true)}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+              >
+                <Database className="h-4 w-4" />
+                解析记录
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModelConfig(true)}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
+            </div>
           </div>
           
           {!modelConfig.apiKey && !hasValidConfig && (
@@ -284,6 +359,7 @@ const DocumentAnalysis: React.FC = () => {
               modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
               onAnalysisComplete={handleDocumentAnalysisComplete}
               onClose={() => navigate('/app')}
+              onViewRecords={() => setShowRecordManager(true)}
             />
           </div>
         </div>
