@@ -105,11 +105,11 @@ const AppMain: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">继续您的冒险</h2>
                 <Button
-                  onClick={() => navigate('/admin')}
+                  onClick={() => navigate('/profile')}
                   className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg border border-gray-200/50 text-gray-600 hover:bg-white hover:shadow-xl hover:text-gray-800 transition-all duration-300 transform hover:scale-105"
                 >
                   <FolderOpen className="w-4 h-4" />
-                  <span className="font-medium text-sm">管理所有存档</span>
+                  <span className="font-medium text-sm">管理我的存档</span>
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

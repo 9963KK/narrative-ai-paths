@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock, Archive } from 'lucide-react';
 import { getSavedContexts } from '@/services/contextManager';
+import SaveManager from '@/components/SaveManager';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -282,6 +283,25 @@ const Profile: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* 存档管理 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-green-600" />
+                    存档管理
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SaveManager 
+                    showInHomePage={true}
+                    onLoadStory={(contextId) => {
+                      // 加载故事并导航
+                      navigate('/app/story');
+                    }}
+                  />
                 </CardContent>
               </Card>
 
