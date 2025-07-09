@@ -383,65 +383,67 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             <p className="text-gray-600">开始一个新故事并保存进度，它就会出现在这里！</p>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedContexts.map((context, index) => (
-              <div key={context.id} className="group bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${
-                        index % 4 === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
-                        index % 4 === 1 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
-                        index % 4 === 2 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
-                        'bg-gradient-to-br from-orange-500 to-red-600'
-                      }`}>
-                        <BookOpen className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 text-xl mb-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
-                          {context.title}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {context.isAutoSave && (
-                            <span className="text-xs font-medium bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
-                              自动保存
-                            </span>
-                          )}
-                          {context.genre && (
-                            <span className="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                              {context.genre}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+              <div 
+                key={context.id} 
+                className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50 cursor-pointer transform hover:scale-105 hover:-translate-y-1 aspect-square"
+                onClick={() => handleLoadContext(context.id)}
+              >
+                <div className="p-6 h-full flex flex-col">
+                  {/* 头部图标和标题 */}
+                  <div className="flex flex-col items-center text-center mb-4">
+                    <div className={`p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mb-3 ${
+                      index % 4 === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
+                      index % 4 === 1 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
+                      index % 4 === 2 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                      'bg-gradient-to-br from-orange-500 to-red-600'
+                    }`}>
+                      <BookOpen className="w-6 h-6 text-white" />
                     </div>
-                    
-                    <div className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {context.thumbnail}
+                    <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                      {context.title}
+                    </h3>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {context.isAutoSave && (
+                        <span className="text-xs font-medium bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                          自动保存
+                        </span>
+                      )}
+                      {context.genre && (
+                        <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                          {context.genre}
+                        </span>
+                      )}
                     </div>
-                    
-                    <div className="flex items-center gap-6 text-xs text-gray-500 mb-4">
+                  </div>
+                  
+                  {/* 故事描述 */}
+                  <div className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+                    {context.thumbnail}
+                  </div>
+                  
+                  {/* 底部信息 */}
+                  <div className="space-y-3 mt-auto">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
                       <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
-                        第 {context.storyState.chapter} 章
+                        <BookOpen className="h-3 w-3" />
+                        第{context.storyState.chapter}章
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-3 w-3" />
                         {formatPlayTime(context.playTime)}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
+                      <div className="flex items-center gap-1 col-span-2">
+                        <Calendar className="h-3 w-3" />
                         {new Date(context.lastPlayTime).toLocaleDateString()}
                       </div>
-                      <div>
-                        {context.storyState.characters?.length || 0} 个角色
-                      </div>
                     </div>
-
+                    
                     {/* 故事进度条 */}
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>故事进度</span>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>进度</span>
                         <span>{Math.round(context.storyState.story_progress || 0)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -458,89 +460,85 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         ></div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex gap-2 ml-6">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() => handleLoadContext(context.id)}
+                    
+                    {/* 操作按钮 */}
+                    <div className="flex gap-1 pt-2" onClick={(e) => e.stopPropagation()}>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              className={`flex-1 text-xs font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                                index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700' :
+                                index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' :
+                                index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' :
+                                'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
+                              }`}
+                              disabled={(context.storyState.story_progress || 0) >= 100}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLoadContext(context.id);
+                              }}
+                            >
+                              继续
+                            </Button>
+                          </TooltipTrigger>
+                          {(context.storyState.story_progress || 0) >= 100 && (
+                            <TooltipContent>
+                              <p>此功能正在开发中，敬请期待！</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenameId(context.id);
+                          setRenameTitle(context.title);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
                             size="sm"
-                            className={`flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
-                              index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700' :
-                              index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' :
-                              index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' :
-                              'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
-                            }`}
-                            disabled={(context.storyState.story_progress || 0) >= 100}
+                            className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Gamepad2 className="h-4 w-4" />
-                            {(context.storyState.story_progress || 0) >= 100 ? '开始新冒险' : '继续'}
+                            <Trash2 className="h-3 w-3" />
                           </Button>
-                        </TooltipTrigger>
-                        {(context.storyState.story_progress || 0) >= 100 && (
-                          <TooltipContent>
-                            <p>此功能正在开发中，敬请期待！</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <Button
-                      onClick={() => {
-                        setRenameId(context.id);
-                        setRenameTitle(context.title);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleExportContext(context.id)}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>确认删除</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            确定要删除存档 "{context.title}" 吗？此操作无法撤销。
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                            取消
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteContext(context.id);
-                            }}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            删除
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>确认删除</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              确定要删除存档 "{context.title}" 吗？此操作无法撤销。
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                              取消
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteContext(context.id);
+                              }}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              删除
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               </div>
