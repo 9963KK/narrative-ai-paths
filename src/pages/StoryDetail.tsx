@@ -16,37 +16,73 @@ const StoryDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const userId = searchParams.get('userId');
-    const storyId = searchParams.get('storyId');
+    // 暂时移除参数验证和查找逻辑，创建一个模拟的故事上下文用于界面预览
+    const mockStoryContext = {
+      id: 'demo-story-id',
+      title: '示例故事：魔法学院的冒险',
+      lastPlayTime: new Date().toISOString(),
+      genre: '奇幻冒险',
+      storyState: {
+        story_id: 'ST_DEMO_123',
+        current_scene: '你站在魔法学院的大门前，古老的石门上雕刻着神秘的符文。夜幕降临，远处传来奇异的魔法波动。作为一名新入学的学生，你必须在今晚完成入学试炼。前方有三条路径：左边通往图书馆，中间直达宿舍，右边是神秘的魔法实验室。',
+        characters: [
+          {
+            name: '阿斯莫德',
+            role: '魔法导师',
+            traits: '智慧, 神秘, 严格',
+            appearance: '银白长发，深邃的蓝眼睛，身穿深蓝色法师袍',
+            backstory: '学院最年轻的导师，精通多种魔法'
+          },
+          {
+            name: '你',
+            role: '新生',
+            traits: '好奇, 勇敢, 渴望学习',
+            appearance: '年轻的面孔，眼中闪烁着对魔法的渴望',
+            backstory: '刚刚觉醒魔法天赋的普通人'
+          }
+        ],
+        setting: '古老的魔法学院，充满神秘力量的地方',
+        chapter: 3,
+        chapter_title: '入学试炼',
+        choices_made: ['选择进入魔法学院', '接受导师的指导'],
+        mood: '紧张而兴奋',
+        tension_level: 7,
+        needs_choice: true,
+        scene_type: 'exploration',
+        is_completed: false,
+        story_progress: 35,
+        main_goal_status: 'in_progress',
+        story_goals: [
+          {
+            id: 'goal_1',
+            description: '完成入学试炼',
+            type: 'main',
+            priority: 'high',
+            status: 'in_progress',
+            completion_chapter: 3
+          },
+          {
+            id: 'goal_2',
+            description: '找到魔法导师',
+            type: 'sub',
+            priority: 'medium',
+            status: 'completed',
+            completion_chapter: 2
+          }
+        ]
+      },
+      modelConfig: {
+        provider: 'openai',
+        model: 'gpt-4',
+        apiKey: 'demo-key'
+      },
+      conversationHistory: [],
+      summaryState: null
+    };
 
-    if (!userId || !storyId) {
-      setError('无效的故事ID参数');
-      setIsLoading(false);
-      return;
-    }
-    
-    // 验证用户权限
-    if (user && user.id !== userId && userId !== 'guest') {
-      setError('无权访问此故事');
-      setIsLoading(false);
-      return;
-    }
-
-    // 查找匹配的故事上下文
-    const savedContexts = contextManager.getSavedContexts();
-    const matchingContext = Object.values(savedContexts).find(
-      context => context.storyState.story_id === storyId
-    );
-
-    if (!matchingContext) {
-      setError('未找到指定的故事');
-      setIsLoading(false);
-      return;
-    }
-
-    setLoadedStoryContext(matchingContext);
+    setLoadedStoryContext(mockStoryContext);
     setIsLoading(false);
-  }, [searchParams, user]);
+  }, []);
 
   const handleReturnToHome = () => {
     navigate('/app');
