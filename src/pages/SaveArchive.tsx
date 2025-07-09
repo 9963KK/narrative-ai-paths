@@ -38,6 +38,7 @@ const SaveArchive: React.FC = () => {
             onLoadStory={handleLoadStory}
             currentStoryExists={false}
             showInHomePage={false}
+            onClose={() => navigate('/app')}
           />
         </div>
       </div>

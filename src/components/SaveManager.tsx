@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2 } from 'lucide-react';
+import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2, ArrowLeft } from 'lucide-react';
 import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
 
 interface SaveManagerProps {
@@ -361,9 +361,10 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             <Button 
               variant="outline" 
               onClick={onClose}
-              className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
             >
-              关闭
+              <ArrowLeft className="h-4 w-4" />
+              返回主页
             </Button>
           )}
         </div>
