@@ -1250,20 +1250,25 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-xl text-slate-700">AI正在为您创作专属故事...</p>
-          <p className="text-sm text-slate-500 mt-2">正在生成角色、场景和剧情</p>
+      <div className="flex items-center justify-center min-h-[60vh] py-12">
+        <div className="text-center bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-lg border border-gray-200/50 max-w-md mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-6"></div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">AI正在创作专属故事</h3>
+          <p className="text-gray-600 mb-4">正在生成角色、场景和剧情...</p>
           {currentModelConfig && (
-            <p className="text-xs text-slate-400 mt-1">
-              使用模型: {currentModelConfig.provider} - {currentModelConfig.model}
-            </p>
+            <div className="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-full inline-block mb-2">
+              {currentModelConfig.provider} - {currentModelConfig.model}
+            </div>
           )}
           {aiError && (
-            <p className="text-xs text-red-500 mt-2 max-w-md mx-auto">
+            <div className="text-xs bg-red-50 text-red-600 px-3 py-2 rounded-lg mt-4">
               注意: {aiError}
-            </p>
+            </div>
           )}
         </div>
       </div>
