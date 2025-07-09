@@ -390,28 +390,23 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                 className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50 cursor-pointer transform hover:scale-105 hover:-translate-y-1 aspect-square"
                 onClick={() => handleLoadContext(context.id)}
               >
-                <div className="p-6 h-full flex flex-col">
+                <div className="p-4 h-full flex flex-col">
                   {/* 头部图标和标题 */}
-                  <div className="flex flex-col items-center text-center mb-4">
-                    <div className={`p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mb-3 ${
+                  <div className="flex flex-col items-center text-center mb-3">
+                    <div className={`p-2 rounded-xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mb-2 ${
                       index % 4 === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
                       index % 4 === 1 ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
                       index % 4 === 2 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
                       'bg-gradient-to-br from-orange-500 to-red-600'
                     }`}>
-                      <BookOpen className="w-6 h-6 text-white" />
+                      <BookOpen className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                    <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
                       {context.title}
                     </h3>
                     <div className="flex flex-wrap justify-center gap-1">
-                      {context.isAutoSave && (
-                        <span className="text-xs font-medium bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                          自动保存
-                        </span>
-                      )}
                       {context.genre && (
-                        <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                        <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                           {context.genre}
                         </span>
                       )}
@@ -419,36 +414,38 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                   </div>
                   
                   {/* 故事描述 */}
-                  <div className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+                  <div className="text-xs text-gray-600 mb-3 line-clamp-2 flex-1">
                     {context.thumbnail}
                   </div>
                   
                   {/* 底部信息 */}
-                  <div className="space-y-3 mt-auto">
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <BookOpen className="h-3 w-3" />
-                        第{context.storyState.chapter}章
+                  <div className="space-y-2 mt-auto">
+                    <div className="space-y-1 text-xs text-gray-500">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>第{context.storyState.chapter}章</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatPlayTime(context.playTime)}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatPlayTime(context.playTime)}
-                      </div>
-                      <div className="flex items-center gap-1 col-span-2">
                         <Calendar className="h-3 w-3" />
-                        {new Date(context.lastPlayTime).toLocaleDateString()}
+                        <span>{new Date(context.lastPlayTime).toLocaleDateString()}</span>
                       </div>
                     </div>
                     
                     {/* 故事进度条 */}
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>进度</span>
                         <span>{Math.round(context.storyState.story_progress || 0)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
                             (context.storyState.story_progress || 0) >= 100 
                               ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
                               : index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
@@ -462,13 +459,13 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     </div>
                     
                     {/* 操作按钮 */}
-                    <div className="flex gap-1 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm" 
-                              className={`flex-1 text-xs font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                              className={`flex-1 text-xs font-medium h-7 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
                                 index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700' :
                                 index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700' :
                                 index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700' :
@@ -499,7 +496,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         }}
                         variant="outline"
                         size="sm"
-                        className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
+                        className="h-7 w-7 p-0 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-gray-800 hover:border-gray-300 transition-all duration-300"
                       >
                         <Edit3 className="h-3 w-3" />
                       </Button>
@@ -509,7 +506,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
+                            className="h-7 w-7 p-0 bg-white/80 backdrop-blur-sm border border-gray-200/50 text-gray-600 hover:bg-white hover:text-red-600 hover:border-red-300 transition-all duration-300"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Trash2 className="h-3 w-3" />
