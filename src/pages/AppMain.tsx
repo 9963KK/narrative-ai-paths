@@ -5,7 +5,7 @@ import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { Settings, Wand2, Wrench, Upload, BookOpen, FolderOpen, Sparkles, TrendingUp, Clock, Star } from 'lucide-react';
-import { getSavedContexts } from '@/services/contextManager';
+import { getSavedContexts, contextManager } from '@/services/contextManager';
 
 const AppMain: React.FC = () => {
   const { user } = useAuth();
@@ -61,6 +61,26 @@ const AppMain: React.FC = () => {
     });
   };
 
+  // 加载并继续故事
+  const handleContinueStory = async (storyId: string) => {
+    try {
+      console.log('正在加载故事:', storyId);
+      
+      // 加载故事上下文
+      const context = contextManager.loadStoryContext(storyId);
+      if (!context) {
+        console.error('未找到故事上下文:', storyId);
+        return;
+      }
+      
+      // 导航到故事页面
+      navigate('/app/story');
+      
+    } catch (error) {
+      console.error('加载故事失败:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
       <UserHeader />
@@ -98,9 +118,7 @@ const AppMain: React.FC = () => {
                   <div 
                     key={story.id}
                     className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 flex items-center space-x-5 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50"
-                    onClick={() => {
-                      console.log('加载故事:', story.id);
-                    }}
+                    onClick={() => handleContinueStory(story.id)}
                   >
                     <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                       <BookOpen className="w-6 h-6 text-white" />
