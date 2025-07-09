@@ -264,7 +264,7 @@ const Advanced: React.FC = () => {
       }));
       
       // 重定向到故事页面
-      navigate('/app/story');
+      navigate('/app');
     }
   };
 

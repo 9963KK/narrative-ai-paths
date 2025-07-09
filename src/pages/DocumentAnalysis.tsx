@@ -166,7 +166,7 @@ const DocumentAnalysis: React.FC = () => {
     }));
     
     // 重定向到故事页面
-    navigate('/app/story');
+    navigate('/app');
   };
 
   // 导出分析结果

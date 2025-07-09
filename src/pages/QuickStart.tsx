@@ -231,7 +231,7 @@ const QuickStart: React.FC = () => {
     }));
     
     // 重定向到故事页面
-    navigate('/app/story');
+    navigate('/app');
   };
 
   // 模型配置界面
