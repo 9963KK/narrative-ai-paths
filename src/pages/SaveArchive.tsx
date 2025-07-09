@@ -54,14 +54,12 @@ const SaveArchive: React.FC = () => {
             </Button>
           </div>
 
-          {/* SaveManager Container */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-200/50 p-8">
-            <SaveManager
-              onLoadStory={handleLoadStory}
-              currentStoryExists={false}
-              showInHomePage={false}
-            />
-          </div>
+          {/* SaveManager */}
+          <SaveManager
+            onLoadStory={handleLoadStory}
+            currentStoryExists={false}
+            showInHomePage={false}
+          />
         </div>
       </div>
     </div>
