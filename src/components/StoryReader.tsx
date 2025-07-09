@@ -1003,7 +1003,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
 
   return (
-    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50 p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* 头部信息 - 重新设计的布局 */}
         <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">

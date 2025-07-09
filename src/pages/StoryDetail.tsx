@@ -107,15 +107,11 @@ const StoryDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
       <UserHeader />
-      <div className="container mx-auto p-4 sm:p-8">
-        <div className="max-w-6xl mx-auto">
-          <StoryManager 
-            preloadedContext={loadedStoryContext}
-            onReturnToHome={handleReturnToHome}
-            userId={user?.id}
-          />
-        </div>
-      </div>
+      <StoryManager 
+        preloadedContext={loadedStoryContext}
+        onReturnToHome={handleReturnToHome}
+        userId={user?.id}
+      />
     </div>
   );
 };
