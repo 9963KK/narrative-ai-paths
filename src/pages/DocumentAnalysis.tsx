@@ -231,37 +231,37 @@ const DocumentAnalysis: React.FC = () => {
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <header className="text-center mb-12">
-            <div className="flex items-center justify-between mb-8">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/app')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回主页
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowModelConfig(true)}
-                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
+          <div className="flex items-center justify-between mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/app')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              返回主页
+            </Button>
+            
+            {/* 缩小的标题 - 移到右上角 */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                <Upload className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">文档基础创作</h1>
+                <p className="text-sm text-gray-600">AI智能分析与创作</p>
+              </div>
             </div>
             
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl">
-              <Upload className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
-              文档基础创作
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              上传您的小说草稿，AI 智能提取核心元素，基于现有内容激发无限创作灵感
-            </p>
-          </header>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowModelConfig(true)}
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+            >
+              <Settings className="h-4 w-4" />
+              模型配置
+            </Button>
+          </div>
           
           {!modelConfig.apiKey && !hasValidConfig && (
             <div className="max-w-2xl mx-auto mb-8">
