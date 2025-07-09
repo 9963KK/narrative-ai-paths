@@ -165,8 +165,8 @@ const DocumentAnalysis: React.FC = () => {
       isAdvanced: true
     }));
     
-    // 重定向到故事页面
-    navigate('/app');
+    // 重定向到故事创作页面
+    navigate('/app/creating');
   };
 
   // 导出分析结果

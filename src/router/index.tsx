@@ -16,6 +16,7 @@ import StoryDetail from "../pages/StoryDetail";
 import SaveArchive from "../pages/SaveArchive";
 import Settings from "../pages/Settings";
 import Profile from "../pages/Profile";
+import StoryCreating from "../pages/StoryCreating";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -76,6 +77,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <StoryDetail />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/app/creating",
+    element: (
+      <ProtectedRoute>
+        <StoryCreating />
       </ProtectedRoute>
     ),
   },
