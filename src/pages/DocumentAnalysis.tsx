@@ -304,37 +304,27 @@ const DocumentAnalysis: React.FC = () => {
               返回主页
             </Button>
             
-            {/* 缩小的标题 - 移到右上角 */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                <Upload className="w-5 h-5 text-white" />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowRecordManager(true)}
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+            >
+              <Database className="h-4 w-4" />
+              查询历史记录
+            </Button>
+          </div>
+
+          {/* 居中的标题区域 */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                <Upload className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-800">文档基础创作</h1>
-                <p className="text-sm text-gray-600">AI智能分析与创作</p>
+                <h1 className="text-2xl font-bold text-gray-800">文档基础创作</h1>
+                <p className="text-gray-600">AI智能分析与创作</p>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowRecordManager(true)}
-                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
-              >
-                <Database className="h-4 w-4" />
-                解析记录
-              </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowModelConfig(true)}
-                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
             </div>
           </div>
           
@@ -347,9 +337,18 @@ const DocumentAnalysis: React.FC = () => {
                   </div>
                   <h3 className="text-amber-800 font-semibold">配置提醒</h3>
                 </div>
-                <p className="text-amber-700 text-center">
+                <p className="text-amber-700 text-center mb-4">
                   请先配置AI模型才能进行文档分析和创作
                 </p>
+                <div className="text-center">
+                  <Button
+                    onClick={() => setShowModelConfig(true)}
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    配置模型
+                  </Button>
+                </div>
               </div>
             </div>
           )}
