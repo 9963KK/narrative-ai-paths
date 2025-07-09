@@ -40,6 +40,13 @@ const Story: React.FC = () => {
       }));
     
     setRecentStories(recentStoriesData);
+    
+    // 检查是否有待处理的故事配置（来自文档分析等）
+    const pendingConfigStr = localStorage.getItem('pendingStoryConfig');
+    if (pendingConfigStr) {
+      console.log('🚀 发现待处理的故事配置，自动启动故事管理器');
+      setShowStoryManager(true);
+    }
   }, []);
 
   // 时间格式化函数
