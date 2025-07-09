@@ -6,6 +6,7 @@ import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { Settings, Wand2, Wrench, Upload, BookOpen, FolderOpen, Sparkles, TrendingUp, Clock, Star } from 'lucide-react';
 import { getSavedContexts, contextManager, SavedStoryContext } from '@/services/contextManager';
+import SaveManager from '@/components/SaveManager';
 
 const Story: React.FC = () => {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ const Story: React.FC = () => {
     genre: string;
   }>>([]);
   const [showStoryManager, setShowStoryManager] = useState(false);
+  const [showSaveManager, setShowSaveManager] = useState(false);
   const [loadedStoryContext, setLoadedStoryContext] = useState<SavedStoryContext | null>(null);
 
   // 检查存档数量和获取最近故事
@@ -87,6 +89,26 @@ const Story: React.FC = () => {
     }
   };
 
+  // 如果显示存档管理器，则渲染存档管理器
+  if (showSaveManager) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserHeader />
+        <div className="container mx-auto p-4">
+          <SaveManager
+            onLoadStory={(contextId) => {
+              // 关闭存档管理器，加载故事
+              setShowSaveManager(false);
+              handleContinueStory(contextId);
+            }}
+            onClose={() => setShowSaveManager(false)}
+            currentStoryExists={false}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // 如果显示故事管理器，则渲染故事管理器
   if (showStoryManager) {
     return (
@@ -129,7 +151,7 @@ const Story: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">继续您的冒险</h2>
                 <Button
-                  onClick={() => navigate('/profile')}
+                  onClick={() => setShowSaveManager(true)}
                   className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg border border-gray-200/50 text-gray-600 hover:bg-white hover:shadow-xl hover:text-gray-800 transition-all duration-300 transform hover:scale-105"
                 >
                   <FolderOpen className="w-4 h-4" />
