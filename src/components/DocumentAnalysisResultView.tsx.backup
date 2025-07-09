@@ -742,6 +742,259 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
             </Card>
           </div>
 
+          {/* 删除原有的复杂卡片结构，从这里开始删除 */}
+          <div style={{display: 'none'}}>
+            {/* 主题分析 */}
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-6">
+                <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  主题分析
+                  {isEditing && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={addMainTheme}
+                      className="ml-auto h-8 w-8 p-0 bg-white/20 border-white/30 hover:bg-white/30 text-white rounded-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+                <p className="text-purple-100 text-sm mt-2">挖掘故事深层主题意义</p>
+              </div>
+              <CardContent className="p-6 space-y-6">
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl p-5 border-l-4 border-violet-400">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-violet-400 rounded-full flex items-center justify-center">
+                      <Target className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-violet-800 text-lg">主要主题</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {data.themes.mainThemes.map((theme, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={theme}
+                              onChange={(e) => updateMainTheme(index, e.target.value)}
+                              className="h-8 text-sm w-24 bg-white/80 border-violet-200/50 rounded-xl"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeMainTheme(index)}
+                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-lg"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-3 py-1 text-sm rounded-full">
+                            {theme}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-5 border-l-4 border-indigo-400">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-indigo-400 rounded-full flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-indigo-800 text-lg">深层含义</span>
+                  </div>
+                  {isEditing ? (
+                    <Textarea
+                      value={data.themes.deeperMeaning}
+                      onChange={(e) => updateThemes('deeperMeaning', e.target.value)}
+                      placeholder="深层含义分析"
+                      className="text-sm h-24 bg-white/80 border-indigo-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-indigo-700 text-sm leading-relaxed">{data.themes.deeperMeaning}</p>
+                  )}
+                </div>
+              </CardContent>
+          </Card>
+
+            {/* 情节元素 */}
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-red-500 to-rose-600 p-6">
+                <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Sword className="h-6 w-6 text-white" />
+                  </div>
+                  情节元素
+                  {isEditing && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={addKeyEvent}
+                      className="ml-auto h-8 w-8 p-0 bg-white/20 border-white/30 hover:bg-white/30 text-white rounded-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+                <p className="text-red-100 text-sm mt-2">故事的冲突与关键转折</p>
+              </div>
+              <CardContent className="p-6 space-y-6">
+                <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-5 border-l-4 border-red-400">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-red-400 rounded-full flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-red-800 text-lg">主要冲突</span>
+                  </div>
+                  {isEditing ? (
+                    <Textarea
+                      value={data.plotElements.mainConflict}
+                      onChange={(e) => updatePlotElements('mainConflict', e.target.value)}
+                      placeholder="主要冲突描述"
+                      className="text-sm h-20 bg-white/80 border-red-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-red-700 text-sm leading-relaxed">{data.plotElements.mainConflict}</p>
+                  )}
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-5 border-l-4 border-orange-400">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-orange-800 text-lg">关键事件</span>
+                  </div>
+                  <div className="space-y-3">
+                    {data.plotElements.keyEvents.map((event, index) => (
+                      <div key={index} className="flex items-start gap-3 bg-white/60 rounded-xl p-3">
+                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          {index + 1}
+                        </div>
+                        {isEditing ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <Input
+                              value={event}
+                              onChange={(e) => updateKeyEvent(index, e.target.value)}
+                              className="text-sm h-8 bg-white/80 border-orange-200/50 rounded-xl"
+                              placeholder="关键事件"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeKeyEvent(index)}
+                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-lg"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-orange-700 text-sm font-medium flex-1">{event}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-2xl p-5 border-l-4 border-cyan-400">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center">
+                      <Palette className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-cyan-800 text-lg">叙事技巧</span>
+                  </div>
+                  {isEditing ? (
+                    <Textarea
+                      value={data.plotElements.narrativeTechniques}
+                      onChange={(e) => updatePlotElements('narrativeTechniques', e.target.value)}
+                      placeholder="叙事技巧描述"
+                      className="text-sm h-20 bg-white/80 border-cyan-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-cyan-700 text-sm leading-relaxed">{data.plotElements.narrativeTechniques}</p>
+                  )}
+                </div>
+              </CardContent>
+          </Card>
+
+            {/* 写作风格 */}
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+                <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Palette className="h-6 w-6 text-white" />
+                  </div>
+                  写作风格
+                </CardTitle>
+                <p className="text-indigo-100 text-sm mt-2">作品的独特表达方式</p>
+              </div>
+              <CardContent className="p-6 space-y-4">
+                <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-4 border-l-4 border-pink-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center">
+                      <Heart className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-pink-800 text-lg">语调风格</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.tone}
+                      onChange={(e) => updateWritingStyle('tone', e.target.value)}
+                      placeholder="语调风格"
+                      className="text-sm bg-white/80 border-pink-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-pink-700 text-sm font-medium pl-2">{data.writingStyle.tone}</p>
+                  )}
+                </div>
+                
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-4 border-l-4 border-teal-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-teal-400 rounded-full flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-teal-800 text-lg">叙述视角</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.narrativePerspective}
+                      onChange={(e) => updateWritingStyle('narrativePerspective', e.target.value)}
+                      placeholder="叙述视角"
+                      className="text-sm bg-white/80 border-teal-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-teal-700 text-sm font-medium pl-2">{data.writingStyle.narrativePerspective}</p>
+                  )}
+                </div>
+                
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-4 border-l-4 border-emerald-400">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-emerald-800 text-lg">文体类型</span>
+                  </div>
+                  {isEditing ? (
+                    <Input
+                      value={data.writingStyle.genre}
+                      onChange={(e) => updateWritingStyle('genre', e.target.value)}
+                      placeholder="文体类型"
+                      className="text-sm bg-white/80 border-emerald-200/50 rounded-xl"
+                    />
+                  ) : (
+                    <p className="text-emerald-700 text-sm font-medium pl-2">{data.writingStyle.genre}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* 右列：创意种子 */}
           <div className="space-y-6">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
