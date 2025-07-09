@@ -55,10 +55,6 @@ const SaveManager: React.FC<SaveManagerProps> = ({
     console.log('📖 尝试加载存档:', contextId);
     if (onLoadStory) {
       onLoadStory(contextId);
-      if (onClose) {
-        console.log('📤 关闭存档管理器');
-        onClose();
-      }
     }
   };
 
