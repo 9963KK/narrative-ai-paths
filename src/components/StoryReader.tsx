@@ -543,8 +543,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     setChoiceGenerationStartTime(Date.now());
     setIsStoryStuck(false); // 重置卡住状态
     
-    // 模拟AI思考时间
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 直接开始生成，不添加人工延时
     
     try {
       // 优先使用AI生成选择
@@ -629,8 +628,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           index++;
         } else {
           setIsTyping(false);
-          // 打字完成后根据需要显示选择项
-          setTimeout(async () => {
+          // 打字完成后立即显示选择项
+          (async () => {
             // 检查是否需要显示选择项 - 增强逻辑，明确检查故事状态
             // 当达到结局条件时不再生成AI选择，而是显示结局选择
             const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
@@ -675,7 +674,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             } else {
               console.log('❌ 不需要显示选择项，或故事已完成');
             }
-          }, 800);
+          })();
           clearInterval(interval);
         }
       }, 30); // 稍微加快打字速度
@@ -1043,43 +1042,33 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </CardContent>
             </Card>
 
-            {/* 选择处理中 */}
+            {/* 选择处理中 - 优化版 */}
             {isProcessingChoice && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-green-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-6">
-                  <div className="text-center space-y-4">
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-4 pb-4">
+                  <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
-                      <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                      <span className="text-slate-700 font-medium text-lg">正在处理您的选择...</span>
-                    </div>
-                    
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-green-700 font-medium">您选择了：</span>
+                      <div className="relative">
+                        <div className="w-8 h-8 border-2 border-indigo-200 rounded-full"></div>
+                        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
                       </div>
-                      <p className="text-green-600 mt-2 font-semibold text-lg">"{selectedChoiceText}"</p>
+                      <span className="text-slate-700 font-medium">正在创作后续剧情...</span>
                     </div>
                     
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-center justify-center space-x-2 text-blue-600 text-sm">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-200"></div>
-                        <span className="ml-2 font-medium">
-                          {modelConfig?.apiKey ? 'AI正在创作后续剧情...' : '正在生成后续剧情...'}
-                        </span>
+                    <div className="bg-white/80 border border-indigo-100 rounded-lg p-3">
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-indigo-600 font-medium text-sm">您的选择：</span>
+                        <span className="text-slate-700 font-semibold text-sm">"{selectedChoiceText}"</span>
                       </div>
-                      
-                      {modelConfig?.apiKey && (
-                        <div className="text-xs text-blue-500 mt-2">
-                          模型: {modelConfig.provider} - {modelConfig.model}
-                        </div>
-                      )}
                     </div>
                     
-                    <div className="text-xs text-slate-400 italic">
-                      正在分析您的选择并创造精彩后续...
+                    <div className="flex items-center justify-center space-x-1">
+                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-150"></div>
+                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-300"></div>
+                      <span className="ml-3 text-xs text-slate-500">
+                        {modelConfig?.apiKey ? `${modelConfig.provider}正在思考中...` : '内容生成中...'}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
