@@ -170,7 +170,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       }`}>
                         <BookOpen className="w-5 h-5 text-white" />
                       </div>
-                      <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                      <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-gray-900 transition-colors duration-300">
                         {context.title}
                       </h3>
                       <div className="flex items-center justify-between text-xs text-gray-500 w-full">
@@ -394,7 +394,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     }`}>
                       <BookOpen className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all duration-300">
+                    <h3 className="font-bold text-gray-800 text-sm mb-1 line-clamp-2 group-hover:text-gray-900 transition-colors duration-300">
                       {context.title}
                     </h3>
                     <div className="flex items-center justify-between text-xs text-gray-500 w-full">

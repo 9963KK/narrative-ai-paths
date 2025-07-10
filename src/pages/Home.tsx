@@ -180,7 +180,7 @@ const Home: React.FC = () => {
                   <div className={`inline-flex items-center justify-center w-20 h-20 ${feature.bgColor} rounded-3xl mx-auto mb-6 shadow-xl group-hover:shadow-2xl transform group-hover:scale-110 transition-all duration-500`}>
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300">
+                  <CardTitle className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
