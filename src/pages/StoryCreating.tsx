@@ -68,6 +68,7 @@ const StoryCreating: React.FC = () => {
         <UserHeader />
         <StoryManager 
           onReturnToHome={handleReturnToHome}
+          onNavigate={navigate}
           userId={user?.id}
         />
       </div>

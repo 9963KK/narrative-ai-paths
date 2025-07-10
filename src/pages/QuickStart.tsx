@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Settings, Wand2, Users, Target, MapPin, Sparkles } from 'lucide-react';
-import ModelConfig from '@/components/ModelConfig';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { storyAI } from '@/services/storyAI';
@@ -20,7 +19,6 @@ interface BaseStoryConfig {
 const QuickStart: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   
   // 简单配置状态
@@ -234,21 +232,6 @@ const QuickStart: React.FC = () => {
     navigate('/app/creating');
   };
 
-  // 模型配置界面
-  if (showModelConfig) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <ModelConfig
-          config={modelConfig}
-          onConfigChange={(config) => {
-            setModelConfig(config);
-            setHasValidConfig(!!config.apiKey);
-          }}
-          onClose={() => setShowModelConfig(false)}
-        />
-      </div>
-    );
-  }
 
   // 故事梗概选择界面
   if (showOutlineSelection) {
@@ -268,7 +251,7 @@ const QuickStart: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModelConfig(true)}
+                onClick={() => navigate('/settings?tab=model')}
                 className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 <Settings className="h-4 w-4" />
@@ -401,7 +384,7 @@ const QuickStart: React.FC = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowModelConfig(true)}
+            onClick={() => navigate('/settings?tab=model')}
             className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
           >
             <Settings className="h-4 w-4" />

@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Settings, ArrowLeft, Wrench, Users, Target, MapPin, Sparkles, FileText } from 'lucide-react';
-import ModelConfig from '@/components/ModelConfig';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
@@ -46,7 +45,6 @@ const Advanced: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const documentAnalysis = location.state?.documentAnalysis as DocumentAnalysisResult | undefined;
-  const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState<string>('basic');
 
@@ -268,22 +266,6 @@ const Advanced: React.FC = () => {
     }
   };
 
-  // 模型配置界面
-  if (showModelConfig) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <ModelConfig
-          config={modelConfig}
-          onConfigChange={(config) => {
-            setModelConfig(config);
-            setHasValidConfig(!!config.apiKey);
-          }}
-          onClose={() => setShowModelConfig(false)}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="w-full max-w-4xl mx-auto bg-white shadow-lg border-slate-200 rounded-2xl">
@@ -301,7 +283,7 @@ const Advanced: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowModelConfig(true)}
+              onClick={() => navigate('/settings?tab=model')}
               className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               <Settings className="h-4 w-4" />

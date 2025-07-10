@@ -149,6 +149,7 @@ const StoryDetail: React.FC = () => {
       <StoryManager 
         preloadedContext={loadedStoryContext}
         onReturnToHome={handleReturnToHome}
+        onNavigate={navigate}
         userId={user?.id}
       />
     </div>

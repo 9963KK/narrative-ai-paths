@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Settings, Wand2, Wrench, ArrowLeft, Users, Target, MapPin, Sparkles, FolderOpen, BookOpen, FileText, Upload } from 'lucide-react';
-import ModelConfig from './ModelConfig';
 import SaveManager from './SaveManager';
 import DocumentAnalyzer from './DocumentAnalyzer';
 import DocumentAnalysisResultView from './DocumentAnalysisResultView';
@@ -58,9 +57,10 @@ export type StoryConfig = BaseStoryConfig | AdvancedStoryConfig;
 interface StoryInitializerProps {
   onInitializeStory: (config: StoryConfig, modelConfig: ModelConfigType, isAdvanced: boolean) => void;
   onLoadStory?: (contextId: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
-const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory }) => {
+const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, onLoadStory, onNavigate }) => {
   const [configMode, setConfigMode] = useState<'select' | 'simple' | 'advanced' | 'saves' | 'document' | 'analysis-result' | 'outline-selection'>('select');
   
   // 分步向导状态 - 必须在组件顶层定义
@@ -106,7 +106,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     maxTokens: 2000
   });
 
-  const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [savedContextsCount, setSavedContextsCount] = useState(0);
   const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
@@ -564,22 +563,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     console.log('文档分析结果已更新:', updatedResult);
   };
 
-  // 模型配置界面
-  if (showModelConfig) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <ModelConfig
-          config={modelConfig}
-          onConfigChange={(config) => {
-            setModelConfig(config);
-            setHasValidConfig(!!config.apiKey);
-          }}
-          onClose={() => setShowModelConfig(false)}
-        />
-      </div>
-    );
-  }
-
   // 文档分析界面
   if (configMode === 'document') {
     return (
@@ -597,7 +580,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowModelConfig(true)}
+              onClick={() => onNavigate?.('/settings?tab=model')}
               className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               <Settings className="h-4 w-4" />
@@ -657,7 +640,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModelConfig(true)}
+                onClick={() => onNavigate?.('/settings?tab=model')}
                 className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors duration-200"
               >
                 <Settings className="w-5 h-5" />
@@ -958,7 +941,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowModelConfig(true)}
+              onClick={() => onNavigate?.('/settings?tab=model')}
               className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               <Settings className="h-4 w-4" />
@@ -1151,7 +1134,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModelConfig(true)}
+                onClick={() => onNavigate?.('/settings?tab=model')}
                 className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 <Settings className="h-4 w-4" />
@@ -1291,7 +1274,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModelConfig(true)}
+                onClick={() => onNavigate?.('/settings?tab=model')}
                 className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 <Settings className="h-4 w-4" />

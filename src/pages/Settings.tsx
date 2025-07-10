@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
 import ModelConfig from '@/components/ModelConfig';
@@ -15,6 +15,7 @@ import { loadModelConfig, saveModelConfig, hasSavedConfig } from '@/services/con
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isGuest } = useAuth();
   const [activeTab, setActiveTab] = useState<'model' | 'account' | 'notifications' | 'privacy'>('account');
   const [modelConfig, setModelConfig] = useState<ModelConfigType>({
@@ -50,7 +51,13 @@ const Settings: React.FC = () => {
     if (notifications !== null) {
       setNotificationsEnabled(JSON.parse(notifications));
     }
-  }, []);
+
+    // 检查 URL 参数，如果有 tab=model 则跳转到模型配置标签
+    const tab = searchParams.get('tab');
+    if (tab === 'model') {
+      setActiveTab('model');
+    }
+  }, [searchParams]);
 
   // 保存模型配置
   const handleModelConfigSave = async (config: ModelConfigType) => {

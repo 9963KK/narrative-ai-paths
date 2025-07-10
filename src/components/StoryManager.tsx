@@ -47,10 +47,11 @@ interface StoryState {
 interface StoryManagerProps {
   preloadedContext?: SavedStoryContext | null;
   onReturnToHome?: () => void;
+  onNavigate?: (path: string) => void;
   userId?: string;
 }
 
-const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome, userId }) => {
+const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome, onNavigate, userId }) => {
   const [currentStory, setCurrentStory] = useState<StoryState | null>(null);
   const [currentModelConfig, setCurrentModelConfig] = useState<ModelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -1279,6 +1280,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     return <StoryInitializer 
       onInitializeStory={initializeStory} 
       onLoadStory={handleLoadStory}
+      onNavigate={onNavigate}
     />;
   }
 

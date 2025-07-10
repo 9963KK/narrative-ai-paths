@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Settings, ArrowLeft, Upload, BookOpen, Database } from 'lucide-react';
-import ModelConfig from '@/components/ModelConfig';
 import DocumentAnalyzer from '@/components/DocumentAnalyzer';
 import DocumentAnalysisResultView from '@/components/DocumentAnalysisResultView';
 import DocumentRecordManager from '@/components/DocumentRecordManager';
@@ -13,7 +12,6 @@ import { DocumentRecord } from '@/services/documentRecordManager';
 
 const DocumentAnalysis: React.FC = () => {
   const navigate = useNavigate();
-  const [showModelConfig, setShowModelConfig] = useState(false);
   const [hasValidConfig, setHasValidConfig] = useState(false);
   const [documentAnalysisResult, setDocumentAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
   const [showAnalysisResult, setShowAnalysisResult] = useState(false);
@@ -213,22 +211,6 @@ const DocumentAnalysis: React.FC = () => {
     }
   };
 
-  // 模型配置界面
-  if (showModelConfig) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <ModelConfig
-          config={modelConfig}
-          onConfigChange={(config) => {
-            setModelConfig(config);
-            setHasValidConfig(!!config.apiKey);
-          }}
-          onClose={() => setShowModelConfig(false)}
-        />
-      </div>
-    );
-  }
-
   // 文档分析结果展示界面
   if (showAnalysisResult && documentAnalysisResult) {
     return (
@@ -327,7 +309,7 @@ const DocumentAnalysis: React.FC = () => {
                 </p>
                 <div className="text-center">
                   <Button
-                    onClick={() => setShowModelConfig(true)}
+                    onClick={() => navigate('/settings?tab=model')}
                     className="bg-amber-500 hover:bg-amber-600 text-white"
                   >
                     <Settings className="h-4 w-4 mr-2" />

@@ -100,6 +100,7 @@ const Story: React.FC = () => {
               setShowStoryManager(false);
               setLoadedStoryContext(null);
             }}
+            onNavigate={navigate}
             userId={user?.id}
           />
         </div>
