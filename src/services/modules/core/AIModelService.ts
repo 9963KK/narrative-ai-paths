@@ -73,6 +73,12 @@ export class AIModelService implements IAIModelService {
           historySummary
         );
 
+        console.log(`🔗 API请求详情:`);
+        console.log(`  - URL: ${baseUrl}/chat/completions`);
+        console.log(`  - Provider: ${this.modelConfig.provider}`);
+        console.log(`  - Model: ${this.modelConfig.model}`);
+        console.log(`  - API Key前缀: ${this.modelConfig.apiKey?.substring(0, 10)}...`);
+
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
@@ -86,7 +92,12 @@ export class AIModelService implements IAIModelService {
         });
 
         if (!response.ok) {
-          throw new Error(`API请求失败: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error(`❌ API请求失败 [${response.status}]: ${response.statusText}`);
+          console.error(`📝 错误详情: ${errorText}`);
+          console.error(`🔗 请求URL: ${baseUrl}/chat/completions`);
+          console.error(`🔑 API Key前缀: ${this.modelConfig.apiKey?.substring(0, 10)}...`);
+          throw new Error(`API请求失败 [${response.status}]: ${response.statusText} - ${errorText}`);
         }
 
         const result = await response.json();
