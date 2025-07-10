@@ -261,7 +261,7 @@ const Story: React.FC = () => {
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Wand2 className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-purple-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">快速创作</h3>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors duration-300">快速创作</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">提供一个想法，AI自动补全所有细节。快速开始，轻松创作。</p>
               <span className="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">新手首选</span>
             </div>
@@ -274,7 +274,7 @@ const Story: React.FC = () => {
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Settings className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">高级定制</h3>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors duration-300">高级定制</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">全面掌控故事的每个细节，自定义角色、情节、世界观。</p>
               <span className="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">专业创作者</span>
             </div>
@@ -287,7 +287,7 @@ const Story: React.FC = () => {
               <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
                 <Upload className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">文档基础创作</h3>
+              <h3 className="text-2xl font-bold text-gray-800 group-hover:text-emerald-600 transition-colors duration-300">文档基础创作</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">上传您的小说草稿，AI 提取核心元素，基于现有内容激发续写灵感。</p>
               <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">基于文档创作</span>
             </div>
