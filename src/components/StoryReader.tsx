@@ -1003,10 +1003,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* 头部信息 - 重新设计的布局 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
           <CardHeader className="pb-3">
             {/* 第一行：章节信息布局 */}
             <div className="flex items-center justify-between mb-3">
@@ -1200,7 +1200,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 角色信息 - 只在有角色时显示 */}
         {story.characters && story.characters.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
             </CardHeader>
@@ -1279,7 +1279,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 故事目标状态 - 在故事进行中显示 */}
         {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
                 🎯 故事目标
@@ -1354,7 +1354,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 故事进度和阶段提示 */}
         {!story.is_completed && (
-          <Card className="bg-gradient-to-r from-blue-50/80 to-purple-50/80 backdrop-blur-sm shadow-lg border border-blue-200/50 mb-6">
+          <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden mb-6">
             <CardContent className="pt-4">
               <div className="space-y-3">
                 {/* 章节和进度信息 */}
@@ -1402,7 +1402,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         )}
 
         {/* 主要故事内容 */}
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
           <CardContent className="pt-6">
             <div className="prose prose-slate max-w-none">
               <div className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap">
@@ -1415,7 +1415,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 选择处理中 - 移动到故事内容后面 */}
         {isProcessingChoice && (
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 animate-in slide-in-from-bottom-4 border-green-300">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-green-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
                 <div className="flex items-center justify-center space-x-3">
@@ -1458,7 +1458,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 选择项生成中 */}
         {isGeneratingChoices && (
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
             <CardContent className="pt-6">
               <div className="flex items-center justify-center space-x-3">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -1470,7 +1470,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 故事结束状态 */}
         {story.is_completed && (
-          <Card className="bg-gradient-to-br from-purple-50/80 to-indigo-50/80 backdrop-blur-sm shadow-xl border-2 border-purple-300/50 animate-in slide-in-from-bottom-4">
+          <Card className="bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-sm shadow-2xl border-2 border-purple-300/50 rounded-3xl overflow-hidden animate-in slide-in-from-bottom-4">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-purple-800 mb-2">
                 {story.completion_type === 'success' && '🎉 完美结局'}
@@ -1564,7 +1564,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 故事卡住时的继续按钮 - 只在真正出现问题时显示 */}
         {!story.is_completed && isStoryStuck && onContinue && (
-          <Card className="bg-red-50/80 backdrop-blur-sm shadow-lg border border-red-200/50 animate-in slide-in-from-bottom-4">
+          <Card className="bg-red-50/90 backdrop-blur-sm shadow-xl border border-red-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
             <CardHeader>
               <CardTitle className="text-lg text-red-800 flex items-center gap-2">
                 ⚠️ 故事卡住了
@@ -1594,7 +1594,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 进度 >= 95% 或章节 >= 20 时的结局类型选择 */}
         {!story.is_completed && ((story.story_progress || 0) >= 95 || story.chapter >= 20) && !isProcessingChoice && (
-          <Card className="bg-purple-50 shadow-lg border-purple-300 animate-in slide-in-from-bottom-4">
+          <Card className="bg-purple-50/90 backdrop-blur-sm shadow-xl border border-purple-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
             <CardHeader>
               <CardTitle className="text-lg text-purple-800 flex items-center gap-2">
                 🎬 选择故事结局类型
@@ -1614,7 +1614,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </div>
               
               {/* 结局类型选择 */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => {
                     if (onMakeChoice) {
@@ -1623,7 +1623,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       onMakeChoice(-1, '选择圆满结局：给所有角色一个完美的归宿');
                     }
                   }}
-                  className="h-auto p-4 bg-green-500 hover:bg-green-600 text-white flex flex-col items-start"
+                  className="h-auto p-5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="font-medium mb-1">
                     🎉 圆满结局
@@ -1641,7 +1641,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       onMakeChoice(-1, '选择开放结局：留有想象空间和未来可能性');
                     }
                   }}
-                  className="h-auto p-4 bg-blue-500 hover:bg-blue-600 text-white flex flex-col items-start"
+                  className="h-auto p-5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="font-medium mb-1">
                     🌟 开放结局
@@ -1659,7 +1659,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       onMakeChoice(-1, '选择戏剧结局：创造情感冲击和深刻印象');
                     }
                   }}
-                  className="h-auto p-4 bg-red-500 hover:bg-red-600 text-white flex flex-col items-start"
+                  className="h-auto p-5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="font-medium mb-1">
                     ⚡ 戏剧结局
@@ -1677,7 +1677,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       onMakeChoice(-1, '选择意外结局：出人意料的转折和惊喜');
                     }
                   }}
-                  className="h-auto p-4 bg-orange-500 hover:bg-orange-600 text-white flex flex-col items-start"
+                  className="h-auto p-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="font-medium mb-1">
                     🎲 意外结局
@@ -1693,7 +1693,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* 选择项 - 只在故事未结束且未达到强制结局条件时显示 */}
         {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (story.story_progress || 0) < 95 && story.chapter < 20 && (
-          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 animate-in slide-in-from-bottom-4">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
             <CardHeader>
               <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
             </CardHeader>
@@ -1705,10 +1705,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     variant="outline"
                     onClick={() => handleChoice(choice.id)}
                     disabled={isProcessingChoice}
-                    className={`w-full text-left h-auto p-4 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md ${
                       choice.id === -999 // 特殊的直通结局选项ID
-                        ? "bg-gradient-to-r from-yellow-100 to-orange-100 border-orange-300 hover:from-yellow-200 hover:to-orange-200 hover:border-orange-400"
-                        : "bg-slate-50 border-slate-300 hover:bg-blue-50 hover:border-blue-300"
+                        ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300/50 hover:from-amber-100 hover:to-orange-100 hover:border-amber-400/60 hover:scale-[1.02]"
+                        : "bg-white/80 border-gray-200/50 hover:bg-indigo-50/80 hover:border-indigo-300/60 hover:scale-[1.02]"
                     }`}
                   >
                     <div className="w-full">
@@ -1753,7 +1753,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
         {/* AI状态信息 */}
         {(modelConfig || aiError) && (
-          <Card className="bg-slate-50 shadow border-slate-200">
+          <Card className="bg-slate-50/90 backdrop-blur-sm shadow-lg border border-slate-200/50 rounded-xl overflow-hidden">
             <CardContent className="pt-4">
               {modelConfig && (
                 <p className="text-xs text-slate-500 text-center">
@@ -1770,7 +1770,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         )}
 
         {/* 操作按钮 */}
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center space-x-4 pt-4">
           {story.is_completed ? (
             <>
               {/* 暂时禁用继续冒险功能 */}
@@ -1784,7 +1784,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               )} */}
               <Button
                 onClick={onRestart}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
                 开启新冒险
               </Button>
@@ -1794,7 +1794,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   console.log('分享故事功能待实现');
                 }}
                 variant="outline"
-                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
               >
                 分享故事
               </Button>
@@ -1803,7 +1803,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           <Button
             onClick={onRestart}
             variant="outline"
-            className="border-slate-300 text-slate-700 hover:bg-slate-50"
+            className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
           >
             重新开始
           </Button>

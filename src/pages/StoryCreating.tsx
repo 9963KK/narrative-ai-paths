@@ -61,10 +61,7 @@ const StoryCreating: React.FC = () => {
   // 如果显示故事管理器，则渲染故事管理器
   if (showStoryManager) {
     return (
-      <div className="min-h-screen" style={{
-        background: 'radial-gradient(ellipse at top right, rgba(59, 130, 246, 0.1), rgb(249, 250, 251), rgb(249, 250, 251))',
-        backgroundColor: 'rgb(249, 250, 251)'
-      }}>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
         <UserHeader />
         <StoryManager 
           onReturnToHome={handleReturnToHome}
