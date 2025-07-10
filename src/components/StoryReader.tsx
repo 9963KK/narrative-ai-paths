@@ -1004,528 +1004,641 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* 头部信息 - 重新设计的布局 */}
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-          <CardHeader className="pb-3">
-            {/* 第一行：章节信息布局 */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex flex-col space-y-1">
-                {/* 章节编号和标题 */}
-                <CardTitle className="text-xl text-slate-800 flex items-center gap-3">
-                  {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') ? (
-                    // 如果有真正的AI生成标题（不包含"第"和"章"），显示完整格式
-                    <>
-                      <span>第 {story.chapter} 章</span>
-                      <span className="text-lg text-slate-600 font-medium">
-                        {story.chapter_title}
-                      </span>
-                    </>
-                  ) : (
-                    // 否则只显示章节号
-                    <span>第 {story.chapter} 章</span>
-                  )}
-
-                </CardTitle>
-                
-                {/* 故事进度显示 */}
-                <div className="flex items-center gap-2">
-                  <Progress 
-                    value={story.story_progress || (story.chapter / 12) * 100} 
-                    className="w-32 h-2" 
-                  />
-                  <span className="text-xs text-slate-500 font-normal">
-                    进度: {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
-                  </span>
-                </div>
-              </div>
-              
-              {/* 主要操作按钮组 */}
-              <div className="flex items-center space-x-2">
-                {/* 保存进度按钮 */}
-                {onSaveStory && (
-                  <Button
-                    onClick={handleSaveStory}
-                    disabled={isSaving}
-                    variant="outline"
-                    size="sm"
-                    className={`flex items-center gap-1 ${
-                      hasUnsavedProgress 
-                        ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
-                        : 'border-green-300 text-green-600 hover:bg-green-50'
-                    } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Save className="h-3 w-3" />
-                    )}
-                    {isSaving ? '保存中...' : hasUnsavedProgress ? '保存进度' : '已保存'}
-                  </Button>
-                )}
-                
-                {/* 返回主页按钮 */}
-                {onReturnHome && (
-                  <Button
-                    onClick={onReturnHome}
-                    variant="outline"
-                    size="sm"
-                    disabled={!hasSavedProgress}
-                    className={`flex items-center gap-1 ${
-                      !hasSavedProgress 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:bg-blue-50 border-blue-300'
-                    }`}
-                    title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
-                  >
-                    <Home className="h-3 w-3" />
-                    返回主页
-                  </Button>
-                )}
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto">
+        {/* 主要布局：左右分栏 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen">
+          
+          {/* 左侧：故事内容区域 (主要区域) */}
+          <div className="lg:col-span-2 flex flex-col space-y-4 overflow-y-auto">
             
-            {/* 第二行：状态信息栏 - 重新设计的三列布局 */}
-            <div className="grid grid-cols-3 gap-4 items-center w-full pt-3 border-t border-slate-100">
-              {/* 左列：保存控制 */}
-              <div className="flex items-center space-x-3">
-                {/* 滑动开关 */}
-                {onToggleAutoSave && (
-                  <div className="flex items-center space-x-2">
-                    {/* 滑动开关组件 */}
-                    <div 
-                      className={`relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                        autoSaveEnabled 
-                          ? 'bg-green-500 focus:ring-green-500' 
-                          : 'bg-gray-300 focus:ring-gray-400'
-                      }`}
-                      onClick={() => onToggleAutoSave(!autoSaveEnabled)}
-                      title={autoSaveEnabled ? "点击关闭自动保存" : "点击开启自动保存"}
-                      role="switch"
-                      aria-checked={autoSaveEnabled}
-                    >
-                      {/* 滑动圆点 */}
-                      <span 
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${
-                          autoSaveEnabled ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      >
-                        {/* 圆点内的图标 */}
-                        <span className="flex h-full w-full items-center justify-center">
-                          {autoSaveEnabled ? (
-                            // 自动保存图标 - 云端上传图标（缩小版）
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M5.5 17a4.5 4.5 0 01-1.44-8.765 4.5 4.5 0 018.302-3.046 3.5 3.5 0 014.504 4.272A4 4 0 0115 17H5.5zm3.75-2.75a.75.75 0 001.5 0V9.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0l-3.25 3.5a.75.75 0 101.1 1.02l1.95-2.1v4.59z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            // 手动保存图标 - 传统的软盘保存图标（缩小版）
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-                              <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </span>
-                      </span>
+            {/* 精简的顶部状态栏 - 仅在移动端显示 */}
+            <div className="lg:hidden">
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50 rounded-xl">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg font-bold text-slate-800">第 {story.chapter} 章</span>
+                      {story.chapter_title && !story.chapter_title.startsWith('第') && (
+                        <span className="text-sm text-slate-600">{story.chapter_title}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Progress value={story.story_progress || (story.chapter / 12) * 100} className="w-20 h-2" />
+                      <span className="text-xs text-slate-500">{Math.round(story.story_progress || (story.chapter / 12) * 100)}%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 主要故事内容 - 移到最前面 */}
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden flex-1">
+              <CardContent className="pt-6 h-full">
+                <div className="prose prose-slate max-w-none h-full">
+                  <div className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap min-h-[300px]">
+                    {currentText}
+                    {isTyping && <span className="animate-pulse text-blue-600">|</span>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 选择处理中 */}
+            {isProcessingChoice && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-green-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex items-center justify-center space-x-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+                      <span className="text-slate-700 font-medium text-lg">正在处理您的选择...</span>
                     </div>
                     
-                    {/* 保存状态文字和指示 */}
-                    <div className="flex items-center space-x-1.5">
-                      <span className={`text-sm font-medium ${
-                        autoSaveEnabled ? 'text-green-700' : 'text-gray-700'
-                      }`}>
-                        {autoSaveEnabled ? '自动保存' : '手动保存'}
-                      </span>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-green-700 font-medium">您选择了：</span>
+                      </div>
+                      <p className="text-green-600 mt-2 font-semibold text-lg">"{selectedChoiceText}"</p>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center justify-center space-x-2 text-blue-600 text-sm">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-200"></div>
+                        <span className="ml-2 font-medium">
+                          {modelConfig?.apiKey ? 'AI正在创作后续剧情...' : '正在生成后续剧情...'}
+                        </span>
+                      </div>
                       
-                      {/* 状态指示器 */}
-                      <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                        autoSaveEnabled ? 'bg-green-400 shadow-sm' : 'bg-gray-400'
-                      }`} />
+                      {modelConfig?.apiKey && (
+                        <div className="text-xs text-blue-500 mt-2">
+                          模型: {modelConfig.provider} - {modelConfig.model}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs text-slate-400 italic">
+                      正在分析您的选择并创造精彩后续...
                     </div>
                   </div>
-                )}
-              </div>
-              
-              {/* 中列：故事状态标签 */}
-              <div className="flex items-center justify-center space-x-2">
-                {/* 氛围标签 */}
-                {story.mood && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-800">
-                    氛围: {story.mood}
-                  </span>
-                )}
-                
-                {/* 紧张度标签 */}
-                {story.tension_level && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-purple-100 text-purple-800">
-                    紧张度: {story.tension_level}/10
-                  </span>
-                )}
-              </div>
-              
-              {/* 右列：故事统计信息 */}
-              <div className="flex items-center justify-end space-x-3 text-xs text-gray-500">
-                {/* 选择数量 */}
-                <span>
-                  已选择: {story.choices_made?.length || 0}
-                </span>
-                
-                {/* 角色数量 */}
-                {story.characters && story.characters.length > 0 && (
-                  <span>
-                    角色: {story.characters.length}
-                  </span>
-                )}
-                
-                {/* 故事场景类型 */}
-                {story.scene_type && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    story.scene_type === 'action' ? 'bg-red-100 text-red-700' :
-                    story.scene_type === 'dialogue' ? 'bg-green-100 text-green-700' :
-                    story.scene_type === 'exploration' ? 'bg-blue-100 text-blue-700' :
-                    story.scene_type === 'reflection' ? 'bg-yellow-100 text-yellow-700' :
-                    story.scene_type === 'climax' ? 'bg-purple-100 text-purple-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {story.scene_type === 'action' ? '动作' :
-                     story.scene_type === 'dialogue' ? '对话' :
-                     story.scene_type === 'exploration' ? '探索' :
-                     story.scene_type === 'reflection' ? '反思' :
-                     story.scene_type === 'climax' ? '高潮' : '未知'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* 角色信息 - 只在有角色时显示 */}
-        {story.characters && story.characters.length > 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {story.characters.filter(character => character.name && character.name.trim() !== '').map((character, index) => (
-                  <Dialog key={index}>
-                    <DialogTrigger asChild>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <User className="w-4 h-4 text-slate-500 group-hover:text-slate-600" />
-                          <h4 className="font-semibold text-slate-800 group-hover:text-slate-900">{character.name}</h4>
-                        </div>
-                        <p className="text-sm text-slate-600 mb-1">{character.role || '未知角色'}</p>
-                        <p className="text-xs text-slate-500 line-clamp-2">{character.traits || '神秘的角色'}</p>
-                        <div className="mt-2 text-xs text-blue-500 group-hover:text-blue-600">
-                          点击查看详细信息 →
-                        </div>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-lg shadow-2xl">
-                      <DialogHeader className="sr-only">
-                        <DialogTitle>{character.name} - 角色详情</DialogTitle>
-                      </DialogHeader>
-
-                      <div className="p-8">
-                        {/* 头部区域 */}
-                        <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
-                          <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <User className="w-10 h-10 text-indigo-500" />
-                          </div>
-                          <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
-                            <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
-                          </div>
-                        </header>
-
-                        {/* 内容区域 */}
-                        <div className="space-y-6">
-                          {/* 性格特征 */}
-                          <div>
-                            <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
-                            <div className="flex flex-wrap gap-2">
-                              {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
-                                <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
-                                  {trait}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* 外貌描述 */}
-                          {character.appearance && (
-                            <div>
-                              <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
-                              <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
-                            </div>
-                          )}
-
-                          {/* 背景故事 */}
-                          {character.backstory && (
-                            <div>
-                              <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
-                              <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 故事目标状态 - 在故事进行中显示 */}
-        {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
-                🎯 故事目标
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {story.story_goals.map((goal, index) => (
-                  <div key={goal.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`font-medium ${
-                            goal.status === 'completed' ? 'text-green-700' :
-                            goal.status === 'failed' ? 'text-red-700' :
-                            goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
-                          }`}>
-                            {goal.description}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="outline"
-                            className={`text-xs ${
-                              goal.type === 'main' ? 'border-purple-300 text-purple-600' :
-                              goal.type === 'sub' ? 'border-blue-300 text-blue-600' :
-                              goal.type === 'personal' ? 'border-green-300 text-green-600' :
-                              'border-pink-300 text-pink-600'
-                            }`}
-                          >
-                            {goal.type === 'main' ? '主要目标' :
-                             goal.type === 'sub' ? '次要目标' :
-                             goal.type === 'personal' ? '个人目标' : '关系目标'}
-                          </Badge>
-                          <Badge 
-                            variant="outline"
-                            className={`text-xs ${
-                              goal.priority === 'high' ? 'border-red-300 text-red-600' :
-                              goal.priority === 'medium' ? 'border-yellow-300 text-yellow-600' :
-                              'border-gray-300 text-gray-600'
-                            }`}
-                          >
-                            {goal.priority === 'high' ? '高优先级' :
-                             goal.priority === 'medium' ? '中优先级' : '低优先级'}
-                          </Badge>
-                          {goal.completion_chapter && (
-                            <span className="text-xs text-slate-500">
-                              第{goal.completion_chapter}章完成
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Badge 
-                        className={`ml-3 ${
-                          goal.status === 'completed' ? 'bg-green-600' :
-                          goal.status === 'failed' ? 'bg-red-600' :
-                          goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
-                        } text-white`}
-                      >
-                        {goal.status === 'completed' && '✅ 已完成'}
-                        {goal.status === 'failed' && '❌ 已失败'}
-                        {goal.status === 'in_progress' && '🔄 进行中'}
-                        {goal.status === 'pending' && '⏳ 待开始'}
-                      </Badge>
-                    </div>
+            {/* 选择项生成中 */}
+            {isGeneratingChoices && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-center space-x-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                    <span className="text-slate-600">AI正在为您生成个性化选择...</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
 
-        {/* 故事进度和阶段提示 */}
-        {!story.is_completed && (
-          <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden mb-6">
-            <CardContent className="pt-4">
-              <div className="space-y-3">
-                {/* 章节和进度信息 */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
-                      第 {story.chapter} 章
-                    </Badge>
-                    <span className="text-sm text-slate-600">
-                      {getStoryStageDescription(story.chapter)}
-                    </span>
+            {/* 故事结束状态 */}
+            {story.is_completed && (
+              <Card className="bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-sm shadow-2xl border-2 border-purple-300/50 rounded-3xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl text-purple-800 mb-2">
+                    {story.completion_type === 'success' && '🎉 完美结局'}
+                    {story.completion_type === 'failure' && '💔 悲壮结局'}
+                    {story.completion_type === 'neutral' && '🌅 开放结局'}
+                    {story.completion_type === 'cliffhanger' && '🎬 待续...'}
+                  </CardTitle>
+                  <div className="text-sm text-purple-600">
+                    故事在第 {story.chapter} 章结束
+                    {story.story_progress && (
+                      <span className="ml-2">• 完成度: {Math.round(story.story_progress)}%</span>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {story.story_progress && `完成度: ${Math.round(story.story_progress)}%`}
-                  </div>
-                </div>
-                
-                {/* 故事阶段进度条 */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>故事发展阶段</span>
-                    <span>{getProgressLabel(story.chapter)}</span>
-                  </div>
-                  <Progress 
-                    value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
-                    className="h-2"
-                  />
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>开始</span>
-                    <span>发展</span>
-                    <span>高潮</span>
-                    <span>结局</span>
-                  </div>
-                </div>
-                
-                {/* 预计结局提示 */}
-                {story.chapter >= 5 && (
-                  <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-3 py-2 border border-slate-200">
-                    💡 {getEndingHint(story.chapter, story.story_progress || 0)}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 主要故事内容 */}
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-          <CardContent className="pt-6">
-            <div className="prose prose-slate max-w-none">
-              <div className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap">
-                {currentText}
-                {isTyping && <span className="animate-pulse text-blue-600">|</span>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 选择处理中 - 移动到故事内容后面 */}
-        {isProcessingChoice && (
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-green-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <div className="flex items-center justify-center space-x-3">
-                  <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                  <span className="text-slate-700 font-medium text-lg">正在处理您的选择...</span>
-                </div>
-                
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-pulse">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-green-700 font-medium">您选择了：</span>
-                  </div>
-                  <p className="text-green-600 mt-2 font-semibold text-lg">"{selectedChoiceText}"</p>
-                </div>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center justify-center space-x-2 text-blue-600 text-sm">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-200"></div>
-                    <span className="ml-2 font-medium">
-                      {modelConfig?.apiKey ? 'AI正在创作后续剧情...' : '正在生成后续剧情...'}
-                    </span>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-white bg-opacity-50 rounded-lg p-4 border border-purple-200">
+                    <h4 className="font-semibold text-purple-800 mb-2">故事总结</h4>
+                    <p className="text-purple-700 text-sm">
+                      经过 {story.choices_made.length} 个重要选择和 {story.chapter} 章的精彩冒险，
+                      {story.characters[0]?.name || '主角'}的故事画下了
+                      {story.completion_type === 'success' ? '完美的句号' : 
+                       story.completion_type === 'failure' ? '悲壮的终章' :
+                       story.completion_type === 'neutral' ? '意味深长的省略号' : '引人遐想的破折号'}。
+                    </p>
                   </div>
                   
-                  {modelConfig?.apiKey && (
-                    <div className="text-xs text-blue-500 mt-2">
-                      模型: {modelConfig.provider} - {modelConfig.model}
+                  {/* 故事目标状态 */}
+                  {story.story_goals && story.story_goals.length > 0 && (
+                    <div className="bg-white bg-opacity-50 rounded-lg p-3 border border-purple-200">
+                      <h4 className="font-semibold text-purple-800 mb-2">故事目标</h4>
+                      <div className="space-y-2">
+                        {story.story_goals.map((goal, index) => (
+                          <div key={goal.id} className="flex items-center justify-between text-sm">
+                            <div className="flex-1">
+                              <span className={`font-medium ${
+                                goal.status === 'completed' ? 'text-green-700' :
+                                goal.status === 'failed' ? 'text-red-700' :
+                                goal.status === 'in_progress' ? 'text-yellow-700' : 'text-gray-700'
+                              }`}>
+                                {goal.description}
+                              </span>
+                              {goal.completion_chapter && (
+                                <span className="text-xs text-purple-600 ml-2">
+                                  (第{goal.completion_chapter}章)
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-1 ml-2">
+                              {goal.type === 'main' && (
+                                <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">
+                                  主要
+                                </Badge>
+                              )}
+                              <Badge 
+                                className={`text-xs ${
+                                  goal.status === 'completed' ? 'bg-green-600' :
+                                  goal.status === 'failed' ? 'bg-red-600' :
+                                  goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
+                                } text-white`}
+                              >
+                                {goal.status === 'completed' && '✅'}
+                                {goal.status === 'failed' && '❌'}
+                                {goal.status === 'in_progress' && '🔄'}
+                                {goal.status === 'pending' && '⏳'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-                </div>
-                
-                <div className="text-xs text-slate-400 italic">
-                  正在分析您的选择并创造精彩后续...
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* 选择项生成中 */}
-        {isGeneratingChoices && (
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center space-x-3">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                <span className="text-slate-600">AI正在为您生成个性化选择...</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="flex flex-wrap gap-2 justify-center pt-4">
+                    <Badge className="bg-purple-600 text-white">
+                      {story.completion_type === 'success' ? '英雄凯旋' : 
+                       story.completion_type === 'failure' ? '悲剧英雄' :
+                       story.completion_type === 'neutral' ? '人生如戏' : '未完待续'}
+                    </Badge>
+                    <Badge variant="outline" className="border-purple-300 text-purple-600">
+                      总章节: {story.chapter}
+                    </Badge>
+                    <Badge variant="outline" className="border-purple-300 text-purple-600">
+                      故事进度: {story.story_progress || 0}%
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* 故事结束状态 */}
-        {story.is_completed && (
-          <Card className="bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-sm shadow-2xl border-2 border-purple-300/50 rounded-3xl overflow-hidden animate-in slide-in-from-bottom-4">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-purple-800 mb-2">
-                {story.completion_type === 'success' && '🎉 完美结局'}
-                {story.completion_type === 'failure' && '💔 悲壮结局'}
-                {story.completion_type === 'neutral' && '🌅 开放结局'}
-                {story.completion_type === 'cliffhanger' && '🎬 待续...'}
-              </CardTitle>
-              <div className="text-sm text-purple-600">
-                故事在第 {story.chapter} 章结束
-                {story.story_progress && (
-                  <span className="ml-2">• 完成度: {Math.round(story.story_progress)}%</span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-white bg-opacity-50 rounded-lg p-4 border border-purple-200">
-                <h4 className="font-semibold text-purple-800 mb-2">故事总结</h4>
-                <p className="text-purple-700 text-sm">
-                  经过 {story.choices_made.length} 个重要选择和 {story.chapter} 章的精彩冒险，
-                  {story.characters[0]?.name || '主角'}的故事画下了
-                  {story.completion_type === 'success' ? '完美的句号' : 
-                   story.completion_type === 'failure' ? '悲壮的终章' :
-                   story.completion_type === 'neutral' ? '意味深长的省略号' : '引人遐想的破折号'}。
-                </p>
-              </div>
-              
-              {/* 故事目标状态 */}
-              {story.story_goals && story.story_goals.length > 0 && (
-                <div className="bg-white bg-opacity-50 rounded-lg p-3 border border-purple-200">
-                  <h4 className="font-semibold text-purple-800 mb-2">故事目标</h4>
-                  <div className="space-y-2">
-                    {story.story_goals.map((goal, index) => (
-                      <div key={goal.id} className="flex items-center justify-between text-sm">
-                        <div className="flex-1">
-                          <span className={`font-medium ${
-                            goal.status === 'completed' ? 'text-green-700' :
-                            goal.status === 'failed' ? 'text-red-700' :
-                            goal.status === 'in_progress' ? 'text-yellow-700' : 'text-gray-700'
+            {/* 故事卡住时的继续按钮 */}
+            {!story.is_completed && isStoryStuck && onContinue && (
+              <Card className="bg-red-50/90 backdrop-blur-sm shadow-xl border border-red-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardHeader>
+                  <CardTitle className="text-lg text-red-800 flex items-center gap-2">
+                    ⚠️ 故事卡住了
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-red-700 mb-4">
+                    AI生成选择时遇到了问题，或者网络连接超时。您可以手动推进故事继续。
+                  </p>
+                  {aiError && (
+                    <p className="text-sm text-red-600 mb-4 bg-red-100 p-2 rounded">
+                      错误详情: {aiError}
+                    </p>
+                  )}
+                  <Button
+                    onClick={() => {
+                      setIsStoryStuck(false);
+                      if (onContinue) onContinue();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    手动继续故事
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 进度 >= 95% 或章节 >= 20 时的结局类型选择 */}
+            {!story.is_completed && ((story.story_progress || 0) >= 95 || story.chapter >= 20) && !isProcessingChoice && (
+              <Card className="bg-purple-50/90 backdrop-blur-sm shadow-xl border border-purple-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardHeader>
+                  <CardTitle className="text-lg text-purple-800 flex items-center gap-2">
+                    🎬 选择故事结局类型
+                    <Badge className="bg-purple-600 text-white text-xs">
+                      完成度: {Math.round(story.story_progress || 0)}%
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-purple-100 border border-purple-300 rounded-lg p-4">
+                    <p className="text-sm text-purple-700 mb-2">
+                      经过 {story.chapter} 章的精彩冒险，故事已经非常完整了！现在是时候为这个故事选择一个合适的结局了。
+                    </p>
+                    <p className="text-xs text-purple-600">
+                      选择您喜欢的结局类型，AI将生成相应的完整结局场景。
+                    </p>
+                  </div>
+                  
+                  {/* 结局类型选择 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      onClick={() => {
+                        if (onMakeChoice) {
+                          setSelectedChoiceText('🎉 圆满结局');
+                          onMakeChoice(-1, '选择圆满结局：给所有角色一个完美的归宿');
+                        }
+                      }}
+                      className="h-auto p-5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    >
+                      <div className="font-medium mb-1">🎉 圆满结局</div>
+                      <div className="text-xs text-green-100 text-left">解决所有冲突，给角色完美归宿</div>
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        if (onMakeChoice) {
+                          setSelectedChoiceText('🌟 开放结局');
+                          onMakeChoice(-1, '选择开放结局：留有想象空间和未来可能性');
+                        }
+                      }}
+                      className="h-auto p-5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    >
+                      <div className="font-medium mb-1">🌟 开放结局</div>
+                      <div className="text-xs text-blue-100 text-left">留有想象空间，暗示未来可能</div>
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        if (onMakeChoice) {
+                          setSelectedChoiceText('⚡ 戏剧结局');
+                          onMakeChoice(-1, '选择戏剧结局：创造情感冲击和深刻印象');
+                        }
+                      }}
+                      className="h-auto p-5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    >
+                      <div className="font-medium mb-1">⚡ 戏剧结局</div>
+                      <div className="text-xs text-red-100 text-left">情感冲击强烈，留下深刻印象</div>
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        if (onMakeChoice) {
+                          setSelectedChoiceText('🎲 意外结局');
+                          onMakeChoice(-1, '选择意外结局：出人意料的转折和惊喜');
+                        }
+                      }}
+                      className="h-auto p-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    >
+                      <div className="font-medium mb-1">🎲 意外结局</div>
+                      <div className="text-xs text-orange-100 text-left">出人意料的转折和惊喜</div>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 选择项 */}
+            {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (story.story_progress || 0) < 95 && story.chapter < 20 && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardHeader>
+                  <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {choices.map((choice) => (
+                      <Button
+                        key={choice.id}
+                        variant="outline"
+                        onClick={() => handleChoice(choice.id)}
+                        disabled={isProcessingChoice}
+                        className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md ${
+                          choice.id === -999
+                            ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300/50 hover:from-amber-100 hover:to-orange-100 hover:border-amber-400/60 hover:scale-[1.02]"
+                            : "bg-white/80 border-gray-200/50 hover:bg-indigo-50/80 hover:border-indigo-300/60 hover:scale-[1.02]"
+                        }`}
+                      >
+                        <div className="w-full">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className={`font-semibold ${
+                              choice.id === -999 ? "text-orange-800" : "text-slate-800"
+                            }`}>
+                              {choice.id === -999 && "🎬 "}
+                              {choice.text}
+                            </div>
+                            {choice.difficulty && (
+                              <div className="flex items-center space-x-1">
+                                <DifficultyIcon level={choice.difficulty} />
+                                <span className="text-xs text-slate-500">难度{choice.difficulty}</span>
+                              </div>
+                            )}
+                            {choice.id === -999 && (
+                              <Badge className="bg-orange-500 text-white text-xs">
+                                直通结局
+                              </Badge>
+                            )}
+                          </div>
+                          <div className={`text-sm mb-2 ${
+                            choice.id === -999 ? "text-orange-700" : "text-slate-600"
                           }`}>
-                            {goal.description}
-                          </span>
-                          {goal.completion_chapter && (
-                            <span className="text-xs text-purple-600 ml-2">
-                              (第{goal.completion_chapter}章)
-                            </span>
-                          )}
+                            {choice.description}
+                          </div>
+                          <div className={`text-xs italic ${
+                            choice.id === -999 ? "text-orange-600" : "text-slate-500"
+                          }`}>
+                            可能后果: {choice.consequences || "未知的影响，需要谨慎考虑"}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-1 ml-2">
-                          {goal.type === 'main' && (
-                            <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">
-                              主要
-                            </Badge>
-                          )}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 底部操作按钮 */}
+            <div className="flex justify-center space-x-4 pt-4 pb-4">
+              {story.is_completed ? (
+                <>
+                  <Button
+                    onClick={onRestart}
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    开启新冒险
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      console.log('分享故事功能待实现');
+                    }}
+                    variant="outline"
+                    className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    分享故事
+                  </Button>
+                </>
+              ) : (
+              <Button
+                onClick={onRestart}
+                variant="outline"
+                className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+              >
+                重新开始
+              </Button>
+              )}
+            </div>
+          </div>
+
+          {/* 右侧：辅助信息边栏 */}
+          <div className="hidden lg:flex lg:col-span-1 flex-col space-y-4 overflow-y-auto max-h-screen">
+            
+            {/* 头部信息 */}
+            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col space-y-3">
+                  {/* 章节信息 */}
+                  <div>
+                    <CardTitle className="text-xl text-slate-800 flex items-center gap-2 mb-2">
+                      {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') ? (
+                        <>
+                          <span>第 {story.chapter} 章</span>
+                          <span className="text-lg text-slate-600 font-medium">
+                            {story.chapter_title}
+                          </span>
+                        </>
+                      ) : (
+                        <span>第 {story.chapter} 章</span>
+                      )}
+                    </CardTitle>
+                    
+                    <div className="flex items-center gap-2">
+                      <Progress 
+                        value={story.story_progress || (story.chapter / 12) * 100} 
+                        className="flex-1 h-2" 
+                      />
+                      <span className="text-xs text-slate-500 font-normal min-w-fit">
+                        {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* 操作按钮组 */}
+                  <div className="flex flex-col space-y-2">
+                    {onSaveStory && (
+                      <Button
+                        onClick={handleSaveStory}
+                        disabled={isSaving}
+                        variant="outline"
+                        size="sm"
+                        className={`flex items-center gap-2 w-full ${
+                          hasUnsavedProgress 
+                            ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
+                            : 'border-green-300 text-green-600 hover:bg-green-50'
+                        } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3" />
+                        )}
+                        {isSaving ? '保存中...' : hasUnsavedProgress ? '保存进度' : '已保存'}
+                      </Button>
+                    )}
+                    
+                    {onReturnHome && (
+                      <Button
+                        onClick={onReturnHome}
+                        variant="outline"
+                        size="sm"
+                        disabled={!hasSavedProgress}
+                        className={`flex items-center gap-2 w-full ${
+                          !hasSavedProgress 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'hover:bg-blue-50 border-blue-300'
+                        }`}
+                        title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
+                      >
+                        <Home className="h-3 w-3" />
+                        返回主页
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+
+              {/* 状态信息 */}
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  {/* 自动保存控制 */}
+                  {onToggleAutoSave && (
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="text-sm font-medium text-slate-700">自动保存</span>
+                      <div 
+                        className={`relative inline-flex h-5 w-9 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          autoSaveEnabled ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                        onClick={() => onToggleAutoSave(!autoSaveEnabled)}
+                        role="switch"
+                        aria-checked={autoSaveEnabled}
+                      >
+                        <span 
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${
+                            autoSaveEnabled ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 故事状态标签 */}
+                  <div className="flex flex-wrap gap-2">
+                    {story.mood && (
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        氛围: {story.mood}
+                      </Badge>
+                    )}
+                    {story.tension_level && (
+                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        紧张度: {story.tension_level}/10
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* 统计信息 */}
+                  <div className="text-xs text-gray-500 space-y-1 bg-slate-50 p-3 rounded-lg">
+                    <div>已选择: {story.choices_made?.length || 0}</div>
+                    {story.characters && story.characters.length > 0 && (
+                      <div>角色: {story.characters.length}</div>
+                    )}
+                    {story.scene_type && (
+                      <div>场景: {
+                        story.scene_type === 'action' ? '动作' :
+                        story.scene_type === 'dialogue' ? '对话' :
+                        story.scene_type === 'exploration' ? '探索' :
+                        story.scene_type === 'reflection' ? '反思' :
+                        story.scene_type === 'climax' ? '高潮' : '未知'
+                      }</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 角色信息 */}
+            {story.characters && story.characters.length > 0 && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg text-slate-800">角色信息</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {story.characters.filter(character => character.name && character.name.trim() !== '').slice(0, 3).map((character, index) => (
+                      <Dialog key={index}>
+                        <DialogTrigger asChild>
+                          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <User className="w-4 h-4 text-slate-500 group-hover:text-slate-600" />
+                              <h4 className="font-semibold text-slate-800 group-hover:text-slate-900 text-sm">{character.name}</h4>
+                            </div>
+                            <p className="text-xs text-slate-600 mb-1">{character.role || '未知角色'}</p>
+                            <p className="text-xs text-slate-500 line-clamp-1">{character.traits || '神秘的角色'}</p>
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg shadow-2xl">
+                          <DialogHeader className="sr-only">
+                            <DialogTitle>{character.name} - 角色详情</DialogTitle>
+                          </DialogHeader>
+
+                          <div className="p-8">
+                            <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
+                              <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <User className="w-10 h-10 text-indigo-500" />
+                              </div>
+                              <div>
+                                <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
+                                <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
+                              </div>
+                            </header>
+
+                            <div className="space-y-6">
+                              <div>
+                                <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
+                                <div className="flex flex-wrap gap-2">
+                                  {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
+                                    <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                      {trait}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {character.appearance && (
+                                <div>
+                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
+                                  <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
+                                </div>
+                              )}
+
+                              {character.backstory && (
+                                <div>
+                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
+                                  <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    ))}
+                    {story.characters.length > 3 && (
+                      <div className="text-xs text-slate-500 text-center py-2">
+                        还有 {story.characters.length - 3} 个角色...
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 故事目标 */}
+            {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
+                    🎯 故事目标
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {story.story_goals.slice(0, 3).map((goal, index) => (
+                      <div key={goal.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm font-medium block ${
+                              goal.status === 'completed' ? 'text-green-700' :
+                              goal.status === 'failed' ? 'text-red-700' :
+                              goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
+                            }`}>
+                              {goal.description}
+                            </span>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Badge 
+                                variant="outline"
+                                className={`text-xs ${
+                                  goal.type === 'main' ? 'border-purple-300 text-purple-600' :
+                                  goal.type === 'sub' ? 'border-blue-300 text-blue-600' :
+                                  goal.type === 'personal' ? 'border-green-300 text-green-600' :
+                                  'border-pink-300 text-pink-600'
+                                }`}
+                              >
+                                {goal.type === 'main' ? '主要' :
+                                 goal.type === 'sub' ? '次要' :
+                                 goal.type === 'personal' ? '个人' : '关系'}
+                              </Badge>
+                            </div>
+                          </div>
                           <Badge 
-                            className={`text-xs ${
+                            className={`ml-2 text-xs ${
                               goal.status === 'completed' ? 'bg-green-600' :
                               goal.status === 'failed' ? 'bg-red-600' :
                               goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
@@ -1539,275 +1652,71 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2 justify-center pt-4">
-                <Badge className="bg-purple-600 text-white">
-                  {story.completion_type === 'success' ? '英雄凯旋' : 
-                   story.completion_type === 'failure' ? '悲剧英雄' :
-                   story.completion_type === 'neutral' ? '人生如戏' : '未完待续'}
-                </Badge>
-                <Badge variant="outline" className="border-purple-300 text-purple-600">
-                  总章节: {story.chapter}
-                </Badge>
-                <Badge variant="outline" className="border-purple-300 text-purple-600">
-                  故事进度: {story.story_progress || 0}%
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-
-
-        {/* 故事卡住时的继续按钮 - 只在真正出现问题时显示 */}
-        {!story.is_completed && isStoryStuck && onContinue && (
-          <Card className="bg-red-50/90 backdrop-blur-sm shadow-xl border border-red-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-            <CardHeader>
-              <CardTitle className="text-lg text-red-800 flex items-center gap-2">
-                ⚠️ 故事卡住了
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-red-700 mb-4">
-                AI生成选择时遇到了问题，或者网络连接超时。您可以手动推进故事继续。
-              </p>
-              {aiError && (
-                <p className="text-sm text-red-600 mb-4 bg-red-100 p-2 rounded">
-                  错误详情: {aiError}
-                </p>
-              )}
-              <Button
-                onClick={() => {
-                  setIsStoryStuck(false); // 重置卡住状态
-                  if (onContinue) onContinue();
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                手动继续故事
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 进度 >= 95% 或章节 >= 20 时的结局类型选择 */}
-        {!story.is_completed && ((story.story_progress || 0) >= 95 || story.chapter >= 20) && !isProcessingChoice && (
-          <Card className="bg-purple-50/90 backdrop-blur-sm shadow-xl border border-purple-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-            <CardHeader>
-              <CardTitle className="text-lg text-purple-800 flex items-center gap-2">
-                🎬 选择故事结局类型
-                <Badge className="bg-purple-600 text-white text-xs">
-                  完成度: {Math.round(story.story_progress || 0)}%
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-purple-100 border border-purple-300 rounded-lg p-4">
-                <p className="text-sm text-purple-700 mb-2">
-                  经过 {story.chapter} 章的精彩冒险，故事已经非常完整了！现在是时候为这个故事选择一个合适的结局了。
-                </p>
-                <p className="text-xs text-purple-600">
-                  选择您喜欢的结局类型，AI将生成相应的完整结局场景。
-                </p>
-              </div>
-              
-              {/* 结局类型选择 */}
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  onClick={() => {
-                    if (onMakeChoice) {
-                      // 设置显示友好的文本，但传递识别用的文本
-                      setSelectedChoiceText('🎉 圆满结局');
-                      onMakeChoice(-1, '选择圆满结局：给所有角色一个完美的归宿');
-                    }
-                  }}
-                  className="h-auto p-5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  <div className="font-medium mb-1">
-                    🎉 圆满结局
-                  </div>
-                  <div className="text-xs text-green-100 text-left">
-                    解决所有冲突，给角色完美归宿
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => {
-                    if (onMakeChoice) {
-                      // 设置显示友好的文本，但传递识别用的文本
-                      setSelectedChoiceText('🌟 开放结局');
-                      onMakeChoice(-1, '选择开放结局：留有想象空间和未来可能性');
-                    }
-                  }}
-                  className="h-auto p-5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  <div className="font-medium mb-1">
-                    🌟 开放结局
-                  </div>
-                  <div className="text-xs text-blue-100 text-left">
-                    留有想象空间，暗示未来可能
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => {
-                    if (onMakeChoice) {
-                      // 设置显示友好的文本，但传递识别用的文本
-                      setSelectedChoiceText('⚡ 戏剧结局');
-                      onMakeChoice(-1, '选择戏剧结局：创造情感冲击和深刻印象');
-                    }
-                  }}
-                  className="h-auto p-5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  <div className="font-medium mb-1">
-                    ⚡ 戏剧结局
-                  </div>
-                  <div className="text-xs text-red-100 text-left">
-                    情感冲击强烈，留下深刻印象
-                  </div>
-                </Button>
-                
-                <Button
-                  onClick={() => {
-                    if (onMakeChoice) {
-                      // 设置显示友好的文本，但传递识别用的文本
-                      setSelectedChoiceText('🎲 意外结局');
-                      onMakeChoice(-1, '选择意外结局：出人意料的转折和惊喜');
-                    }
-                  }}
-                  className="h-auto p-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  <div className="font-medium mb-1">
-                    🎲 意外结局
-                  </div>
-                  <div className="text-xs text-orange-100 text-left">
-                    出人意料的转折和惊喜
-                  </div>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 选择项 - 只在故事未结束且未达到强制结局条件时显示 */}
-        {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (story.story_progress || 0) < 95 && story.chapter < 20 && (
-          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {choices.map((choice) => (
-                  <Button
-                    key={choice.id}
-                    variant="outline"
-                    onClick={() => handleChoice(choice.id)}
-                    disabled={isProcessingChoice}
-                    className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md ${
-                      choice.id === -999 // 特殊的直通结局选项ID
-                        ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300/50 hover:from-amber-100 hover:to-orange-100 hover:border-amber-400/60 hover:scale-[1.02]"
-                        : "bg-white/80 border-gray-200/50 hover:bg-indigo-50/80 hover:border-indigo-300/60 hover:scale-[1.02]"
-                    }`}
-                  >
-                    <div className="w-full">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className={`font-semibold ${
-                          choice.id === -999 ? "text-orange-800" : "text-slate-800"
-                        }`}>
-                          {choice.id === -999 && "🎬 "}
-                          {choice.text}
-                        </div>
-                        {choice.difficulty && (
-                          <div className="flex items-center space-x-1">
-                            <DifficultyIcon level={choice.difficulty} />
-                            <span className="text-xs text-slate-500">难度{choice.difficulty}</span>
-                          </div>
-                        )}
-                        {choice.id === -999 && (
-                          <Badge className="bg-orange-500 text-white text-xs">
-                            直通结局
-                          </Badge>
-                        )}
+                    {story.story_goals.length > 3 && (
+                      <div className="text-xs text-slate-500 text-center py-2">
+                        还有 {story.story_goals.length - 3} 个目标...
                       </div>
-                      <div className={`text-sm mb-2 ${
-                        choice.id === -999 ? "text-orange-700" : "text-slate-600"
-                      }`}>
-                        {choice.description}
-                      </div>
-                      <div className={`text-xs italic ${
-                        choice.id === -999 ? "text-orange-600" : "text-slate-500"
-                      }`}>
-                        可能后果: {choice.consequences || "未知的影响，需要谨慎考虑"}
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 故事进度提示 */}
+            {!story.is_completed && (
+              <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden">
+                <CardContent className="pt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="bg-white text-blue-700 border-blue-300 text-xs">
+                        {getStoryStageDescription(story.chapter)}
+                      </Badge>
+                      <div className="text-xs text-slate-500">
+                        {story.story_progress && `${Math.round(story.story_progress)}%`}
                       </div>
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    
+                    <div className="space-y-2">
+                      <Progress 
+                        value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
+                        className="h-2"
+                      />
+                      <div className="flex justify-between text-xs text-slate-400">
+                        <span>开始</span>
+                        <span>发展</span>
+                        <span>高潮</span>
+                        <span>结局</span>
+                      </div>
+                    </div>
+                    
+                    {story.chapter >= 5 && (
+                      <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-3 py-2 border border-slate-200">
+                        💡 {getEndingHint(story.chapter, story.story_progress || 0)}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-
-
-        {/* AI状态信息 */}
-        {(modelConfig || aiError) && (
-          <Card className="bg-slate-50/90 backdrop-blur-sm shadow-lg border border-slate-200/50 rounded-xl overflow-hidden">
-            <CardContent className="pt-4">
-              {modelConfig && (
-                <p className="text-xs text-slate-500 text-center">
-                  AI模型: {modelConfig.provider} - {modelConfig.model}
-                </p>
-              )}
-              {aiError && (
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 text-center">
-                  ⚠️ {aiError}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 操作按钮 */}
-        <div className="flex justify-center space-x-4 pt-4">
-          {story.is_completed ? (
-            <>
-              {/* 暂时禁用继续冒险功能 */}
-              {/* {onContinue && (
-                <Button
-                  onClick={onContinue}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  继续冒险
-                </Button>
-              )} */}
-              <Button
-                onClick={onRestart}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-              >
-                开启新冒险
-              </Button>
-              <Button
-                onClick={() => {
-                  // 分享故事功能（后续可以实现）
-                  console.log('分享故事功能待实现');
-                }}
-                variant="outline"
-                className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-              >
-                分享故事
-              </Button>
-            </>
-          ) : (
-          <Button
-            onClick={onRestart}
-            variant="outline"
-            className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-          >
-            重新开始
-          </Button>
-          )}
+            {/* AI状态信息 */}
+            {(modelConfig || aiError) && (
+              <Card className="bg-slate-50/90 backdrop-blur-sm shadow-lg border border-slate-200/50 rounded-xl overflow-hidden">
+                <CardContent className="pt-4">
+                  {modelConfig && (
+                    <p className="text-xs text-slate-500 text-center">
+                      AI模型: {modelConfig.provider} - {modelConfig.model}
+                    </p>
+                  )}
+                  {aiError && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 text-center">
+                      ⚠️ {aiError}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
