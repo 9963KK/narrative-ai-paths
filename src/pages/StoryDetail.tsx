@@ -6,6 +6,7 @@ import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { BookOpen, AlertCircle, ArrowLeft } from 'lucide-react';
 import { contextManager, SavedStoryContext } from '@/services/contextManager';
+import { loadModelConfig } from '@/services/configStorage';
 
 const StoryDetail: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -16,7 +17,17 @@ const StoryDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 暂时移除参数验证和查找逻辑，创建一个模拟的故事上下文用于界面预览
+    // 加载用户的真实配置
+    const userModelConfig = loadModelConfig();
+    console.log('🔧 StoryDetail加载的模型配置:', {
+      hasConfig: !!userModelConfig,
+      provider: userModelConfig?.provider || 'none',
+      model: userModelConfig?.model || 'none',
+      hasApiKey: !!userModelConfig?.apiKey,
+      apiKeyPrefix: userModelConfig?.apiKey ? userModelConfig.apiKey.substring(0, 10) + '...' : 'None'
+    });
+    
+    // 创建一个模拟的故事上下文用于界面预览
     const mockStoryContext = {
       id: 'demo-story-id',
       title: '示例故事：魔法学院的冒险',
@@ -71,10 +82,12 @@ const StoryDetail: React.FC = () => {
           }
         ]
       },
-      modelConfig: {
+      modelConfig: userModelConfig || {
         provider: 'openai',
         model: 'gpt-4',
-        apiKey: 'demo-key'
+        apiKey: '',
+        temperature: 0.7,
+        maxTokens: 4000
       },
       conversationHistory: [],
       summaryState: null
