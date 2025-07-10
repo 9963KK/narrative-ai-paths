@@ -1485,39 +1485,17 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   </div>
                 )}
                 
-                {/* 故事状态标签 */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {story.mood && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-2 py-0.5">
-                      {story.mood}
-                    </Badge>
-                  )}
-                  {story.tension_level && (
-                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 px-2 py-0.5">
-                      紧张{story.tension_level}
-                    </Badge>
-                  )}
-                </div>
-                
-                {/* 统计信息 */}
+                {/* 简化统计信息 */}
                 <div className="text-xs text-gray-500 bg-slate-50 p-2 rounded-lg">
-                  <div className="flex justify-between">
-                    <span>已选择: {story.choices_made?.length || 0}</span>
-                    {story.characters && story.characters.length > 0 && (
-                      <span>角色: {story.characters.length}</span>
+                  <div className="flex justify-between items-center">
+                    <span>选择: {story.choices_made?.length || 0}</span>
+                    <span>角色: {story.characters?.length || 0}</span>
+                    {story.mood && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                        {story.mood}
+                      </span>
                     )}
                   </div>
-                  {story.scene_type && (
-                    <div className="mt-1 text-center">
-                      场景: {
-                        story.scene_type === 'action' ? '动作' :
-                        story.scene_type === 'dialogue' ? '对话' :
-                        story.scene_type === 'exploration' ? '探索' :
-                        story.scene_type === 'reflection' ? '反思' :
-                        story.scene_type === 'climax' ? '高潮' : '未知'
-                      }
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1534,11 +1512,13 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <Dialog key={index}>
                         <DialogTrigger asChild>
                           <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <User className="w-3 h-3 text-slate-500 group-hover:text-slate-600" />
-                              <h4 className="font-medium text-slate-800 group-hover:text-slate-900 text-sm">{character.name}</h4>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center space-x-2">
+                                <User className="w-3 h-3 text-slate-500 group-hover:text-slate-600" />
+                                <h4 className="font-medium text-slate-800 group-hover:text-slate-900 text-sm">{character.name}</h4>
+                              </div>
+                              <span className="text-xs text-slate-600">{character.role || '未知角色'}</span>
                             </div>
-                            <p className="text-xs text-slate-600 mb-1">{character.role || '未知角色'}</p>
                             <p className="text-xs text-slate-500 line-clamp-1">{character.traits || '神秘的角色'}</p>
                           </div>
                         </DialogTrigger>
@@ -1610,43 +1590,27 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   <div className="space-y-2">
                     {story.story_goals.slice(0, 3).map((goal, index) => (
                       <div key={goal.id} className="bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <span className={`text-sm font-medium block ${
-                              goal.status === 'completed' ? 'text-green-700' :
-                              goal.status === 'failed' ? 'text-red-700' :
-                              goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
-                            }`}>
-                              {goal.description}
-                            </span>
-                            <div className="flex items-center gap-1 mt-1">
-                              <Badge 
-                                variant="outline"
-                                className={`text-xs px-1 py-0 ${
-                                  goal.type === 'main' ? 'border-purple-300 text-purple-600' :
-                                  goal.type === 'sub' ? 'border-blue-300 text-blue-600' :
-                                  goal.type === 'personal' ? 'border-green-300 text-green-600' :
-                                  'border-pink-300 text-pink-600'
-                                }`}
-                              >
-                                {goal.type === 'main' ? '主要' :
-                                 goal.type === 'sub' ? '次要' :
-                                 goal.type === 'personal' ? '个人' : '关系'}
-                              </Badge>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-medium ${
+                                goal.status === 'completed' ? 'text-green-700' :
+                                goal.status === 'failed' ? 'text-red-700' :
+                                goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
+                              }`}>
+                                {goal.description}
+                              </span>
+                              {goal.type === 'main' && (
+                                <span className="text-xs px-1 py-0 bg-purple-100 text-purple-600 rounded">主</span>
+                              )}
                             </div>
                           </div>
-                          <Badge 
-                            className={`ml-2 text-xs px-1 py-0 ${
-                              goal.status === 'completed' ? 'bg-green-600' :
-                              goal.status === 'failed' ? 'bg-red-600' :
-                              goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
-                            } text-white`}
-                          >
+                          <span className="text-xs ml-2">
                             {goal.status === 'completed' && '✅'}
                             {goal.status === 'failed' && '❌'}
                             {goal.status === 'in_progress' && '🔄'}
                             {goal.status === 'pending' && '⏳'}
-                          </Badge>
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -1660,32 +1624,24 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Card>
             )}
 
-            {/* 故事进度提示 - 紧凑版 */}
+            {/* 故事进度提示 - 极简版 */}
             {!story.is_completed && (
               <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-xl overflow-hidden">
                 <CardContent className="pt-3 pb-3">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="bg-white text-blue-700 border-blue-300 text-xs">
+                      <span className="text-xs font-medium text-blue-700">
                         {getStoryStageDescription(story.chapter)}
-                      </Badge>
-                      <div className="text-xs text-slate-500">
-                        {story.story_progress && `${Math.round(story.story_progress)}%`}
-                      </div>
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {Math.round(story.story_progress || Math.min((story.chapter / 20) * 100, 100))}%
+                      </span>
                     </div>
                     
-                    <div className="space-y-1">
-                      <Progress 
-                        value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
-                        className="h-2"
-                      />
-                      <div className="flex justify-between text-xs text-slate-400">
-                        <span>开始</span>
-                        <span>发展</span>
-                        <span>高潮</span>
-                        <span>结局</span>
-                      </div>
-                    </div>
+                    <Progress 
+                      value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
+                      className="h-2"
+                    />
                     
                     {story.chapter >= 5 && (
                       <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-2 py-1 border border-slate-200">
