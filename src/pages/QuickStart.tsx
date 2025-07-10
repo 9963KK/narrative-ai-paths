@@ -236,78 +236,122 @@ const QuickStart: React.FC = () => {
   // 故事梗概选择界面
   if (showOutlineSelection) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <Card className="w-full max-w-6xl mx-auto bg-white shadow-xl border-slate-200">
-          <CardHeader>
+      <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
+          <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
                 onClick={() => setShowOutlineSelection(false)}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/80"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回修改
               </Button>
               <Button
-                type="button"
                 variant="outline"
                 onClick={() => navigate('/settings?tab=model')}
-                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 <Settings className="h-4 w-4" />
                 模型配置
               </Button>
             </div>
-            <div className="text-center pt-4">
-              <CardTitle className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-2">
-                <Wand2 className="h-8 w-8 text-indigo-600" />
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-5xl mx-auto">
+            {/* Page Header */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl mb-6 shadow-xl">
+                <Wand2 className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-3">
                 选择您的故事方向
-              </CardTitle>
-              <p className="text-slate-600 mt-2">
-                基于您的灵感，AI为您生成了 {storyOutlines.length} 个不同风格的故事梗概
+              </h1>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                AI已经基于您的灵感生成了 {storyOutlines.length} 个不同风格的故事梗概
               </p>
+              
               {originalSimpleConfig && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>您的原始想法：</strong>{originalSimpleConfig.story_idea}
-                  </p>
-                  {originalSimpleConfig.main_goal && (
-                    <p className="text-sm text-blue-700 mt-1">
-                      <strong>期望目标：</strong>{originalSimpleConfig.main_goal}
-                    </p>
-                  )}
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 max-w-3xl mx-auto">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mt-1">
+                      <span className="text-white text-sm font-bold">💡</span>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-blue-800 font-medium mb-1">您的原始想法：</p>
+                      <p className="text-blue-700">{originalSimpleConfig.story_idea}</p>
+                      {originalSimpleConfig.main_goal && (
+                        <>
+                          <p className="text-blue-800 font-medium mt-3 mb-1">期望目标：</p>
+                          <p className="text-blue-700">{originalSimpleConfig.main_goal}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2">
-              {storyOutlines.map((outline) => (
+            {/* Story Outlines Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+              {storyOutlines.map((outline, index) => (
                 <Card
                   key={outline.id}
-                  className="border-2 border-slate-200 hover:border-indigo-300 cursor-pointer transition-all duration-300 group hover:shadow-lg"
+                  className="group cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-2xl bg-white/80 backdrop-blur-sm hover:bg-white"
                   onClick={() => handleOutlineSelection(outline)}
                 >
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl text-slate-800 group-hover:text-indigo-700 transition-colors">
-                      {outline.title}
-                    </CardTitle>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
+                            index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' :
+                            index === 1 ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                            index === 2 ? 'bg-gradient-to-br from-orange-500 to-red-600' :
+                            'bg-gradient-to-br from-blue-500 to-indigo-600'
+                          }`}>
+                            <Sparkles className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                              index === 0 ? 'bg-emerald-100 text-emerald-700' :
+                              index === 1 ? 'bg-purple-100 text-purple-700' :
+                              index === 2 ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {outline.genre}
+                            </span>
+                          </div>
+                        </div>
+                        <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors mb-2">
+                          {outline.title}
+                        </CardTitle>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold text-slate-700 mb-2">📖 故事概念</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
+                  
+                  <CardContent className="pt-0 space-y-4">
+                    <div className="bg-gray-50/80 p-4 rounded-xl">
+                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        📖 <span>故事概念</span>
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">
                         {outline.premise}
                       </p>
                     </div>
                     
                     <div>
-                      <h4 className="font-semibold text-slate-700 mb-2">🎭 主要角色</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {outline.characters.map((character, index) => (
+                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        🎭 <span>主要角色</span>
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {outline.characters.map((character, charIndex) => (
                           <span 
-                            key={index}
-                            className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs"
+                            key={charIndex}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium"
                           >
                             {character}
                           </span>
@@ -316,28 +360,38 @@ const QuickStart: React.FC = () => {
                     </div>
                     
                     <div>
-                      <h4 className="font-semibold text-slate-700 mb-2">🏛️ 背景设定</h4>
-                      <p className="text-slate-600 text-sm">
+                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        🏛️ <span>背景设定</span>
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">
                         {outline.setting}
                       </p>
                     </div>
                     
-                    <div>
-                      <h4 className="font-semibold text-slate-700 mb-2">🎣 故事钩子</h4>
-                      <p className="text-slate-600 text-sm italic">
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
+                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        🎣 <span>故事钩子</span>
+                      </h4>
+                      <p className="text-gray-700 text-sm italic leading-relaxed">
                         "{outline.hook}"
                       </p>
                     </div>
                     
-                    <div className="pt-2 border-t border-slate-200">
+                    <div className="pt-4">
                       <Button 
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                        className={`w-full shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105 ${
+                          index === 0 ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' :
+                          index === 1 ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' :
+                          index === 2 ? 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700' :
+                          'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOutlineSelection(outline);
                         }}
                       >
-                        选择这个故事方向 ✨
+                        选择这个故事方向
+                        <Wand2 className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
@@ -345,216 +399,328 @@ const QuickStart: React.FC = () => {
               ))}
             </div>
             
-            <div className="mt-8 text-center">
-              <p className="text-slate-500 text-sm mb-4">
-                💡 选择一个梗概后，AI将基于您的选择创建完整的故事开篇
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => setShowOutlineSelection(false)}
-                className="text-slate-600 border-slate-300 hover:bg-slate-50"
-              >
-                不满意？重新生成梗概
-              </Button>
+            <div className="mt-12 text-center">
+              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/50 max-w-2xl mx-auto">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  <p className="text-gray-700 font-medium">
+                    选择一个梗概后，AI将基于您的选择创建完整的故事开篇
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOutlineSelection(false)}
+                  className="text-gray-600 border-gray-300 hover:bg-gray-50"
+                >
+                  不满意？重新生成梗概
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   // 主要的分步向导界面
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/app')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            返回
-          </Button>
-          <div className="text-center ui-text">
-            <h1 className="text-3xl font-bold text-gray-800">快速开始</h1>
-            <p className="text-gray-500 mt-2">跟随向导，一步步构建您的世界</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/settings?tab=model')}
-            className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-          >
-            <Settings className="h-4 w-4" />
-            模型配置
-          </Button>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-10 ui-text">
-          <div className="flex justify-between mb-1 text-sm font-medium text-gray-600">
-            <span>第 {currentStep} / {totalSteps} 步</span>
-            <span>{stepTitles[currentStep - 1]}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            ></div>
+    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/app')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/80"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              返回首页
+            </Button>
+            
+            <div className="flex items-center gap-3">
+              {!modelConfig.apiKey && !hasValidConfig && (
+                <div className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                  未配置AI模型
+                </div>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => navigate('/settings?tab=model')}
+                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* API Key Warning */}
-        {!modelConfig.apiKey && !hasValidConfig && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="text-amber-800 text-sm text-center">
-              ⚠️ 请先配置AI模型才能开始创作故事
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Page Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl mb-6 shadow-xl">
+              <Wand2 className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-3">
+              快速创作模式
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              跟随向导，一步步构建您的专属故事世界
             </p>
           </div>
-        )}
 
-        {/* Step 1: Genre Selection */}
-        {currentStep === 1 && (
-          <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
-            <label className="text-xl font-semibold text-gray-700 mb-4 block">您想创作什么类型的故事？</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-              {genres.map((genre) => (
-                <div
-                  key={genre.value}
-                  onClick={() => setSimpleConfig(prev => ({ ...prev, genre: genre.value }))}
-                  className={`border-2 p-4 rounded-lg text-center cursor-pointer transition-all duration-300 hover:border-indigo-500 hover:shadow-lg ${
-                    simpleConfig.genre === genre.value
-                      ? 'border-indigo-500 bg-indigo-50 transform scale-105 shadow-lg'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
-                  <span className="font-medium">{genreTitles[genre.value as keyof typeof genreTitles]}</span>
-                  <p className="text-xs text-gray-500 mt-1">{genre.desc}</p>
+          {/* Progress Steps */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              {stepTitles.map((title, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                    currentStep > index + 1 
+                      ? 'bg-green-500 border-green-500 text-white shadow-lg' 
+                      : currentStep === index + 1
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                      : 'bg-white border-gray-300 text-gray-400'
+                  }`}>
+                    {currentStep > index + 1 ? (
+                      <span className="text-sm font-bold">✓</span>
+                    ) : (
+                      <span className="text-sm font-bold">{index + 1}</span>
+                    )}
+                  </div>
+                  <span className={`text-sm mt-2 transition-colors ${
+                    currentStep >= index + 1 ? 'text-indigo-600 font-medium' : 'text-gray-500'
+                  }`}>
+                    {title}
+                  </span>
                 </div>
               ))}
             </div>
-            <div className="text-right">
-              <Button
-                onClick={nextStep}
-                disabled={!canProceedFromStep(1)}
-                className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                下一步
-              </Button>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              ></div>
             </div>
           </div>
-        )}
 
-        {/* Step 2: Story Idea */}
-        {currentStep === 2 && (
-          <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
-            <label className="text-xl font-semibold text-gray-700 mb-4 block">您的故事核心想法是什么？</label>
-            <p className="text-sm text-gray-500 mb-4">
-              一句话即可，例如："一个失忆的赏金猎人在霓虹闪烁的未来都市里，寻找自己被盗走的记忆。"
-            </p>
-            <Textarea
-              value={simpleConfig.story_idea}
-              onChange={(e) => setSimpleConfig(prev => ({ ...prev, story_idea: e.target.value }))}
-              rows={5}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition mb-8"
-              placeholder="请在此输入您的故事想法..."
-            />
-            <div className="flex justify-between">
-              <Button
-                onClick={prevStep}
-                className="bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-all"
-              >
-                上一步
-              </Button>
-              <Button
-                onClick={nextStep}
-                disabled={!canProceedFromStep(2)}
-                className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                下一步
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Main Goal */}
-        {currentStep === 3 && (
-          <div className="step-content ui-text" style={{ animation: 'fadeIn 0.5s ease-in-out' }}>
-            <label className="text-xl font-semibold text-gray-700 mb-4 block">这个故事的主要目标是什么？</label>
-            <p className="text-sm text-gray-500 mb-4">
-              这将决定故事的结局。例如："找回记忆并复仇"、"拯救被邪恶公司控制的城市"、"找到真爱"...
-            </p>
-            <Input
-              value={simpleConfig.main_goal || ''}
-              onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition mb-4"
-              placeholder="请在此输入故事的主要目标..."
-            />
-            
-            {/* AI Features Preview */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-              <h4 className="font-semibold text-blue-800 mb-2">AI将自动为您创建：</h4>
-              <div className="grid grid-cols-2 gap-3 text-sm text-blue-700">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>3-5个个性鲜明的角色</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>详细的故事背景设定</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  <span>引人入胜的开场情节</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span>符合类型的故事氛围</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                onClick={prevStep}
-                className="bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-all"
-              >
-                上一步
-              </Button>
-              <Button
-                onClick={handleSimpleSubmit}
-                disabled={!canProceedFromStep(3) || (!modelConfig.apiKey && !hasValidConfig) || isGeneratingOutlines}
-                className="bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-600 transition-transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isGeneratingOutlines ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    生成中...
+          {/* Main Form */}
+          {currentStep === 1 && (
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-4">
+                    <span className="text-2xl">🎭</span>
                   </div>
-                ) : (
-                  '完成配置，生成梗概'
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+                  <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    选择故事类型
+                  </CardTitle>
+                  <p className="text-gray-600">
+                    选择一个您感兴趣的故事类型，AI 将据此调整创作风格
+                  </p>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  {genres.map((genre) => (
+                    <div
+                      key={genre.value}
+                      onClick={() => setSimpleConfig(prev => ({ ...prev, genre: genre.value }))}
+                      className={`border-2 p-4 rounded-2xl text-center cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
+                        simpleConfig.genre === genre.value
+                          ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg transform scale-105'
+                          : 'border-gray-200 hover:border-indigo-300 bg-white'
+                      }`}
+                    >
+                      <div className="text-3xl mb-3">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
+                      <div className="font-semibold text-gray-800 text-sm mb-1">
+                        {genreTitles[genre.value as keyof typeof genreTitles]}
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">{genre.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button
+                    onClick={nextStep}
+                    disabled={!canProceedFromStep(1)}
+                    className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                  >
+                    下一步：描述想法
+                    <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 2: Story Idea */}
+          {currentStep === 2 && (
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4">
+                    <span className="text-2xl">💡</span>
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    分享您的故事想法
+                  </CardTitle>
+                  <p className="text-gray-600">
+                    描述您脑海中的故事核心概念，可以是一个场景、角色或冲突
+                  </p>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-200">
+                    <p className="text-blue-800 text-sm font-medium mb-2">💭 创作提示</p>
+                    <p className="text-blue-700 text-sm leading-relaxed">
+                      一句话即可，例如："一个失忆的赏金猎人在霓虹闪烁的未来都市里，寻找自己被盗走的记忆。"
+                    </p>
+                  </div>
+
+                  <Textarea
+                    value={simpleConfig.story_idea}
+                    onChange={(e) => setSimpleConfig(prev => ({ ...prev, story_idea: e.target.value }))}
+                    rows={6}
+                    className="w-full p-4 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-xl resize-none"
+                    placeholder="请在此输入您的故事想法...&#10;&#10;可以描述：&#10;• 主要角色和背景&#10;• 核心冲突或挑战&#10;• 故事发生的世界或时代&#10;• 您想要探索的主题"
+                  />
+
+                  <div className="flex justify-between pt-4">
+                    <Button
+                      onClick={prevStep}
+                      variant="outline"
+                      className="px-8 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      上一步
+                    </Button>
+                    <Button
+                      onClick={nextStep}
+                      disabled={!canProceedFromStep(2)}
+                      className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                    >
+                      下一步：设定目标
+                      <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Main Goal */}
+          {currentStep === 3 && (
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-4">
+                    <Target className="w-8 h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    设定故事目标
+                  </CardTitle>
+                  <p className="text-gray-600">
+                    定义故事的核心目标，这将指导整个故事的发展方向
+                  </p>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border border-purple-200">
+                    <p className="text-purple-800 text-sm font-medium mb-2">🎯 目标示例</p>
+                    <p className="text-purple-700 text-sm leading-relaxed">
+                      例如："找回记忆并复仇"、"拯救被邪恶公司控制的城市"、"找到真爱"、"揭开家族秘密"...
+                    </p>
+                  </div>
+
+                  <Input
+                    value={simpleConfig.main_goal || ''}
+                    onChange={(e) => setSimpleConfig(prev => ({ ...prev, main_goal: e.target.value }))}
+                    className="w-full p-4 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20 rounded-xl text-lg"
+                    placeholder="请描述故事的主要目标..."
+                  />
+
+                  {/* AI Features Preview */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-200">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Sparkles className="w-6 h-6 text-indigo-600" />
+                      <h4 className="text-lg font-semibold text-gray-800">AI将自动为您创建</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3 p-3 bg-white/60 rounded-xl">
+                        <Users className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-gray-700">3-5个个性鲜明的角色</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white/60 rounded-xl">
+                        <MapPin className="h-5 w-5 text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">详细的故事背景设定</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white/60 rounded-xl">
+                        <Target className="h-5 w-5 text-pink-600" />
+                        <span className="text-sm font-medium text-gray-700">引人入胜的开场情节</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white/60 rounded-xl">
+                        <Sparkles className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-gray-700">符合类型的故事氛围</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {!modelConfig.apiKey && !hasValidConfig && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">!</span>
+                        </div>
+                        <div>
+                          <p className="text-red-800 font-medium">需要配置AI模型</p>
+                          <p className="text-red-700 text-sm">请先配置AI模型才能开始创作故事</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between pt-4">
+                    <Button
+                      onClick={prevStep}
+                      variant="outline"
+                      className="px-8 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      上一步
+                    </Button>
+                    <Button
+                      onClick={handleSimpleSubmit}
+                      disabled={!canProceedFromStep(3) || (!modelConfig.apiKey && !hasValidConfig) || isGeneratingOutlines}
+                      className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                    >
+                      {isGeneratingOutlines ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          AI正在生成梗概...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          完成配置，生成梗概
+                          <Wand2 className="h-4 w-4" />
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-      
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { 
-            opacity: 0; 
-            transform: translateY(10px); 
-          }
-          to { 
-            opacity: 1; 
-            transform: translateY(0); 
-          }
-        }
-      `}</style>
     </div>
   );
 };
