@@ -231,15 +231,13 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/20">
-      {/* 顶部渐变背景 */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-pink-400/10 to-orange-400/10 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
+    <div className="min-h-screen bg-gray-50">
+      {/* 简化的顶部背景 */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/3 to-purple-600/3"></div>
         
         {/* 标题栏 */}
-        <div className="relative z-10 backdrop-blur-sm bg-white/80 border-b border-gray-200/50 shadow-lg">
+        <div className="relative z-10 bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
@@ -247,17 +245,17 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={onBack}
-                  className="flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2 border border-gray-200/50"
+                  className="flex items-center gap-2 hover:bg-gray-100 rounded-xl px-4 py-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   返回
                 </Button>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">文档分析结果</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">文档分析结果</h1>
                     <p className="text-sm text-gray-600 mt-1">AI智能分析完成，为您提供创作灵感</p>
                   </div>
                 </div>
@@ -270,7 +268,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={cancelEdit}
-                      className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+                      className="flex items-center gap-2"
                     >
                       <X className="h-4 w-4" />
                       取消
@@ -278,7 +276,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                     <Button
                       size="sm"
                       onClick={saveChanges}
-                      className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
+                      className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
                     >
                       <Save className="h-4 w-4" />
                       保存修改
@@ -290,7 +288,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={initEditMode}
-                      className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+                      className="flex items-center gap-2"
                     >
                       <Edit className="h-4 w-4" />
                       编辑分析结果
@@ -300,7 +298,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={onExportResult}
-                        className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+                        className="flex items-center gap-2"
                       >
                         <Download className="h-4 w-4" />
                         导出结果
@@ -321,7 +319,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左列：人物分析 */}
           <div className="space-y-6">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
                 <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -344,10 +342,10 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
               <CardContent className="p-6">
                 <div className="space-y-4">
                     {data.characters.map((character, index) => (
-                      <div key={index} className="group p-4 border border-gray-200/50 rounded-2xl bg-gradient-to-r from-gray-50 to-blue-50/30 hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-300 shadow-sm hover:shadow-md">
+                      <div key={index} className="group p-4 border border-gray-200 rounded-2xl bg-gray-50 hover:bg-blue-50 transition-colors duration-200">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                               <User className="h-4 w-4 text-white" />
                             </div>
                             {isEditing ? (
@@ -441,7 +439,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
           {/* 中列：故事背景 + 主题情节 + 写作风格 */}
           <div className="space-y-6">
             {/* 故事背景 */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
                 <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -531,7 +529,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
             </Card>
 
             {/* 主题与情节概要 */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-purple-500 to-red-600 p-6">
                 <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -669,7 +667,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
             </Card>
 
             {/* 写作风格 */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
                 <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -742,7 +740,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
 
           {/* 右列：创意种子 */}
           <div className="space-y-6">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-yellow-500 to-orange-600 p-6">
                 <CardTitle className="flex items-center gap-3 text-white text-xl font-bold">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -775,17 +773,17 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                     {data.suggestedStorySeeds.map((seed, index) => (
                       <div 
                         key={index} 
-                        className={`group p-6 border-2 rounded-2xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:z-10 relative ${
+                        className={`group p-6 border-2 rounded-2xl transition-colors duration-200 ${
                           selectedSeedIndex === index 
-                            ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 shadow-xl ring-4 ring-orange-200/50' 
-                            : 'border-gray-200/50 bg-white hover:border-orange-300 hover:shadow-lg hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-yellow-50/50'
+                            ? 'border-orange-400 bg-orange-50 shadow-lg' 
+                            : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/50'
                         } ${isEditing ? 'cursor-default' : 'cursor-pointer'}`}
                         onClick={!isEditing ? () => setSelectedSeedIndex(selectedSeedIndex === index ? null : index) : undefined}
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3 flex-1">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                              selectedSeedIndex === index ? 'bg-gradient-to-br from-orange-500 to-yellow-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                              selectedSeedIndex === index ? 'bg-orange-500' : 'bg-gray-400'
                             }`}>
                               <BookOpen className="h-5 w-5 text-white" />
                             </div>
@@ -901,14 +899,13 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
 
         {/* 底部创作按钮 */}
         {!isEditing && (
-          <div className="mt-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl blur-3xl"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200/50 p-8">
+          <div className="mt-12">
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-8">
               <div className="flex flex-col items-center space-y-6">
                 {selectedSeedIndex !== null ? (
                   <div className="text-center">
-                    <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-2xl px-6 py-4 shadow-lg">
-                      <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-600 rounded-full flex items-center justify-center">
+                    <div className="flex items-center gap-3 bg-orange-50 border-2 border-orange-200 rounded-2xl px-6 py-4 shadow-lg">
+                      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
                         <CheckCircle2 className="h-5 w-5 text-white" />
                       </div>
                       <div className="text-left">
@@ -941,9 +938,9 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                     size="lg"
                     disabled={selectedSeedIndex === null}
                     onClick={() => onCreateStory(selectedSeedIndex !== null ? data.suggestedStorySeeds[selectedSeedIndex] : undefined)}
-                    className={`flex items-center gap-3 px-10 py-6 text-lg font-bold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 ${
+                    className={`flex items-center gap-3 px-10 py-6 text-lg font-bold rounded-2xl ${
                       selectedSeedIndex !== null 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
@@ -956,7 +953,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                       size="lg"
                       variant="outline"
                       onClick={onGoToAdvanced}
-                      className="flex items-center gap-3 px-10 py-6 text-lg font-bold border-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-300 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105"
+                      className="flex items-center gap-3 px-10 py-6 text-lg font-bold border-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 rounded-2xl"
                     >
                       <Edit className="h-6 w-6" />
                       进入专业模式
