@@ -692,7 +692,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   useEffect(() => {
     if (initialStory.current_scene !== story.current_scene && isProcessingChoice && choiceStartTime > 0) {
       const elapsedTime = Date.now() - choiceStartTime;
-      const minDisplayTime = 1500; // 最少显示1.5秒
+      const minDisplayTime = 0; // 不强制等待，立即响应
       
       console.log('🎯 AI处理完成，检查是否可以重置加载状态:', {
         elapsedTime,
@@ -1075,13 +1075,16 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Card>
             )}
 
-            {/* 选择项生成中 */}
+            {/* 选择项生成中 - 优化版 */}
             {isGeneratingChoices && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-                <CardContent className="pt-6">
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-xl overflow-hidden">
+                <CardContent className="pt-4 pb-4">
                   <div className="flex items-center justify-center space-x-3">
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                    <span className="text-slate-600">AI正在为您生成个性化选择...</span>
+                    <div className="relative">
+                      <div className="w-6 h-6 border-2 border-indigo-200 rounded-full"></div>
+                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                    </div>
+                    <span className="text-slate-600 font-medium">正在生成选择项...</span>
                   </div>
                 </CardContent>
               </Card>
