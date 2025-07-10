@@ -1398,27 +1398,13 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               <CardContent className="pt-4 pb-4">
                 {/* 章节信息 */}
                 <div className="mb-3">
-                  <div className="text-lg font-bold text-slate-800 mb-2">
-                    {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') ? (
-                      <>
-                        <span>第 {story.chapter} 章</span>
-                        <span className="text-sm text-slate-600 font-medium block mt-1">
-                          {story.chapter_title}
-                        </span>
-                      </>
-                    ) : (
-                      <span>第 {story.chapter} 章</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-slate-800">第 {story.chapter} 章</span>
+                    {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') && (
+                      <span className="text-sm text-slate-600 font-medium truncate ml-2">
+                        {story.chapter_title}
+                      </span>
                     )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <Progress 
-                      value={story.story_progress || (story.chapter / 12) * 100} 
-                      className="flex-1 h-2" 
-                    />
-                    <span className="text-xs text-slate-500 font-normal min-w-fit">
-                      {Math.round(story.story_progress || (story.chapter / 12) * 100)}%
-                    </span>
                   </div>
                 </div>
                 
