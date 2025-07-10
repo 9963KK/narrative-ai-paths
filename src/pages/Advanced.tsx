@@ -16,11 +16,15 @@ import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 interface AdvancedStoryConfig {
   genre: string;
   story_idea: string;
-  protagonist: string;
-  setting: string;
-  special_requirements: string;
-  character_count: number;
-  character_details: Array<{
+  main_character: {
+    name: string;
+    role: string;
+    traits: string;
+    appearance?: string;
+    backstory?: string;
+  };
+  supporting_characters: Array<{
+    id: string;
     name: string;
     role: string;
     traits: string;
@@ -37,41 +41,14 @@ interface AdvancedStoryConfig {
     type: 'main' | 'sub' | 'personal' | 'relationship';
     priority: 'high' | 'medium' | 'low';
   }>;
-  documentAnalysis?: DocumentAnalysisResult;
-  useDocumentAnalysis?: boolean;
 }
 
 const Advanced: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const documentAnalysis = location.state?.documentAnalysis as DocumentAnalysisResult | undefined;
+  const state = location.state as { documentAnalysisResult?: DocumentAnalysisResult } | null;
+  
   const [hasValidConfig, setHasValidConfig] = useState(false);
-  const [activeAccordion, setActiveAccordion] = useState<string>('basic');
-
-  // 高级配置状态
-  const [advancedConfig, setAdvancedConfig] = useState<AdvancedStoryConfig>({
-    genre: '',
-    story_idea: '',
-    protagonist: '',
-    setting: '',
-    special_requirements: '',
-    character_count: 3,
-    character_details: [
-      { name: '', role: '主角', traits: '' },
-      { name: '', role: '伙伴', traits: '' },
-      { name: '', role: '反派', traits: '' }
-    ],
-    environment_details: '',
-    preferred_ending: 'open',
-    story_length: 'medium',
-    tone: 'serious',
-    story_goals: [
-      { id: '1', description: '', type: 'main', priority: 'high' }
-    ],
-    documentAnalysis,
-    useDocumentAnalysis: !!documentAnalysis
-  });
-
   const [modelConfig, setModelConfig] = useState<ModelConfigType>({
     provider: 'openai',
     model: 'gpt-4',
@@ -80,707 +57,740 @@ const Advanced: React.FC = () => {
     maxTokens: 2000
   });
 
-  // 组件加载时检查本地配置
+  // 高级配置状态
+  const [advancedConfig, setAdvancedConfig] = useState<AdvancedStoryConfig>({
+    genre: '',
+    story_idea: '',
+    main_character: {
+      name: '',
+      role: '',
+      traits: '',
+      appearance: '',
+      backstory: ''
+    },
+    supporting_characters: [],
+    environment_details: '',
+    preferred_ending: 'open',
+    story_length: 'medium',
+    tone: 'light',
+    story_goals: []
+  });
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [characterCount, setCharacterCount] = useState(1);
+
+  // 检查模型配置
   useEffect(() => {
     const savedConfig = loadModelConfig();
-    if (savedConfig && savedConfig.apiKey) {
+    if (savedConfig) {
       setModelConfig(savedConfig);
       setHasValidConfig(true);
-      console.log('📂 已从本地存储加载配置');
     } else {
       setHasValidConfig(hasSavedConfig());
     }
-  }, []);
 
-  // 如果有文档分析数据，自动填充配置
-  useEffect(() => {
-    if (documentAnalysis?.success && documentAnalysis.data) {
-      const analysisData = documentAnalysis.data;
-      
-      // 从写作风格推断文体类型
-      let inferredGenre = 'fantasy';
-      const genre = analysisData.writingStyle.genre.toLowerCase();
-      if (genre.includes('科幻') || genre.includes('sci-fi')) {
-        inferredGenre = 'sci-fi';
-      } else if (genre.includes('奇幻') || genre.includes('fantasy')) {
-        inferredGenre = 'fantasy';
-      } else if (genre.includes('推理') || genre.includes('悬疑') || genre.includes('mystery')) {
-        inferredGenre = 'mystery';
-      } else if (genre.includes('爱情') || genre.includes('浪漫') || genre.includes('romance')) {
-        inferredGenre = 'romance';
-      } else if (genre.includes('惊悚') || genre.includes('恐怖')) {
-        inferredGenre = 'thriller';
-      } else if (genre.includes('历史')) {
-        inferredGenre = 'historical';
-      } else if (genre.includes('日常') || genre.includes('生活')) {
-        inferredGenre = 'slice-of-life';
-      } else if (genre.includes('冒险')) {
-        inferredGenre = 'adventure';
-      }
-
-      // 从语调推断故事基调
-      let inferredTone: 'light' | 'serious' | 'humorous' | 'dark' | 'romantic' = 'serious';
-      const tone = analysisData.writingStyle.tone.toLowerCase();
-      if (tone.includes('轻松') || tone.includes('轻快')) {
-        inferredTone = 'light';
-      } else if (tone.includes('幽默') || tone.includes('诙谐')) {
-        inferredTone = 'humorous';
-      } else if (tone.includes('黑暗') || tone.includes('沉重')) {
-        inferredTone = 'dark';
-      } else if (tone.includes('浪漫') || tone.includes('温馨')) {
-        inferredTone = 'romantic';
-      }
-
+    // 如果有文档分析结果，自动填充一些字段
+    if (state?.documentAnalysisResult) {
+      const result = state.documentAnalysisResult;
       setAdvancedConfig(prev => ({
         ...prev,
-        genre: inferredGenre,
-        story_idea: `基于文档分析的故事想法：${analysisData.themes.mainThemes.join('、')}`,
-        protagonist: analysisData.characters[0]?.name || '主角',
-        setting: `${analysisData.setting.time}，${analysisData.setting.place}`,
-        environment_details: `${analysisData.setting.time}，${analysisData.setting.place}。${analysisData.setting.worldBackground}。整体氛围：${analysisData.setting.atmosphere}`,
-        tone: inferredTone,
-        character_count: Math.min(Math.max(analysisData.characters.length, 3), 6),
-        character_details: analysisData.characters.slice(0, 6).map((char, index) => ({
-          name: char.name || `角色${index + 1}`,
-          role: char.role || (index === 0 ? '主角' : '配角'),
-          traits: char.traits || '待定义',
-          appearance: char.appearance || '',
-          backstory: char.backstory || ''
-        })),
-        story_goals: analysisData.plotElements.keyEvents.slice(0, 3).map((event, index) => ({
-          id: `goal_${index + 1}`,
-          description: event,
-          type: index === 0 ? 'main' as const : 'sub' as const,
-          priority: index === 0 ? 'high' as const : 'medium' as const
-        })),
-        documentAnalysis,
-        useDocumentAnalysis: true
+        genre: result.genre || '',
+        story_idea: result.summary || '',
+        main_character: {
+          ...prev.main_character,
+          name: result.characters?.[0]?.name || '',
+          role: result.characters?.[0]?.role || '',
+          traits: result.characters?.[0]?.traits || '',
+          backstory: result.characters?.[0]?.backstory || ''
+        },
+        environment_details: result.setting || '',
+        tone: (result.tone as any) || 'light'
       }));
     }
-  }, [documentAnalysis]);
+  }, [state]);
 
-  const genres = [
-    { value: 'sci-fi', label: '🚀 科幻小说', desc: '探索未来科技与太空' },
-    { value: 'fantasy', label: '🐉 奇幻小说', desc: '魔法与神话世界' },
-    { value: 'mystery', label: '🔍 推理悬疑', desc: '解谜与侦探故事' },
-    { value: 'romance', label: '💕 浪漫爱情', desc: '情感与关系发展' },
-    { value: 'thriller', label: '⚡惊悚恐怖', desc: '紧张刺激的冒险' },
-    { value: 'historical', label: '🏛️ 历史小说', desc: '重现过去的时代' },
-    { value: 'slice-of-life', label: '🌸 日常生活', desc: '温馨的生活片段' },
-    { value: 'adventure', label: '🗺️ 冒险探索', desc: '刺激的旅程体验' }
-  ];
-
-  const endingTypes = [
-    { value: 'open', label: '开放结局', desc: '留给读者想象空间' },
-    { value: 'success', label: '成功结局', desc: '主角达成目标' },
-    { value: 'failure', label: '悲剧结局', desc: '深刻而感人' },
-    { value: 'surprise', label: '意外结局', desc: '出人意料的转折' },
-    { value: 'romantic', label: '浪漫结局', desc: '爱情修成正果' },
-    { value: 'tragic', label: '悲壮结局', desc: '英雄式的牺牲' }
-  ];
-
-  const storyLengths = [
-    { value: 'short', label: '短篇', desc: '5-8章，快速体验' },
-    { value: 'medium', label: '中篇', desc: '8-12章，深度体验' },
-    { value: 'long', label: '长篇', desc: '12-20章，史诗冒险' }
-  ];
-
-  const tones = [
-    { value: 'light', label: '轻松', desc: '愉快轻松的氛围' },
-    { value: 'serious', label: '严肃', desc: '深刻认真的主题' },
-    { value: 'humorous', label: '幽默', desc: '诙谐有趣的风格' },
-    { value: 'dark', label: '黑暗', desc: '深沉压抑的基调' },
-    { value: 'romantic', label: '浪漫', desc: '温馨甜蜜的感觉' }
-  ];
-
-  // 处理角色数量变化
-  const handleCharacterCountChange = (count: number) => {
-    setAdvancedConfig(prev => {
-      const newCharacters = [...prev.character_details];
-      
-      if (count > newCharacters.length) {
-        const roles = ['主角', '伙伴', '反派', '导师', '神秘人', '对手', '朋友', '敌人'];
-        for (let i = newCharacters.length; i < count; i++) {
-          newCharacters.push({
-            name: '',
-            role: roles[i] || '配角',
-            traits: ''
-          });
-        }
-      } else if (count < newCharacters.length) {
-        newCharacters.splice(count);
-      }
-      
-      return {
-        ...prev,
-        character_count: count,
-        character_details: newCharacters
-      };
-    });
+  // 添加配角
+  const addSupportingCharacter = () => {
+    const newCharacter = {
+      id: Date.now().toString(),
+      name: '',
+      role: '',
+      traits: '',
+      appearance: '',
+      backstory: ''
+    };
+    setAdvancedConfig(prev => ({
+      ...prev,
+      supporting_characters: [...prev.supporting_characters, newCharacter]
+    }));
+    setCharacterCount(prev => prev + 1);
   };
 
-  // 检查手风琴部分的完成状态
-  const checkSectionCompletion = (section: string): boolean => {
-    switch (section) {
-      case 'basic':
-        return !!(advancedConfig.genre && advancedConfig.story_idea && advancedConfig.tone && advancedConfig.preferred_ending);
-      case 'character':
-        return advancedConfig.character_details.some(char => char.name.trim() !== '' && char.role.trim() !== '' && char.traits.trim() !== '');
-      case 'goal':
-        return advancedConfig.story_goals.some(goal => goal.description.trim() !== '');
-      case 'environment':
-        return !!(advancedConfig.environment_details.trim());
-      default:
-        return false;
+  // 移除配角
+  const removeSupportingCharacter = (id: string) => {
+    setAdvancedConfig(prev => ({
+      ...prev,
+      supporting_characters: prev.supporting_characters.filter(char => char.id !== id)
+    }));
+    setCharacterCount(prev => prev - 1);
+  };
+
+  // 添加故事目标
+  const addStoryGoal = () => {
+    const newGoal = {
+      id: Date.now().toString(),
+      description: '',
+      type: 'main' as const,
+      priority: 'medium' as const
+    };
+    setAdvancedConfig(prev => ({
+      ...prev,
+      story_goals: [...prev.story_goals, newGoal]
+    }));
+  };
+
+  // 移除故事目标
+  const removeStoryGoal = (id: string) => {
+    setAdvancedConfig(prev => ({
+      ...prev,
+      story_goals: prev.story_goals.filter(goal => goal.id !== id)
+    }));
+  };
+
+  // 完成配置
+  const handleComplete = () => {
+    if (!hasValidConfig) {
+      alert('请先配置AI模型！');
+      return;
     }
-  };
 
-  // 切换手风琴部分
-  const toggleAccordion = (section: string) => {
-    setActiveAccordion(activeAccordion === section ? '' : section);
-  };
-
-  // 处理高级配置提交
-  const handleAdvancedSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const hasValidGoal = advancedConfig.story_goals.some(goal => goal.description.trim() !== '');
-    const hasApiKey = modelConfig.apiKey || hasValidConfig;
-    if (advancedConfig.genre && advancedConfig.story_idea && hasValidGoal && hasApiKey) {
-      let configToUse = modelConfig;
-      if (!modelConfig.apiKey && hasValidConfig) {
-        const savedConfig = loadModelConfig();
-        if (savedConfig) {
-          configToUse = savedConfig;
-          setModelConfig(savedConfig);
-        }
-      }
-      // 保存配置到 localStorage
-      localStorage.setItem('pendingStoryConfig', JSON.stringify({
-        config: advancedConfig,
-        modelConfig: configToUse,
-        isAdvanced: true
-      }));
-      
-      // 重定向到故事创作页面
-      navigate('/app/creating');
+    // 验证必填字段
+    if (!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.main_character.name) {
+      alert('请填写必要的故事信息！');
+      return;
     }
+
+    // 保存配置到 localStorage
+    localStorage.setItem('pendingStoryConfig', JSON.stringify({
+      config: advancedConfig,
+      modelConfig: modelConfig,
+      isAdvanced: true
+    }));
+
+    // 重定向到故事创作页面
+    navigate('/app/creating');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-      <div className="w-full max-w-4xl mx-auto bg-white shadow-lg border-slate-200 rounded-2xl">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-50/20 via-gray-50 to-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/80"
             >
               <ArrowLeft className="h-4 w-4" />
-              返回
+              返回首页
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/settings?tab=model')}
-              className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              <Settings className="h-4 w-4" />
-              模型配置
-            </Button>
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3 mb-2">
-              <Wrench className="h-8 w-8 text-purple-600" />
-              专业模式
-            </h1>
-            <p className="text-slate-600">精确控制故事的每一个细节，打造您的完美作品</p>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className="p-6">
-          {/* 文档分析结果显示 */}
-          {advancedConfig.useDocumentAnalysis && advancedConfig.documentAnalysis?.data && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  基于文档分析自动填充
-                </h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/app/document')}
-                  className="text-green-700 border-green-300 hover:bg-green-100"
-                >
-                  查看完整分析
-                </Button>
-              </div>
-              <div className="text-sm text-green-700 mb-2">
-                ✅ 已从上传的文档中自动提取了角色、背景、风格等信息，您可以在下方进一步调整
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  {advancedConfig.documentAnalysis.data.characters.length} 个角色
+            
+            <div className="flex items-center gap-3">
+              {!hasValidConfig && (
+                <Badge variant="destructive" className="text-xs">
+                  未配置AI模型
                 </Badge>
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  {advancedConfig.documentAnalysis.data.themes.mainThemes.length} 个主题
-                </Badge>
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  {advancedConfig.documentAnalysis.data.suggestedStorySeeds.length} 个创意种子
-                </Badge>
-              </div>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => navigate('/settings?tab=model')}
+                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Settings className="h-4 w-4" />
+                模型配置
+              </Button>
             </div>
-          )}
-
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-amber-800 text-sm">
-                ⚠️ 请先配置AI模型才能开始创作故事
-              </p>
-            </div>
-          )}
-
-          {/* 手风琴布局 */}
-          <div className="accordion">
-            {/* 基础设定 */}
-            <div className={`accordion-item ${activeAccordion === 'basic' ? 'active' : ''} ${checkSectionCompletion('basic') ? 'completed' : ''}`}>
-              <div className="accordion-header ui-text" onClick={() => toggleAccordion('basic')}>
-                <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-indigo-600" />
-                  </div>
-                  基础设定
-                  <span className="accordion-status">✔</span>
-                </h3>
-                <div className="accordion-icon">+</div>
-              </div>
-              <div className="accordion-content">
-                <div className="accordion-content-inner">
-                  <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <Label className="text-slate-700 font-medium">故事类型</Label>
-                      <Select value={advancedConfig.genre} onValueChange={(value) => setAdvancedConfig(prev => ({ ...prev, genre: value }))}>
-                        <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                          <SelectValue placeholder="选择故事类型" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-slate-200">
-                          {genres.map((genre) => (
-                            <SelectItem key={genre.value} value={genre.value} className="text-slate-800 hover:bg-purple-50">
-                              <div>
-                                <div className="font-medium">{genre.label}</div>
-                                <div className="text-xs text-slate-500">{genre.desc}</div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-slate-700 font-medium">故事长度</Label>
-                      <Select value={advancedConfig.story_length} onValueChange={(value: 'short' | 'medium' | 'long') => setAdvancedConfig(prev => ({ ...prev, story_length: value }))}>
-                        <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                          <SelectValue placeholder="选择故事长度" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-slate-200">
-                          {storyLengths.map((length) => (
-                            <SelectItem key={length.value} value={length.value} className="text-slate-800 hover:bg-purple-50">
-                              <div>
-                                <div className="font-medium">{length.label}</div>
-                                <div className="text-xs text-slate-500">{length.desc}</div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="mb-6">
-                    <Label className="text-slate-700 font-medium">核心故事想法</Label>
-                    <Textarea
-                      value={advancedConfig.story_idea}
-                      onChange={(e) => setAdvancedConfig(prev => ({ ...prev, story_idea: e.target.value }))}
-                      placeholder="描述您故事的核心概念和主要情节..."
-                      className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-slate-700 font-medium">故事基调</Label>
-                      <Select value={advancedConfig.tone} onValueChange={(value: 'light' | 'serious' | 'humorous' | 'dark' | 'romantic') => setAdvancedConfig(prev => ({ ...prev, tone: value }))}>
-                        <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                          <SelectValue placeholder="选择故事基调" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-slate-200">
-                          {tones.map((tone) => (
-                            <SelectItem key={tone.value} value={tone.value} className="text-slate-800 hover:bg-purple-50">
-                              <div>
-                                <div className="font-medium">{tone.label}</div>
-                                <div className="text-xs text-slate-500">{tone.desc}</div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-slate-700 font-medium">期望结局类型</Label>
-                      <Select value={advancedConfig.preferred_ending} onValueChange={(value: any) => setAdvancedConfig(prev => ({ ...prev, preferred_ending: value }))}>
-                        <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                          <SelectValue placeholder="选择结局类型" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-slate-200">
-                          {endingTypes.map((ending) => (
-                            <SelectItem key={ending.value} value={ending.value} className="text-slate-800 hover:bg-purple-50">
-                              <div>
-                                <div className="font-medium">{ending.label}</div>
-                                <div className="text-xs text-slate-500">{ending.desc}</div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 角色设定 */}
-            <div className={`accordion-item ${activeAccordion === 'character' ? 'active' : ''} ${checkSectionCompletion('character') ? 'completed' : ''}`}>
-              <div className="accordion-header ui-text" onClick={() => toggleAccordion('character')}>
-                <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
-                  </div>
-                  角色设定
-                  <span className="accordion-status">✔</span>
-                </h3>
-                <div className="accordion-icon">+</div>
-              </div>
-              <div className="accordion-content">
-                <div className="accordion-content-inner">
-                  <div className="mb-6" style={{maxWidth: '250px'}}>
-                    <Label className="text-slate-700 font-medium">角色数量</Label>
-                    <Select value={advancedConfig.character_count.toString()} onValueChange={(value) => handleCharacterCountChange(parseInt(value))}>
-                      <SelectTrigger className="mt-2 bg-white border-slate-300 text-slate-800">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-slate-200">
-                        {[2, 3, 4, 5, 6].map((count) => (
-                          <SelectItem key={count} value={count.toString()} className="text-slate-800 hover:bg-purple-50">
-                            {count} 个角色
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-4">
-                    {advancedConfig.character_details.map((character, index) => (
-                      <Card key={index} className="p-4 border border-slate-200">
-                        <h4 className="font-medium text-slate-800 mb-3">角色 {index + 1}</h4>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm text-slate-600">姓名</Label>
-                            <Input
-                              value={character.name}
-                              onChange={(e) => {
-                                const newCharacters = [...advancedConfig.character_details];
-                                newCharacters[index].name = e.target.value;
-                                setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
-                              }}
-                              placeholder="角色姓名"
-                              className="mt-1 bg-white border-slate-300 text-slate-800"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm text-slate-600">角色定位</Label>
-                            <Input
-                              value={character.role}
-                              onChange={(e) => {
-                                const newCharacters = [...advancedConfig.character_details];
-                                newCharacters[index].role = e.target.value;
-                                setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
-                              }}
-                              placeholder="如：主角、伙伴、反派"
-                              className="mt-1 bg-white border-slate-300 text-slate-800"
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <Label className="text-sm text-slate-600">性格特征</Label>
-                            <Input
-                              value={character.traits}
-                              onChange={(e) => {
-                                const newCharacters = [...advancedConfig.character_details];
-                                newCharacters[index].traits = e.target.value;
-                                setAdvancedConfig(prev => ({ ...prev, character_details: newCharacters }));
-                              }}
-                              placeholder="性格描述"
-                              className="mt-1 bg-white border-slate-300 text-slate-800"
-                            />
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 故事目标设定 */}
-            <div className={`accordion-item ${activeAccordion === 'goal' ? 'active' : ''} ${checkSectionCompletion('goal') ? 'completed' : ''}`}>
-              <div className="accordion-header ui-text" onClick={() => toggleAccordion('goal')}>
-                <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <Target className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  故事目标设定
-                  <span className="accordion-status">✔</span>
-                </h3>
-                <div className="accordion-icon">+</div>
-              </div>
-              <div className="accordion-content">
-                <div className="accordion-content-inner">
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                    <p className="text-purple-800 text-sm">
-                      💡 设定明确的故事目标，AI将根据这些目标的完成情况决定故事何时自然结束
-                    </p>
-                  </div>
-                  <div className="space-y-4 mb-4">
-                    {advancedConfig.story_goals.map((goal, index) => (
-                      <Card key={goal.id} className="p-4 border border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-slate-800">目标 {index + 1}</h4>
-                          {advancedConfig.story_goals.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newGoals = advancedConfig.story_goals.filter(g => g.id !== goal.id);
-                                setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
-                              }}
-                              className="text-slate-400 hover:text-red-600 hover:bg-red-50 w-6 h-6 rounded-full flex items-center justify-center"
-                            >
-                              ×
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid gap-4">
-                          <div>
-                            <Label className="text-sm text-slate-600">目标描述</Label>
-                            <Input
-                              value={goal.description}
-                              onChange={(e) => {
-                                const newGoals = [...advancedConfig.story_goals];
-                                const goalIndex = newGoals.findIndex(g => g.id === goal.id);
-                                newGoals[goalIndex].description = e.target.value;
-                                setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
-                              }}
-                              placeholder="如：找到失踪的朋友..."
-                              className="mt-1 bg-white border-slate-300 text-slate-800"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-sm text-slate-600">类型</Label>
-                              <Select 
-                                value={goal.type} 
-                                onValueChange={(value: 'main' | 'sub' | 'personal' | 'relationship') => {
-                                  const newGoals = [...advancedConfig.story_goals];
-                                  const goalIndex = newGoals.findIndex(g => g.id === goal.id);
-                                  newGoals[goalIndex].type = value;
-                                  setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
-                                }}
-                              >
-                                <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-800">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border-slate-200">
-                                  <SelectItem value="main" className="text-slate-800">主要</SelectItem>
-                                  <SelectItem value="sub" className="text-slate-800">次要</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label className="text-sm text-slate-600">优先级</Label>
-                              <Select 
-                                value={goal.priority} 
-                                onValueChange={(value: 'high' | 'medium' | 'low') => {
-                                  const newGoals = [...advancedConfig.story_goals];
-                                  const goalIndex = newGoals.findIndex(g => g.id === goal.id);
-                                  newGoals[goalIndex].priority = value;
-                                  setAdvancedConfig(prev => ({ ...prev, story_goals: newGoals }));
-                                }}
-                              >
-                                <SelectTrigger className="mt-1 bg-white border-slate-300 text-slate-800">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border-slate-200">
-                                  <SelectItem value="high" className="text-slate-800">高</SelectItem>
-                                  <SelectItem value="medium" className="text-slate-800">中</SelectItem>
-                                  <SelectItem value="low" className="text-slate-800">低</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const newGoal = {
-                        id: Date.now().toString(),
-                        description: '',
-                        type: 'sub' as const,
-                        priority: 'medium' as const
-                      };
-                      setAdvancedConfig(prev => ({ 
-                        ...prev, 
-                        story_goals: [...prev.story_goals, newGoal] 
-                      }));
-                    }}
-                    className="w-full border-2 border-dashed border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200 py-3 rounded-lg flex items-center justify-center gap-2 font-medium"
-                  >
-                    + 添加目标
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* 环境与特殊要求 */}
-            <div className={`accordion-item ${activeAccordion === 'environment' ? 'active' : ''} ${checkSectionCompletion('environment') ? 'completed' : ''}`}>
-              <div className="accordion-header ui-text" onClick={() => toggleAccordion('environment')}>
-                <h3 className="flex items-center gap-3 text-lg font-semibold text-slate-800 m-0">
-                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-orange-600" />
-                  </div>
-                  环境与特殊要求
-                  <span className="accordion-status">✔</span>
-                </h3>
-                <div className="accordion-icon">+</div>
-              </div>
-              <div className="accordion-content">
-                <div className="accordion-content-inner">
-                  <div className="mb-6">
-                    <Label className="text-slate-700 font-medium">详细环境描述</Label>
-                    <Textarea
-                      value={advancedConfig.environment_details}
-                      onChange={(e) => setAdvancedConfig(prev => ({ ...prev, environment_details: e.target.value }))}
-                      placeholder="描述故事发生的具体环境..."
-                      className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-slate-700 font-medium">特殊要求（可选）</Label>
-                    <Textarea
-                      value={advancedConfig.special_requirements}
-                      onChange={(e) => setAdvancedConfig(prev => ({ ...prev, special_requirements: e.target.value }))}
-                      placeholder="其他特殊要求..."
-                      className="mt-2 bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 resize-none"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 提交按钮 */}
-          <div className="mt-8">
-            <Button
-              onClick={handleAdvancedSubmit}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-              disabled={!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.story_goals.some(goal => goal.description.trim() !== '') || (!modelConfig.apiKey && !hasValidConfig)}
-            >
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              创建精心定制的故事
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* 添加手风琴样式 */}
-      <style jsx>{`
-        .accordion-item {
-          border: 1px solid #e2e8f0;
-          border-radius: 0.5rem;
-          margin-bottom: 1rem;
-          overflow: hidden;
-        }
-        
-        .accordion-item.completed {
-          border-color: #10b981;
-          background-color: #f0fdf4;
-        }
-        
-        .accordion-header {
-          padding: 1rem;
-          cursor: pointer;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background-color: #f8fafc;
-          transition: background-color 0.2s;
-        }
-        
-        .accordion-header:hover {
-          background-color: #f1f5f9;
-        }
-        
-        .accordion-item.active .accordion-header {
-          background-color: #e0e7ff;
-        }
-        
-        .accordion-item.completed .accordion-header {
-          background-color: #dcfce7;
-        }
-        
-        .accordion-status {
-          color: #10b981;
-          font-weight: bold;
-          opacity: 0;
-        }
-        
-        .accordion-item.completed .accordion-status {
-          opacity: 1;
-        }
-        
-        .accordion-icon {
-          font-weight: bold;
-          font-size: 1.5rem;
-          color: #64748b;
-          transition: transform 0.2s;
-        }
-        
-        .accordion-item.active .accordion-icon {
-          transform: rotate(45deg);
-        }
-        
-        .accordion-content {
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 0.3s ease-out;
-        }
-        
-        .accordion-item.active .accordion-content {
-          max-height: 2000px;
-        }
-        
-        .accordion-content-inner {
-          padding: 1.5rem;
-        }
-      `}</style>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Page Header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl mb-6 shadow-xl">
+              <Wrench className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-3">
+              专业创作模式
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              精确控制故事的每一个细节，全面定制角色、情节、世界观，打造您的完美作品
+            </p>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              {[
+                { step: 1, label: '基础设定', icon: FileText },
+                { step: 2, label: '角色塑造', icon: Users },
+                { step: 3, label: '世界构建', icon: MapPin },
+                { step: 4, label: '目标设定', icon: Target }
+              ].map(({ step, label, icon: Icon }) => (
+                <div key={step} className="flex flex-col items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                    currentStep >= step 
+                      ? 'bg-purple-600 border-purple-600 text-white shadow-lg' 
+                      : 'bg-white border-gray-300 text-gray-400'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className={`text-sm mt-2 transition-colors ${
+                    currentStep >= step ? 'text-purple-600 font-medium' : 'text-gray-500'
+                  }`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(currentStep / 4) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Step 1: 基础设定 */}
+          {currentStep === 1 && (
+            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
+                    <FileText className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">故事基础设定</h2>
+                  <p className="text-gray-600">为您的故事奠定基础框架</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="genre" className="text-sm font-medium text-gray-700">故事类型 *</Label>
+                    <Select value={advancedConfig.genre} onValueChange={(value) => setAdvancedConfig(prev => ({ ...prev, genre: value }))}>
+                      <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20">
+                        <SelectValue placeholder="选择故事类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fantasy">奇幻</SelectItem>
+                        <SelectItem value="scifi">科幻</SelectItem>
+                        <SelectItem value="romance">言情</SelectItem>
+                        <SelectItem value="mystery">悬疑</SelectItem>
+                        <SelectItem value="adventure">冒险</SelectItem>
+                        <SelectItem value="historical">历史</SelectItem>
+                        <SelectItem value="contemporary">现代</SelectItem>
+                        <SelectItem value="thriller">惊悚</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tone" className="text-sm font-medium text-gray-700">故事基调</Label>
+                    <Select value={advancedConfig.tone} onValueChange={(value) => setAdvancedConfig(prev => ({ ...prev, tone: value as any }))}>
+                      <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20">
+                        <SelectValue placeholder="选择故事基调" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">轻松愉快</SelectItem>
+                        <SelectItem value="serious">严肃认真</SelectItem>
+                        <SelectItem value="humorous">幽默风趣</SelectItem>
+                        <SelectItem value="dark">黑暗深沉</SelectItem>
+                        <SelectItem value="romantic">浪漫温馨</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="story_idea" className="text-sm font-medium text-gray-700">故事创意 *</Label>
+                  <Textarea
+                    id="story_idea"
+                    placeholder="详细描述您的故事想法、背景设定、主要冲突等..."
+                    value={advancedConfig.story_idea}
+                    onChange={(e) => setAdvancedConfig(prev => ({ ...prev, story_idea: e.target.value }))}
+                    className="min-h-32 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20 resize-none"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="story_length" className="text-sm font-medium text-gray-700">故事长度</Label>
+                    <Select value={advancedConfig.story_length} onValueChange={(value) => setAdvancedConfig(prev => ({ ...prev, story_length: value as any }))}>
+                      <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20">
+                        <SelectValue placeholder="选择故事长度" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short">短篇 (5-10章)</SelectItem>
+                        <SelectItem value="medium">中篇 (10-20章)</SelectItem>
+                        <SelectItem value="long">长篇 (20+章)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="preferred_ending" className="text-sm font-medium text-gray-700">结局偏好</Label>
+                    <Select value={advancedConfig.preferred_ending} onValueChange={(value) => setAdvancedConfig(prev => ({ ...prev, preferred_ending: value as any }))}>
+                      <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500/20">
+                        <SelectValue placeholder="选择结局类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">开放式结局</SelectItem>
+                        <SelectItem value="success">圆满结局</SelectItem>
+                        <SelectItem value="failure">悲剧结局</SelectItem>
+                        <SelectItem value="surprise">意外转折</SelectItem>
+                        <SelectItem value="romantic">浪漫结局</SelectItem>
+                        <SelectItem value="tragic">悲壮结局</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-6">
+                  <Button 
+                    onClick={() => setCurrentStep(2)}
+                    disabled={!advancedConfig.genre || !advancedConfig.story_idea}
+                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                  >
+                    下一步：角色塑造
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Step 2: 角色塑造 */}
+          {currentStep === 2 && (
+            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-4">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">角色塑造</h2>
+                  <p className="text-gray-600">创造生动立体的角色形象</p>
+                </div>
+
+                {/* 主角设定 */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">主</span>
+                    </div>
+                    主角设定
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">姓名 *</Label>
+                      <Input
+                        placeholder="主角姓名"
+                        value={advancedConfig.main_character.name}
+                        onChange={(e) => setAdvancedConfig(prev => ({
+                          ...prev,
+                          main_character: { ...prev.main_character, name: e.target.value }
+                        }))}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">身份/职业</Label>
+                      <Input
+                        placeholder="例如：年轻骑士、法师学徒、侦探..."
+                        value={advancedConfig.main_character.role}
+                        onChange={(e) => setAdvancedConfig(prev => ({
+                          ...prev,
+                          main_character: { ...prev.main_character, role: e.target.value }
+                        }))}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">性格特征</Label>
+                      <Textarea
+                        placeholder="描述主角的性格特点、价值观、行为习惯等..."
+                        value={advancedConfig.main_character.traits}
+                        onChange={(e) => setAdvancedConfig(prev => ({
+                          ...prev,
+                          main_character: { ...prev.main_character, traits: e.target.value }
+                        }))}
+                        className="min-h-20 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">外貌描述</Label>
+                      <Input
+                        placeholder="身高、发色、特征等..."
+                        value={advancedConfig.main_character.appearance}
+                        onChange={(e) => setAdvancedConfig(prev => ({
+                          ...prev,
+                          main_character: { ...prev.main_character, appearance: e.target.value }
+                        }))}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">背景故事</Label>
+                      <Input
+                        placeholder="成长经历、重要事件..."
+                        value={advancedConfig.main_character.backstory}
+                        onChange={(e) => setAdvancedConfig(prev => ({
+                          ...prev,
+                          main_character: { ...prev.main_character, backstory: e.target.value }
+                        }))}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 配角设定 */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">配</span>
+                      </div>
+                      配角设定 ({advancedConfig.supporting_characters.length})
+                    </h3>
+                    <Button
+                      onClick={addSupportingCharacter}
+                      variant="outline"
+                      size="sm"
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      + 添加配角
+                    </Button>
+                  </div>
+
+                  {advancedConfig.supporting_characters.map((character, index) => (
+                    <div key={character.id} className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium text-gray-800">配角 {index + 1}</h4>
+                        <Button
+                          onClick={() => removeSupportingCharacter(character.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          删除
+                        </Button>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">姓名</Label>
+                          <Input
+                            placeholder="配角姓名"
+                            value={character.name}
+                            onChange={(e) => {
+                              const updatedCharacters = [...advancedConfig.supporting_characters];
+                              updatedCharacters[index] = { ...character, name: e.target.value };
+                              setAdvancedConfig(prev => ({ ...prev, supporting_characters: updatedCharacters }));
+                            }}
+                            className="border-gray-300 focus:border-green-500 focus:ring-green-500/20"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">身份/关系</Label>
+                          <Input
+                            placeholder="与主角的关系或职业"
+                            value={character.role}
+                            onChange={(e) => {
+                              const updatedCharacters = [...advancedConfig.supporting_characters];
+                              updatedCharacters[index] = { ...character, role: e.target.value };
+                              setAdvancedConfig(prev => ({ ...prev, supporting_characters: updatedCharacters }));
+                            }}
+                            className="border-gray-300 focus:border-green-500 focus:ring-green-500/20"
+                          />
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">性格特征</Label>
+                          <Textarea
+                            placeholder="简要描述这个角色的性格和特点..."
+                            value={character.traits}
+                            onChange={(e) => {
+                              const updatedCharacters = [...advancedConfig.supporting_characters];
+                              updatedCharacters[index] = { ...character, traits: e.target.value };
+                              setAdvancedConfig(prev => ({ ...prev, supporting_characters: updatedCharacters }));
+                            }}
+                            className="min-h-16 border-gray-300 focus:border-green-500 focus:ring-green-500/20 resize-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button 
+                    onClick={() => setCurrentStep(1)}
+                    variant="outline"
+                    className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    上一步
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentStep(3)}
+                    disabled={!advancedConfig.main_character.name}
+                    className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                  >
+                    下一步：世界构建
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Step 3: 世界构建 */}
+          {currentStep === 3 && (
+            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl mb-4">
+                    <MapPin className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">世界构建</h2>
+                  <p className="text-gray-600">构建丰富详实的故事世界</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="environment_details" className="text-sm font-medium text-gray-700">世界设定与环境描述</Label>
+                  <Textarea
+                    id="environment_details"
+                    placeholder="详细描述故事发生的世界、时代背景、地理环境、社会结构、文化特色、魔法/科技水平等..."
+                    value={advancedConfig.environment_details}
+                    onChange={(e) => setAdvancedConfig(prev => ({ ...prev, environment_details: e.target.value }))}
+                    className="min-h-40 border-gray-300 focus:border-orange-500 focus:ring-orange-500/20 resize-none"
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    提示：可以描述政治制度、经济状况、宗教信仰、种族分布、重要城市、危险区域等
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-2xl border border-orange-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">世界构建要素参考</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">地理环境</h4>
+                      <ul className="text-gray-600 space-y-1">
+                        <li>• 大陆、岛屿、城市分布</li>
+                        <li>• 气候、地形、自然资源</li>
+                        <li>• 特殊地点、危险区域</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">社会文化</h4>
+                      <ul className="text-gray-600 space-y-1">
+                        <li>• 政治制度、统治者</li>
+                        <li>• 社会阶层、职业体系</li>
+                        <li>• 宗教信仰、价值观念</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">力量体系</h4>
+                      <ul className="text-gray-600 space-y-1">
+                        <li>• 魔法/科技水平</li>
+                        <li>• 特殊能力、武器装备</li>
+                        <li>• 修炼/学习体系</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">历史背景</h4>
+                      <ul className="text-gray-600 space-y-1">
+                        <li>• 重要历史事件</li>
+                        <li>• 传说、预言、禁忌</li>
+                        <li>• 当前时代特征</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button 
+                    onClick={() => setCurrentStep(2)}
+                    variant="outline"
+                    className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    上一步
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentStep(4)}
+                    className="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  >
+                    下一步：目标设定
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Step 4: 目标设定 */}
+          {currentStep === 4 && (
+            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-4">
+                    <Target className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">故事目标设定</h2>
+                  <p className="text-gray-600">设定驱动情节发展的关键目标</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">故事目标列表</h3>
+                    <Button
+                      onClick={addStoryGoal}
+                      variant="outline"
+                      size="sm"
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      + 添加目标
+                    </Button>
+                  </div>
+
+                  {advancedConfig.story_goals.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>还没有设定任何故事目标</p>
+                      <p className="text-sm">点击"添加目标"来创建第一个目标</p>
+                    </div>
+                  )}
+
+                  {advancedConfig.story_goals.map((goal, index) => (
+                    <div key={goal.id} className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium text-gray-800">目标 {index + 1}</h4>
+                        <Button
+                          onClick={() => removeStoryGoal(goal.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          删除
+                        </Button>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2 space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">目标描述</Label>
+                          <Textarea
+                            placeholder="描述这个故事目标，例如：拯救被困的公主、寻找失落的神器、揭露幕后阴谋..."
+                            value={goal.description}
+                            onChange={(e) => {
+                              const updatedGoals = [...advancedConfig.story_goals];
+                              updatedGoals[index] = { ...goal, description: e.target.value };
+                              setAdvancedConfig(prev => ({ ...prev, story_goals: updatedGoals }));
+                            }}
+                            className="min-h-20 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 resize-none"
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">目标类型</Label>
+                            <Select 
+                              value={goal.type} 
+                              onValueChange={(value) => {
+                                const updatedGoals = [...advancedConfig.story_goals];
+                                updatedGoals[index] = { ...goal, type: value as any };
+                                setAdvancedConfig(prev => ({ ...prev, story_goals: updatedGoals }));
+                              }}
+                            >
+                              <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="main">主要目标</SelectItem>
+                                <SelectItem value="sub">次要目标</SelectItem>
+                                <SelectItem value="personal">个人目标</SelectItem>
+                                <SelectItem value="relationship">关系目标</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">优先级</Label>
+                            <Select 
+                              value={goal.priority} 
+                              onValueChange={(value) => {
+                                const updatedGoals = [...advancedConfig.story_goals];
+                                updatedGoals[index] = { ...goal, priority: value as any };
+                                setAdvancedConfig(prev => ({ ...prev, story_goals: updatedGoals }));
+                              }}
+                            >
+                              <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="high">高</SelectItem>
+                                <SelectItem value="medium">中</SelectItem>
+                                <SelectItem value="low">低</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">目标设定指导</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">主要目标</h4>
+                      <p className="text-gray-600">推动整个故事发展的核心目标，通常在故事结局才能实现</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">次要目标</h4>
+                      <p className="text-gray-600">支撑主要目标的阶段性目标，为主线剧情提供支持</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">个人目标</h4>
+                      <p className="text-gray-600">角色的个人成长、内心转变、技能提升等目标</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">关系目标</h4>
+                      <p className="text-gray-600">角色间的情感发展、友谊建立、冲突解决等目标</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button 
+                    onClick={() => setCurrentStep(3)}
+                    variant="outline"
+                    className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    上一步
+                  </Button>
+                  <Button 
+                    onClick={handleComplete}
+                    disabled={!hasValidConfig}
+                    className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                  >
+                    开始创作
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
