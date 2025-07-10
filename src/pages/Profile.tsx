@@ -112,26 +112,26 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/20 via-gray-50 to-gray-50">
       <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <Button
               variant="ghost"
               onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
             >
               <ArrowLeft className="h-4 w-4" />
               返回主页
             </Button>
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
-                <User className="h-8 w-8 text-blue-600" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                <User className="h-10 w-10 text-blue-600" />
                 个人资料
               </h1>
-              <p className="text-slate-600 mt-2">查看您的账户信息和创作统计</p>
+              <p className="text-slate-600 mt-2 text-lg">查看您的账户信息和创作统计</p>
             </div>
             <div className="w-20"></div>
           </div>
@@ -139,27 +139,34 @@ const Profile: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 用户信息卡片 */}
             <div className="lg:col-span-1">
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader className="text-center pb-2">
                   <div className="flex justify-center mb-4">
-                    <Avatar className={getAvatarStyle()}>
-                      <AvatarFallback className={getAvatarStyle()}>
-                        {getInitials(user.username)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className={`${getAvatarStyle()} shadow-lg border-4 ${isGuest ? 'border-orange-200' : 'border-blue-200'}`}>
+                        <AvatarFallback className={getAvatarStyle()}>
+                          {getInitials(user.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-2 -right-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg ${isGuest ? 'bg-orange-500' : 'bg-blue-500'}`}>
+                          {isGuest ? <AlertTriangle className="w-3 h-3" /> : <Crown className="w-3 h-3" />}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <CardTitle className="text-xl">{user.username}</CardTitle>
-                  <div className="flex justify-center mt-2">
-                    <Badge className={getRoleColor(user.role)}>
-                      {user.role === 'admin' && <Crown className="w-3 h-3 mr-1" />}
-                      {isGuest && <AlertTriangle className="w-3 h-3 mr-1" />}
+                  <CardTitle className="text-2xl font-bold text-gray-800">{user.username}</CardTitle>
+                  <div className="flex justify-center mt-3">
+                    <Badge className={`${getRoleColor(user.role)} px-4 py-2 text-sm font-medium shadow-sm`}>
+                      {user.role === 'admin' && <Crown className="w-4 h-4 mr-2" />}
+                      {isGuest && <AlertTriangle className="w-4 h-4 mr-2" />}
                       {getRoleLabel(user.role)}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {isGuest ? (
-                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-xl">
                       <p className="text-orange-800 text-sm font-medium flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4" />
                         游客模式
@@ -169,14 +176,18 @@ const Profile: React.FC = () => {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="w-4 h-4 text-slate-500" />
-                        <span className="text-slate-600">{user.email}</span>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-sm p-3 bg-gray-50 rounded-lg">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <span className="text-gray-700 font-medium">{user.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-slate-500" />
-                        <span className="text-slate-600">加入时间：最近</span>
+                      <div className="flex items-center gap-3 text-sm p-3 bg-gray-50 rounded-lg">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-green-600" />
+                        </div>
+                        <span className="text-gray-700 font-medium">加入时间：最近</span>
                       </div>
                     </div>
                   )}
@@ -187,84 +198,88 @@ const Profile: React.FC = () => {
             {/* 统计信息 */}
             <div className="lg:col-span-2 space-y-6">
               {/* 创作统计 */}
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-white" />
+                    </div>
                     创作统计
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{totalStories}</div>
-                      <div className="text-sm text-blue-700">总故事数</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="text-3xl font-bold text-blue-600 mb-2">{totalStories}</div>
+                      <div className="text-sm font-medium text-blue-700">总故事数</div>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{completedStories}</div>
-                      <div className="text-sm text-green-700">已完成</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200/50 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="text-3xl font-bold text-green-600 mb-2">{completedStories}</div>
+                      <div className="text-sm font-medium text-green-700">已完成</div>
                     </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
+                    <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200/50 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="text-3xl mb-2">
                         {getGenreEmoji(favoriteGenre)}
                       </div>
-                      <div className="text-sm text-purple-700">偏好类型</div>
-                      <div className="text-xs text-purple-600">{favoriteGenre}</div>
+                      <div className="text-sm font-medium text-purple-700">偏好类型</div>
+                      <div className="text-xs text-purple-600 mt-1">{favoriteGenre}</div>
                     </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">
-                        <Clock className="w-6 h-6 mx-auto" />
+                    <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border border-orange-200/50 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="text-orange-600 mb-2">
+                        <Clock className="w-8 h-8 mx-auto" />
                       </div>
-                      <div className="text-sm text-orange-700">游戏时间</div>
-                      <div className="text-xs text-orange-600">{formatPlayTime(totalPlayTime)}</div>
+                      <div className="text-sm font-medium text-orange-700">游戏时间</div>
+                      <div className="text-xs text-orange-600 mt-1">{formatPlayTime(totalPlayTime)}</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* 成就系统 */}
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-600" />
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                      <Trophy className="h-5 w-5 text-white" />
+                    </div>
                     成就徽章
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {totalStories >= 1 && (
-                      <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="text-2xl mb-2">🌟</div>
-                        <div className="text-sm font-medium text-yellow-800">初次创作</div>
-                        <div className="text-xs text-yellow-600">完成第一个故事</div>
+                      <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+                        <div className="text-3xl mb-3">🌟</div>
+                        <div className="text-sm font-bold text-yellow-800">初次创作</div>
+                        <div className="text-xs text-yellow-600 mt-1">完成第一个故事</div>
                       </div>
                     )}
                     {totalStories >= 5 && (
-                      <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="text-2xl mb-2">📚</div>
-                        <div className="text-sm font-medium text-blue-800">故事收集者</div>
-                        <div className="text-xs text-blue-600">创作5个故事</div>
+                      <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+                        <div className="text-3xl mb-3">📚</div>
+                        <div className="text-sm font-bold text-blue-800">故事收集者</div>
+                        <div className="text-xs text-blue-600 mt-1">创作5个故事</div>
                       </div>
                     )}
                     {completedStories >= 1 && (
-                      <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-2xl mb-2">🏆</div>
-                        <div className="text-sm font-medium text-green-800">完美结局</div>
-                        <div className="text-xs text-green-600">完成一个完整故事</div>
+                      <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+                        <div className="text-3xl mb-3">🏆</div>
+                        <div className="text-sm font-bold text-green-800">完美结局</div>
+                        <div className="text-xs text-green-600 mt-1">完成一个完整故事</div>
                       </div>
                     )}
                     {totalPlayTime >= 60 && (
-                      <div className="text-center p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                        <div className="text-2xl mb-2">⏰</div>
-                        <div className="text-sm font-medium text-purple-800">时间投入者</div>
-                        <div className="text-xs text-purple-600">游戏超过1小时</div>
+                      <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+                        <div className="text-3xl mb-3">⏰</div>
+                        <div className="text-sm font-bold text-purple-800">时间投入者</div>
+                        <div className="text-xs text-purple-600 mt-1">游戏超过1小时</div>
                       </div>
                     )}
                     {user.role === 'admin' && (
-                      <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="text-2xl mb-2">👑</div>
-                        <div className="text-sm font-medium text-red-800">管理员</div>
-                        <div className="text-xs text-red-600">平台管理权限</div>
+                      <div className="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 border border-red-200/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
+                        <div className="text-3xl mb-3">👑</div>
+                        <div className="text-sm font-bold text-red-800">管理员</div>
+                        <div className="text-xs text-red-600 mt-1">平台管理权限</div>
                       </div>
                     )}
                     
@@ -276,10 +291,10 @@ const Profile: React.FC = () => {
                       (totalPlayTime >= 60 ? 1 : 0) - 
                       (user.role === 'admin' ? 1 : 0)
                     ))].map((_, index) => (
-                      <div key={index} className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
-                        <div className="text-2xl mb-2">🔒</div>
-                        <div className="text-sm font-medium text-gray-500">待解锁</div>
-                        <div className="text-xs text-gray-400">继续创作解锁</div>
+                      <div key={index} className="text-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/50 rounded-2xl opacity-60 hover:opacity-80 transition-all duration-200">
+                        <div className="text-3xl mb-3">🔒</div>
+                        <div className="text-sm font-bold text-gray-500">待解锁</div>
+                        <div className="text-xs text-gray-400 mt-1">继续创作解锁</div>
                       </div>
                     ))}
                   </div>
@@ -287,10 +302,12 @@ const Profile: React.FC = () => {
               </Card>
 
               {/* 存档管理 */}
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Archive className="h-5 w-5 text-green-600" />
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
+                      <Archive className="h-5 w-5 text-white" />
+                    </div>
                     存档管理
                   </CardTitle>
                 </CardHeader>
@@ -306,34 +323,58 @@ const Profile: React.FC = () => {
               </Card>
 
               {/* 账户操作 */}
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle>账户操作</CardTitle>
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    账户操作
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button 
                       variant="outline"
                       onClick={() => navigate('/settings')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-3 p-4 h-auto bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-200"
                     >
-                      <User className="w-4 h-4" />
-                      编辑资料
+                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-blue-800">编辑资料</div>
+                        <div className="text-xs text-blue-600">更新个人信息</div>
+                      </div>
                     </Button>
                     {!isGuest && (
-                      <Button variant="outline" disabled>
-                        <Mail className="w-4 h-4 mr-2" />
-                        更改邮箱
+                      <Button 
+                        variant="outline" 
+                        disabled
+                        className="flex items-center gap-3 p-4 h-auto bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 opacity-50"
+                      >
+                        <div className="w-8 h-8 bg-gray-400 rounded-lg flex items-center justify-center">
+                          <Mail className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-medium text-gray-600">更改邮箱</div>
+                          <div className="text-xs text-gray-500">暂未开放</div>
+                        </div>
                       </Button>
                     )}
                     {user.role === 'admin' && (
                       <Button 
                         variant="outline"
                         onClick={() => navigate('/admin')}
-                        className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                        className="flex items-center gap-3 p-4 h-auto bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 hover:from-purple-100 hover:to-purple-200 hover:border-purple-300 transition-all duration-200"
                       >
-                        <Crown className="w-4 h-4 mr-2" />
-                        管理后台
+                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                          <Crown className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-medium text-purple-800">管理后台</div>
+                          <div className="text-xs text-purple-600">系统管理</div>
+                        </div>
                       </Button>
                     )}
                   </div>

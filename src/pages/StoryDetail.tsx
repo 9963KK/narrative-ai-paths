@@ -19,13 +19,6 @@ const StoryDetail: React.FC = () => {
   useEffect(() => {
     // 加载用户的真实配置
     const userModelConfig = loadModelConfig();
-    console.log('🔧 StoryDetail加载的模型配置:', {
-      hasConfig: !!userModelConfig,
-      provider: userModelConfig?.provider || 'none',
-      model: userModelConfig?.model || 'none',
-      hasApiKey: !!userModelConfig?.apiKey,
-      apiKeyPrefix: userModelConfig?.apiKey ? userModelConfig.apiKey.substring(0, 10) + '...' : 'None'
-    });
     
     // 创建一个模拟的故事上下文用于界面预览
     const mockStoryContext = {
