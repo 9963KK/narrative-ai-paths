@@ -21,7 +21,6 @@ const SaveArchive: React.FC = () => {
 
     // 根据用户ID和上下文ID生成路由
     const userId = user?.id || 'guest';
-    const contextId = context.id; // 使用上下文ID而不是故事ID
     
     // 导航到故事页面
     navigate(`/app/story?userId=${userId}&storyId=${contextId}`);
