@@ -179,7 +179,7 @@ const Story: React.FC = () => {
           {savedContextsCount > 0 && (
             <section className="mb-12">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">继续您的冒险</h2>
+                <h2 className="text-2xl font-bold text-gray-800">您的创作数据</h2>
                 <Button
                   onClick={() => navigate('/saves')}
                   className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg border border-gray-200/50 text-gray-600 hover:bg-white hover:shadow-xl hover:text-gray-800 transition-all duration-300 transform hover:scale-105"
@@ -188,6 +188,67 @@ const Story: React.FC = () => {
                   <span className="font-medium text-sm">管理我的存档</span>
                 </Button>
               </div>
+              
+              {/* 统计数据区域 */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 mb-1">{userStats.totalTokens.toLocaleString()}</div>
+                    <div className="text-sm text-gray-600">Token消耗</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-emerald-600 mb-1">{userStats.totalPlayTime}</div>
+                    <div className="text-sm text-gray-600">游玩时间(分钟)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 mb-1">{userStats.totalStories}</div>
+                    <div className="text-sm text-gray-600">总故事数</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600 mb-1">{userStats.completedStories}</div>
+                    <div className="text-sm text-gray-600">已完结</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-pink-600 mb-1">{userStats.totalStories - userStats.completedStories}</div>
+                    <div className="text-sm text-gray-600">进行中</div>
+                  </div>
+                </div>
+
+                {/* 最近故事类型 */}
+                {userStats.recentGenres.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">最近故事类型</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {userStats.recentGenres.map((genre, index) => (
+                        <span
+                          key={index}
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            index === 0 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : index === 1 
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : index === 2
+                              ? 'bg-purple-100 text-purple-800'
+                              : index === 3
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 继续故事区域 */}
+              {recentStories && recentStories.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">继续您的冒险</h3>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 显示最近的故事 */}
                 {recentStories && recentStories.slice(0, 2).map((story, index) => (
