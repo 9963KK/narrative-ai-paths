@@ -98,34 +98,36 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/20 via-gray-50 to-gray-50">
       <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <Button
               variant="ghost"
               onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
             >
               <ArrowLeft className="h-4 w-4" />
               返回主页
             </Button>
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
-                <SettingsIcon className="h-8 w-8 text-blue-600" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <SettingsIcon className="h-6 w-6 text-white" />
+                </div>
                 设置
               </h1>
-              <p className="text-slate-600 mt-2">管理您的账户和应用偏好</p>
+              <p className="text-slate-600 mt-2 text-lg">管理您的账户和应用偏好</p>
             </div>
             <div className="w-20"></div>
           </div>
 
           {/* Success Message */}
           {saveSuccess && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-100 border border-green-200/50 rounded-2xl flex items-center gap-2 shadow-lg backdrop-blur-sm">
+              <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-sm"></div>
               <span className="text-green-800 text-sm font-medium">设置已保存</span>
             </div>
           )}
@@ -133,24 +135,30 @@ const Settings: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">设置分类</CardTitle>
+                  <CardTitle className="text-lg font-bold text-gray-800">设置分类</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                      className={`w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all duration-300 transform hover:scale-105 ${
                         activeTab === tab.id
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200/50 shadow-md'
+                          : 'text-slate-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                       }`}
                     >
-                      <tab.icon className="h-5 w-5" />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 ${
+                        activeTab === tab.id
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                          : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
+                      }`}>
+                        <tab.icon className="h-5 w-5" />
+                      </div>
                       <div>
-                        <div className="font-medium">{tab.label}</div>
+                        <div className="font-semibold">{tab.label}</div>
                         <div className="text-xs text-slate-500">{tab.description}</div>
                       </div>
                     </button>
@@ -163,13 +171,15 @@ const Settings: React.FC = () => {
             <div className="lg:col-span-3">
               {/* AI模型配置 */}
               {activeTab === 'model' && (
-                <Card>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bot className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Bot className="h-5 w-5 text-white" />
+                      </div>
                       AI模型配置
                     </CardTitle>
-                    <p className="text-slate-600 text-sm">
+                    <p className="text-slate-600 text-sm mt-2">
                       配置您的AI模型提供商、API密钥和生成参数
                     </p>
                   </CardHeader>
@@ -187,22 +197,26 @@ const Settings: React.FC = () => {
 
               {/* 账户设置 */}
               {activeTab === 'account' && (
-                <Card>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-green-600" />
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
                       账户设置
                     </CardTitle>
-                    <p className="text-slate-600 text-sm">
+                    <p className="text-slate-600 text-sm mt-2">
                       管理您的个人信息和账户偏好
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {isGuest && (
-                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-orange-600" />
+                      <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200/50 rounded-2xl flex items-center gap-3 shadow-lg backdrop-blur-sm">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                          <AlertCircle className="h-4 w-4 text-white" />
+                        </div>
                         <div>
-                          <p className="text-orange-800 font-medium">游客模式</p>
+                          <p className="text-orange-800 font-semibold">游客模式</p>
                           <p className="text-orange-700 text-sm">您正在使用游客模式，数据不会永久保存</p>
                         </div>
                       </div>
@@ -248,7 +262,11 @@ const Settings: React.FC = () => {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSettingsSave} disabled={isSaving}>
+                      <Button 
+                        onClick={handleSettingsSave} 
+                        disabled={isSaving}
+                        className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      >
                         <Save className="h-4 w-4 mr-2" />
                         {isSaving ? '保存中...' : '保存设置'}
                       </Button>
@@ -259,13 +277,15 @@ const Settings: React.FC = () => {
 
               {/* 通知设置 */}
               {activeTab === 'notifications' && (
-                <Card>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5 text-yellow-600" />
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Bell className="h-5 w-5 text-white" />
+                      </div>
                       通知设置
                     </CardTitle>
-                    <p className="text-slate-600 text-sm">
+                    <p className="text-slate-600 text-sm mt-2">
                       管理您的通知和提醒偏好
                     </p>
                   </CardHeader>
@@ -285,7 +305,11 @@ const Settings: React.FC = () => {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSettingsSave} disabled={isSaving}>
+                      <Button 
+                        onClick={handleSettingsSave} 
+                        disabled={isSaving}
+                        className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      >
                         <Save className="h-4 w-4 mr-2" />
                         {isSaving ? '保存中...' : '保存设置'}
                       </Button>
@@ -296,27 +320,39 @@ const Settings: React.FC = () => {
 
               {/* 隐私安全 */}
               {activeTab === 'privacy' && (
-                <Card>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-purple-600" />
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Shield className="h-5 w-5 text-white" />
+                      </div>
                       隐私安全
                     </CardTitle>
-                    <p className="text-slate-600 text-sm">
+                    <p className="text-slate-600 text-sm mt-2">
                       管理您的数据隐私和安全设置
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-medium text-slate-800">数据存储</h3>
-                        <p className="text-sm text-slate-500">
+                    <div className="space-y-6">
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200/50 rounded-2xl">
+                        <h3 className="font-semibold text-blue-800 flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <Shield className="w-3 h-3 text-white" />
+                          </div>
+                          数据存储
+                        </h3>
+                        <p className="text-sm text-blue-700">
                           您的故事数据存储在浏览器本地存储中，只有您可以访问
                         </p>
                       </div>
-                      <div>
-                        <h3 className="font-medium text-slate-800">API密钥安全</h3>
-                        <p className="text-sm text-slate-500">
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200/50 rounded-2xl">
+                        <h3 className="font-semibold text-green-800 flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
+                            <Shield className="w-3 h-3 text-white" />
+                          </div>
+                          API密钥安全
+                        </h3>
+                        <p className="text-sm text-green-700">
                           您的API密钥仅存储在本地，不会上传到服务器
                         </p>
                       </div>
