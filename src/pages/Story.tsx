@@ -91,7 +91,7 @@ const Story: React.FC = () => {
   // 如果显示故事管理器，则渲染故事管理器
   if (showStoryManager) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
         <UserHeader />
         <div className="container mx-auto">
           <StoryManager 

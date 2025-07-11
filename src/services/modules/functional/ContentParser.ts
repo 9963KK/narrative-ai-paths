@@ -549,8 +549,35 @@ export class ContentParser implements IContentParser {
       cleanContent = cleanContent.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
       
       // 尝试找到JSON对象的开始和结束
-      const jsonStart = cleanContent.indexOf('{');
-      const jsonEnd = cleanContent.lastIndexOf('}');
+      let jsonStart = cleanContent.indexOf('{');
+      let jsonEnd = cleanContent.lastIndexOf('}');
+      
+      // 如果找不到JSON边界，尝试更宽松的匹配
+      if (jsonStart < 0 || jsonEnd <= jsonStart) {
+        console.log('🔧 尝试宽松的JSON边界检测...');
+        
+        // 尝试匹配任何看起来像JSON的内容
+        const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanContent = jsonMatch[0];
+          jsonStart = 0;
+          jsonEnd = cleanContent.length - 1;
+        } else {
+          // 如果完全找不到JSON，尝试构造一个基本的摘要结构
+          console.log('🔧 构造基本摘要结构...');
+          cleanContent = `{
+            "plot_developments": ["${cleanContent.replace(/"/g, '\\"').substring(0, 100)}"],
+            "character_changes": [],
+            "key_decisions": [],
+            "atmosphere": {"mood": "未知", "tension_level": 3},
+            "important_clues": [],
+            "timestamp": "${new Date().toISOString()}",
+            "summary_version": 1
+          }`;
+          jsonStart = 0;
+          jsonEnd = cleanContent.length - 1;
+        }
+      }
       
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
