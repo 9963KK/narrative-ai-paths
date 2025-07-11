@@ -88,8 +88,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     try {
       const success = await onLogin(data.email, data.password);
       if (success) {
-        // 登录成功后，跳转到智能重定向页面
-        navigate('/app/index');
+        // 登录成功后，跳转到主页
+        navigate('/app');
       } else {
         setError('邮箱或密码错误');
       }

@@ -283,10 +283,24 @@ class StoryAI {
         ? await endingGenerator.generateCustomEnding(storyState, endingType)
         : await endingGenerator.generateStoryEnding(storyState);
       
+      // 映射用户界面结局类型到系统内部类型
+      const mapEndingType = (type: string): 'success' | 'failure' | 'neutral' | 'cliffhanger' => {
+        switch (type) {
+          case 'satisfying':
+            return 'success';
+          case 'dramatic':
+            return 'failure';
+          case 'open':
+            return 'cliffhanger';
+          default:
+            return 'neutral';
+        }
+      };
+
       // 标记故事为已完成
       storyStateManager.updateState({
         is_completed: true,
-        completion_type: (endingType as any) || endingGenerator.determineEndingType(storyState),
+        completion_type: endingType ? mapEndingType(endingType) : endingGenerator.determineEndingType(storyState),
         story_progress: 100
       });
 

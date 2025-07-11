@@ -3,7 +3,6 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { OAuthCallback } from "@/components/auth/OAuthCallback";
 
 // 导入所有页面组件
-import Index from "../pages/Index";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import AdminDashboard from "../pages/AdminDashboard";
@@ -37,14 +36,6 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Story />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/index",
-    element: (
-      <ProtectedRoute>
-        <Index />
       </ProtectedRoute>
     ),
   },
