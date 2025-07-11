@@ -160,6 +160,38 @@
     transform: translateY(-2px) translateZ(0);
   }
   
+  /* 移动端适配优化 */
+  @media (max-width: 1024px) {
+    /* 移动端按钮尺寸优化 */
+    .mobile-button {
+      min-height: 44px;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    
+    /* 移动端触摸点击区域优化 */
+    .mobile-touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* 小屏幕设备优化 */
+  @media (max-width: 640px) {
+    /* 小屏幕按钮尺寸 */
+    .small-screen-button {
+      min-height: 40px;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    
+    /* 小屏幕字体大小调整 */
+    .small-screen-text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+  
   /* 确保输入框和文本区域仍然可选中 */
   input, textarea, [contenteditable] {
     -webkit-user-select: auto !important;
@@ -229,6 +261,17 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     overflow: hidden;
+  }
+  
+  /* 移动端卡片间距优化 */
+  @media (max-width: 1024px) {
+    .mobile-card-spacing {
+      margin-bottom: 16px;
+    }
+    
+    .mobile-padding {
+      padding: 16px;
+    }
   }
   
   .accordion-item {
@@ -301,7 +344,30 @@
     max-height: 2000px;
   }
   
+  /* 移动端按钮组优化 */
+  @media (max-width: 768px) {
+    .mobile-button-group {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .mobile-button-group .mobile-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
   .accordion-item.active .accordion-icon {
     transform: rotate(45deg);
+  }
+  
+  /* 移动端对话框优化 */
+  @media (max-width: 640px) {
+    .mobile-dialog {
+      margin: 0;
+      max-width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
   }
 }

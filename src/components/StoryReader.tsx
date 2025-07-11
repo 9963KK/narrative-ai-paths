@@ -1010,11 +1010,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           {/* 左侧：故事内容区域 (主要区域) */}
           <div className="lg:col-span-2 flex flex-col space-y-4 min-h-0">
             
-            {/* 精简的顶部状态栏 - 仅在移动端显示 */}
+            {/* 移动端顶部状态栏 - 包含操作按钮 */}
             <div className="lg:hidden">
               <Card className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50 rounded-xl">
                 <CardContent className="pt-4 pb-3">
-                  <div className="flex items-center justify-between">
+                  {/* 第一行：章节和进度信息 */}
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <span className="text-lg font-bold text-slate-800">第 {story.chapter} 章</span>
                       {story.chapter_title && !story.chapter_title.startsWith('第') && (
@@ -1024,6 +1025,53 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     <div className="flex items-center space-x-2">
                       <Progress value={story.story_progress || (story.chapter / 12) * 100} className="w-20 h-2" />
                       <span className="text-xs text-slate-500">{Math.round(story.story_progress || (story.chapter / 12) * 100)}%</span>
+                    </div>
+                  </div>
+                  
+                  {/* 第二行：操作按钮 */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {onSaveStory && (
+                        <Button
+                          onClick={handleSaveStory}
+                          disabled={isSaving}
+                          variant="outline"
+                          size="sm"
+                          className={`flex items-center gap-1 text-xs ${hasUnsavedProgress ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-green-300 text-green-600 hover:bg-green-50'} ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {isSaving ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Save className="h-3 w-3" />
+                          )}
+                          {isSaving ? '保存中' : hasUnsavedProgress ? '保存' : '已保存'}
+                        </Button>
+                      )}
+                      
+                      {onReturnHome && (
+                        <Button
+                          onClick={onReturnHome}
+                          variant="outline"
+                          size="sm"
+                          disabled={!hasSavedProgress}
+                          className={`flex items-center gap-1 text-xs ${!hasSavedProgress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50 border-blue-300'}`}
+                          title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
+                        >
+                          <Home className="h-3 w-3" />
+                          返回
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* 右侧信息：角色数量和氛围 */}
+                    <div className="flex items-center space-x-2 text-xs text-slate-500">
+                      <span>选择: {story.choices_made?.length || 0}</span>
+                      <span>角色: {story.characters?.length || 0}</span>
+                      {story.mood && (
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                          {story.mood}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -1349,13 +1397,89 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Card>
             )}
 
+            {/* 移动端角色信息 - 在底部操作按钮之前 */}
+            <div className="lg:hidden">
+              {story.characters && story.characters.length > 0 && (
+                <Card className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50 rounded-xl">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-slate-800">角色信息</h3>
+                      <span className="text-xs text-slate-500">{story.characters.length}个角色</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      {story.characters.filter(character => character.name && character.name.trim() !== '').slice(0, 4).map((character, index) => (
+                        <Dialog key={index}>
+                          <DialogTrigger asChild>
+                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <User className="w-3 h-3 text-slate-500" />
+                                <h4 className="font-medium text-slate-800 text-xs truncate">{character.name}</h4>
+                              </div>
+                              <p className="text-xs text-slate-500 truncate">{character.role || '角色'}</p>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-lg shadow-2xl">
+                            <DialogHeader className="sr-only">
+                              <DialogTitle>{character.name} - 角色详情</DialogTitle>
+                            </DialogHeader>
+                            <div className="p-8">
+                              <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
+                                <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                                  <User className="w-10 h-10 text-indigo-500" />
+                                </div>
+                                <div>
+                                  <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
+                                  <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
+                                </div>
+                              </header>
+                              <div className="space-y-6">
+                                <div>
+                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
+                                  <div className="flex flex-wrap gap-2">
+                                    {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
+                                      <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                        {trait}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                {character.appearance && (
+                                  <div>
+                                    <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
+                                    <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
+                                  </div>
+                                )}
+                                {character.backstory && (
+                                  <div>
+                                    <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
+                                    <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      ))}
+                    </div>
+                    
+                    {story.characters.length > 4 && (
+                      <div className="text-xs text-slate-500 text-center mt-2">
+                        还有 {story.characters.length - 4} 个角色...
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
             {/* 底部操作按钮 */}
             <div className="flex justify-center space-x-4 pt-4 pb-4">
               {story.is_completed ? (
                 <>
                   <Button
                     onClick={onRestart}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                   >
                     开启新冒险
                   </Button>
@@ -1364,19 +1488,19 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       console.log('分享故事功能待实现');
                     }}
                     variant="outline"
-                    className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                    className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
                   >
                     分享故事
                   </Button>
                 </>
               ) : (
-              <Button
-                onClick={onRestart}
-                variant="outline"
-                className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-              >
-                重新开始
-              </Button>
+                <Button
+                  onClick={onRestart}
+                  variant="outline"
+                  className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                >
+                  重新开始
+                </Button>
               )}
             </div>
           </div>
