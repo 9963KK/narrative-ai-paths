@@ -17,19 +17,66 @@ const Story: React.FC = () => {
     lastPlayTime: Date;
     progress: number;
     genre: string;
-    isGenreRecommendation?: boolean;
   }>>([]);
+  
+  // 用户交互数据统计
+  const [userStats, setUserStats] = useState({
+    totalTokens: 0,
+    totalPlayTime: 0, // 分钟
+    recentGenres: [] as string[],
+    totalStories: 0,
+    completedStories: 0
+  });
   const [showStoryManager, setShowStoryManager] = useState(false);
   const [loadedStoryContext, setLoadedStoryContext] = useState<SavedStoryContext | null>(null);
 
-  // 检查存档数量和获取最近故事
+  // 检查存档数量和计算用户统计数据
   useEffect(() => {
     const savedContexts = getSavedContexts();
     const contextArray = Object.values(savedContexts);
     setSavedContextsCount(contextArray.length);
     
+    // 计算用户统计数据
+    let totalTokens = 0;
+    let totalPlayTime = 0;
+    let completedCount = 0;
+    const allGenres: string[] = [];
+    
+    contextArray.forEach(context => {
+      // 估算token使用（基于章节数和字数）
+      const estimatedTokens = (context.storyState.chapter || 1) * 500 + 
+                             ((context.storyState.current_scene?.length || 0) / 4);
+      totalTokens += Math.round(estimatedTokens);
+      
+      // 累计游玩时间（秒转分钟）
+      totalPlayTime += (context.playTime || 0) / 60;
+      
+      // 统计完成的故事
+      if (context.storyState.is_completed) {
+        completedCount++;
+      }
+      
+      // 收集所有类型
+      const genre = context.genre || context.storyState.genre || '未知类型';
+      allGenres.push(genre);
+    });
+    
+    // 获取最近5个故事的类型（按lastPlayTime排序）
+    const recentGenres = contextArray
+      .sort((a, b) => new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime())
+      .slice(0, 5)
+      .map(context => context.genre || context.storyState.genre || '未知类型');
+    
+    setUserStats({
+      totalTokens: Math.round(totalTokens),
+      totalPlayTime: Math.round(totalPlayTime),
+      recentGenres,
+      totalStories: contextArray.length,
+      completedStories: completedCount
+    });
+    
     // 获取最近的两个未完结故事
-    let recentStoriesData = contextArray
+    const recentStoriesData = contextArray
       .filter(context => !context.storyState.is_completed) // 过滤掉已完结的故事
       .sort((a, b) => new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime())
       .slice(0, 2)
@@ -40,32 +87,6 @@ const Story: React.FC = () => {
         progress: context.storyState.story_progress || Math.min(75, context.storyState.chapter * 12.5),
         genre: context.genre || context.storyState.genre || '未知类型'
       }));
-
-    // 如果没有未完结的故事，显示最近产生最多的两个类型的故事，方便快速开始
-    if (recentStoriesData.length === 0 && contextArray.length > 0) {
-      // 统计各个类型的故事数量
-      const genreCount: { [key: string]: number } = {};
-      contextArray.forEach(context => {
-        const genre = context.genre || context.storyState.genre || '未知类型';
-        genreCount[genre] = (genreCount[genre] || 0) + 1;
-      });
-
-      // 获取最多的两个类型
-      const topGenres = Object.entries(genreCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 2)
-        .map(([genre]) => genre);
-
-      // 为每个热门类型创建推荐项
-      recentStoriesData = topGenres.map((genre, index) => ({
-        id: `genre-${genre}`, // 特殊标识符
-        title: `${genre}故事`,
-        lastPlayTime: new Date(),
-        progress: 0,
-        genre: genre,
-        isGenreRecommendation: true // 标记为类型推荐
-      }));
-    }
     
     setRecentStories(recentStoriesData);
   }, []);
@@ -173,15 +194,7 @@ const Story: React.FC = () => {
                   <div 
                     key={story.id}
                     className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 flex items-center space-x-5 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50"
-                    onClick={() => {
-                      if (story.isGenreRecommendation) {
-                        // 如果是类型推荐，跳转到快速开始页面
-                        navigate('/app/quick');
-                      } else {
-                        // 普通故事，继续游戏
-                        handleContinueStory(story.id);
-                      }
-                    }}
+                    onClick={() => handleContinueStory(story.id)}
                   >
                     <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                       <BookOpen className="w-6 h-6 text-white" />
