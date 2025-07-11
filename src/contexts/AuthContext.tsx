@@ -58,6 +58,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log(`🌐 环境: ${status.isProduction ? '生产环境' : '开发环境'}`);
         console.log(`📡 Supabase连接: ${status.supabaseConnected ? '已连接' : '未连接'}`);
         
+        // 监听OAuth状态变化
+        const { data: authListener } = unifiedAuthService.onAuthStateChange((event, session) => {
+          console.log('🔄 认证状态变化:', event);
+          
+          if (event === 'SIGNED_IN' && session) {
+            console.log('✅ 用户已登录，处理OAuth会话');
+            handleOAuthSession(session);
+          } else if (event === 'SIGNED_OUT') {
+            console.log('🚪 用户已登出');
+            setUser(null);
+          }
+        });
+        
+        // 清理监听器
+        return () => {
+          authListener?.subscription?.unsubscribe();
+        };
+        
       } catch (error) {
         console.error('初始化认证失败:', error);
         if (process.env.NODE_ENV === 'production') {
@@ -66,6 +84,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    const handleOAuthSession = async (session: any) => {
+      try {
+        const authUser = await unifiedAuthService.handleOAuthCallback();
+        if (authUser) {
+          setUser(authUser);
+          console.log('✅ OAuth用户已设置到Context');
+        }
+      } catch (error) {
+        console.error('处理OAuth会话失败:', error);
       }
     };
 

@@ -13,6 +13,18 @@ export const OAuthCallback: React.FC = () => {
     const handleOAuthCallback = async () => {
       try {
         console.log('🔄 处理OAuth回调...');
+        console.log('🔗 当前URL:', window.location.href);
+        
+        // 检查URL中是否包含OAuth回调参数
+        const urlFragment = window.location.hash;
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (!urlFragment.includes('access_token') && !urlParams.has('code')) {
+          console.log('❌ 未找到OAuth回调参数');
+          setError('无效的OAuth回调');
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
         
         // 处理OAuth回调并获取用户信息
         const authUser = await unifiedAuthService.handleOAuthCallback();
@@ -20,11 +32,14 @@ export const OAuthCallback: React.FC = () => {
         if (authUser) {
           console.log('✅ OAuth登录成功，用户信息:', authUser.username);
           
+          // 清理URL中的token参数
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
           // 根据用户角色跳转到相应页面
           if (authUser.role === 'admin') {
-            navigate('/admin');
+            navigate('/admin', { replace: true });
           } else {
-            navigate('/app');
+            navigate('/app', { replace: true });
           }
         } else {
           console.log('❌ OAuth回调处理失败');

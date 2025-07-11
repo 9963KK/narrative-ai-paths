@@ -323,10 +323,13 @@ export class SupabaseService {
   // OAuth 登录
   async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
     try {
+      const redirectTo = typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined;
+      console.log(`🔄 启动 ${provider} OAuth登录，回调URL: ${redirectTo}`);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
+          redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
