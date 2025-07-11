@@ -1165,8 +1165,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     {/* 右侧信息：字数统计和角色数量 */}
                     <div className="flex items-center space-x-2 text-xs text-slate-500">
                       <span>字数: {(() => {
-                        const wordCount = currentText.length;
-                        return wordCount > 1000 ? `${(wordCount / 1000).toFixed(1)}K` : wordCount;
+                        // 计算全局章节总字数
+                        const globalWordCount = story.current_scene?.length || 0;
+                        return globalWordCount > 1000 ? `${(globalWordCount / 1000).toFixed(1)}K` : globalWordCount;
                       })()}</span>
                       <span>角色: {story.characters?.length || 0}</span>
                       {story.mood && (
@@ -1181,14 +1182,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             </div>
 
             {/* 主要故事内容 - 移到最前面 */}
-            <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden transition-all duration-300 ${
+            <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden ${
               isTyping || isProcessingChoice 
                 ? 'flex-shrink-0 shadow-lg processing-choice-card' 
                 : 'flex-1 shadow-xl'
             }`}>
               <CardContent className="pt-6 pb-6">
                 <div className="prose prose-slate max-w-none">
-                  <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap transition-all duration-300 ${
+                  <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
                     isTyping || isProcessingChoice
                       ? 'opacity-95 content-fit-height' 
                       : 'opacity-100'
@@ -1745,8 +1746,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 <div className="text-xs text-gray-500 bg-slate-50 p-2 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span>字数: {(() => {
-                      const wordCount = currentText.length;
-                      return wordCount > 1000 ? `${(wordCount / 1000).toFixed(1)}K` : wordCount;
+                      // 计算全局章节总字数
+                      const globalWordCount = story.current_scene?.length || 0;
+                      return globalWordCount > 1000 ? `${(globalWordCount / 1000).toFixed(1)}K` : globalWordCount;
                     })()}</span>
                     <span>角色: {story.characters?.length || 0}</span>
                     {story.mood && (
