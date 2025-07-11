@@ -155,12 +155,14 @@ export class StoryStateManager implements IStoryStateManager {
         return false;
       }
 
-      if (!state.mood || typeof state.mood !== 'string') {
-        console.error('故事氛围无效');
+      // mood 字段在有值时验证类型
+      if (state.mood !== undefined && typeof state.mood !== 'string') {
+        console.error('故事氛围类型无效');
         return false;
       }
 
-      if (typeof state.tension_level !== 'number' || state.tension_level < 0 || state.tension_level > 100) {
+      // tension_level 字段在有值时验证范围
+      if (state.tension_level !== undefined && (typeof state.tension_level !== 'number' || state.tension_level < 0 || state.tension_level > 100)) {
         console.error('紧张度无效（应为0-100）');
         return false;
       }

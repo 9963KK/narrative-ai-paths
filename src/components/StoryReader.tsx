@@ -1466,17 +1466,18 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {choices.map((choice) => (
+                    {choices.map((choice, index) => (
                       <Button
                         key={choice.id}
                         variant="outline"
                         onClick={() => handleChoice(choice.id)}
                         disabled={isProcessingChoice}
-                        className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md ${
+                        className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md animate-in slide-in-from-bottom-4 ${
                           choice.id === -999
                             ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300/50 hover:from-amber-100 hover:to-orange-100 hover:border-amber-400/60 hover:scale-[1.02]"
                             : "bg-white/80 border-gray-200/50 hover:bg-indigo-50/80 hover:border-indigo-300/60 hover:scale-[1.02]"
                         }`}
+                        style={{ animationDelay: `${index * 150}ms` }}
                       >
                         <div className="w-full">
                           <div className="flex items-center justify-between mb-1">
