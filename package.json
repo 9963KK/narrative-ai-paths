@@ -2,6 +2,9 @@
   "name": "weaver-of-dreams",
   "private": true,
   "version": "0.0.0",
+  "description": "织梦师 - AI驱动的互动式故事创作平台",
+  "author": "织梦师团队 <ai_novel_official@ai-novel.top>",
+  "homepage": "https://ai-novel.top",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -90,5 +93,21 @@
   },
   "overrides": {
     "esbuild": "0.21.5"
+  },
+  "keywords": [
+    "ai",
+    "story",
+    "interactive",
+    "writing",
+    "creative",
+    "织梦师"
+  ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "private"
+  },
+  "bugs": {
+    "email": "ai_novel_official@ai-novel.top"
   }
 }

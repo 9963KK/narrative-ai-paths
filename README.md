@@ -460,4 +460,11 @@ A:
 
 **🌟 立即开始您的AI故事冒险之旅！**
 
-如有问题请查看Issues或提交新的Issue。
+## 📧 联系我们
+
+- **官方邮箱**: ai_novel_official@ai-novel.top
+- **反馈建议**: 请通过Issues或发送邮件联系我们
+
+---
+
+© 2025 织梦师 (Weaver of Dreams). 保留所有权利.

@@ -240,7 +240,10 @@ const Home: React.FC = () => {
               让AI成为您创作路上的最佳伙伴
             </p>
             <p className="text-sm text-gray-500">
-              © 2024 织梦师. 保留所有权利.
+              © 2025 织梦师. 保留所有权利.
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              官方邮箱: ai_novel_official@ai-novel.top
             </p>
           </div>
         </div>
