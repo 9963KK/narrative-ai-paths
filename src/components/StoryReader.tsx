@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { storyAI } from '@/services/storyAI';
 
 interface StoryState {
   story_id: string;
@@ -94,6 +95,33 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
       .map(trait => trait.trim()) // 去除空格
       .filter(trait => trait.length > 0); // 过滤空字符串
+  };
+
+  // 计算所有章节的累积字数
+  const calculateTotalWordCount = (): number => {
+    try {
+      const conversationHistory = storyAI.getConversationHistory();
+      let totalWords = 0;
+      
+      // 计算所有AI生成的助手回复的字数
+      conversationHistory.forEach(msg => {
+        if (msg.role === 'assistant') {
+          totalWords += msg.content.length;
+        }
+      });
+      
+      // 如果当前文本与最新的助手回复不同，说明是新的内容，需要加上
+      const lastAssistantMsg = conversationHistory.filter(msg => msg.role === 'assistant').pop();
+      if (!lastAssistantMsg || currentText !== lastAssistantMsg.content) {
+        totalWords += currentText.length;
+      }
+      
+      return totalWords;
+    } catch (error) {
+      console.warn('计算总字数失败，使用当前章节字数:', error);
+      // 降级为当前章节字数
+      return story.current_scene?.length || 0;
+    }
   };
   const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
@@ -1165,9 +1193,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     {/* 右侧信息：字数统计和角色数量 */}
                     <div className="flex items-center space-x-2 text-xs text-slate-500">
                       <span>字数: {(() => {
-                        // 计算全局章节总字数
-                        const globalWordCount = story.current_scene?.length || 0;
-                        return globalWordCount > 1000 ? `${(globalWordCount / 1000).toFixed(1)}K` : globalWordCount;
+                        // 计算所有章节的累积字数
+                        const totalWordCount = calculateTotalWordCount();
+                        return totalWordCount > 1000 ? `${(totalWordCount / 1000).toFixed(1)}K` : totalWordCount;
                       })()}</span>
                       <span>角色: {story.characters?.length || 0}</span>
                       {story.mood && (
@@ -1746,9 +1774,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 <div className="text-xs text-gray-500 bg-slate-50 p-2 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span>字数: {(() => {
-                      // 计算全局章节总字数
-                      const globalWordCount = story.current_scene?.length || 0;
-                      return globalWordCount > 1000 ? `${(globalWordCount / 1000).toFixed(1)}K` : globalWordCount;
+                      // 计算所有章节的累积字数
+                      const totalWordCount = calculateTotalWordCount();
+                      return totalWordCount > 1000 ? `${(totalWordCount / 1000).toFixed(1)}K` : totalWordCount;
                     })()}</span>
                     <span>角色: {story.characters?.length || 0}</span>
                     {story.mood && (
