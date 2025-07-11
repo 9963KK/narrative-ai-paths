@@ -44,8 +44,6 @@ export class StoryInitializer implements IStoryInitializer {
       }
 
       const content = response.choices[0].message.content;
-      console.log('🎬 AI初始故事响应（前500字符）:', content.substring(0, 500));
-      console.log('🎬 AI初始故事响应（完整长度）:', content.length);
 
       // 解析故事响应
       const storyResponse = contentParser.parseStoryResponse(content);
@@ -54,9 +52,7 @@ export class StoryInitializer implements IStoryInitializer {
         console.log('✅ 初始故事生成成功');
         return storyResponse;
       } else {
-        console.error('❌ 初始故事解析失败，详细信息:');
-        console.error('解析结果:', storyResponse);
-        console.error('AI原始响应:', content);
+        console.error('❌ 初始故事解析失败');
         
         const errorMessage = storyResponse?.error || '解析返回null或success为false';
         throw new Error(`初始故事解析失败: ${errorMessage}`);

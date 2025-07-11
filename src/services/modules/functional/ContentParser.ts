@@ -26,16 +26,9 @@ export class ContentParser implements IContentParser {
   parseStoryResponse(response: string): StoryGenerationResponse | null {
     try {
       console.log('📖 开始解析故事响应...');
-      console.log('📄 原始响应长度:', response.length);
-      console.log('📄 原始响应前200字符:', response.substring(0, 200));
       
       const content = this.extractJsonFromResponse(response);
-      console.log('🔧 提取的JSON内容长度:', content.length);
-      console.log('🔧 提取的JSON前200字符:', content.substring(0, 200));
-      
       const parsed = JSON.parse(content);
-      console.log('✅ JSON解析成功，解析结果类型:', Array.isArray(parsed) ? 'Array' : 'Object');
-      console.log('解析结果键值或长度:', Array.isArray(parsed) ? `数组长度: ${parsed.length}` : `对象键值: ${Object.keys(parsed)}`);
       
       // 检查是否错误地返回了数组
       if (Array.isArray(parsed)) {
@@ -157,7 +150,6 @@ export class ContentParser implements IContentParser {
    */
   parseSummaryJSON(summaryText: string): SummaryData | null {
     console.log('🔍 开始解析JSON摘要...');
-    console.log('📄 原始内容长度:', summaryText.length);
     
     try {
       // 尝试直接解析
@@ -317,7 +309,7 @@ export class ContentParser implements IContentParser {
    */
   repairMalformedJSON(jsonString: string): string {
     try {
-      console.log('🔧 开始修复JSON格式...');
+      // 开始修复JSON格式
       
       // 1. 基础清理
       let fixed = jsonString.trim();
@@ -412,7 +404,7 @@ export class ContentParser implements IContentParser {
       // 8. 尝试解析修复后的JSON
       try {
         JSON.parse(fixed);
-        console.log('✅ JSON修复成功');
+        // JSON修复成功
         return fixed;
       } catch (e) {
         console.log('🔧 基础修复失败，尝试高级修复:', e.message);
@@ -490,7 +482,7 @@ export class ContentParser implements IContentParser {
   private extractJsonFromResponse(response: string): string {
     let content = response.trim();
     
-    console.log('🔍 AI原始响应内容:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+    // 已移除AI原始响应内容调试输出
     
     // 如果内容包含代码块标记，提取其中的JSON
     const jsonObjectMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
@@ -498,10 +490,10 @@ export class ContentParser implements IContentParser {
     
     if (jsonObjectMatch) {
       content = jsonObjectMatch[1];
-      console.log('📄 从代码块提取JSON对象');
+      // 从代码块提取JSON对象
     } else if (jsonArrayMatch) {
       content = jsonArrayMatch[1];
-      console.log('📄 从代码块提取JSON数组');
+      // 从代码块提取JSON数组
     } else {
       // 如果没有代码块，优先提取JSON对象，避免错误提取对象中的数组部分
       const directObjectMatch = content.match(/\{[\s\S]*\}/);
@@ -509,21 +501,21 @@ export class ContentParser implements IContentParser {
       
       if (directObjectMatch) {
         content = directObjectMatch[0];
-        console.log('📄 直接提取JSON对象');
+        // 直接提取JSON对象
       } else if (directArrayMatch) {
         content = directArrayMatch[0];
-        console.log('📄 直接提取JSON数组');
+        // 直接提取JSON数组
       } else {
         console.warn('📄 未找到JSON格式，使用原始内容');
       }
     }
     
-    console.log('🔧 提取后的内容:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+    // 已移除提取后内容调试输出
     
     // 先尝试直接解析，避免不必要的修复
     try {
       JSON.parse(content);
-      console.log('✅ JSON格式正确，无需修复');
+      // JSON格式正确，无需修复
       return content;
     } catch (directParseError) {
       console.log('🔧 JSON格式有问题，尝试修复:', directParseError.message);

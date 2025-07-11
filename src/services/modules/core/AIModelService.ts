@@ -262,7 +262,7 @@ export class AIModelService implements IAIModelService {
           let enhancedSystemPrompt = systemPrompt;
           if (historySummary && historySummary.trim()) {
             enhancedSystemPrompt += `\n\n**📚 故事发展摘要**（重要背景信息，请参考此信息保持故事连贯性）：\n${historySummary}`;
-            console.log('🎯 已将历史摘要添加到AI上下文中，摘要长度:', historySummary.length);
+            console.log('🎯 已将历史摘要添加到AI上下文中');
           }
           messages.unshift({ role: 'system', content: enhancedSystemPrompt });
         } else {
@@ -273,7 +273,7 @@ export class AIModelService implements IAIModelService {
               const currentSystemContent = messages[systemMessageIndex].content;
               if (!currentSystemContent.includes('故事发展摘要')) {
                 messages[systemMessageIndex].content += `\n\n**📚 故事发展摘要**（重要背景信息，请参考此信息保持故事连贯性）：\n${historySummary}`;
-                console.log('🎯 已更新现有系统消息，添加历史摘要，摘要长度:', historySummary.length);
+                console.log('🎯 已更新现有系统消息，添加历史摘要');
               }
             }
           }

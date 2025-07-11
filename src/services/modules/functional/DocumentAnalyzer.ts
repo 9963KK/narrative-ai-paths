@@ -75,7 +75,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
           }
 
           const content_str = response.choices[0].message.content;
-          console.log(`📄 AI分析原始响应 (尝试${attempt}):`, content_str);
+          // 已移除AI分析原始响应调试输出
           
           // 解析分析结果
           const tempResult = this.parseAnalysisResult(content_str);
@@ -605,8 +605,7 @@ ${content}
         cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
       }
       
-      console.log('📄 清理后的JSON字符串长度:', cleanedResponse.length);
-      console.log('📄 清理后的JSON前100字符:', cleanedResponse.substring(0, 100));
+      // 已移除清理后的JSON调试输出
 
       // 尝试直接解析
       let parsed;
@@ -631,7 +630,7 @@ ${content}
         // 再次尝试解析
         try {
           parsed = JSON.parse(fixedJson);
-          console.log('📄 JSON修复成功');
+          // JSON修复成功
         } catch (fixError) {
           console.error('📄 JSON修复也失败:', fixError);
           console.error('📄 问题JSON内容:', cleanedResponse);
@@ -726,7 +725,7 @@ ${content}
         parsed.suggestedStorySeeds = [];
       }
 
-      console.log('📄 JSON解析和验证完成');
+      // JSON解析和验证完成
       return parsed;
     } catch (error) {
       console.error('📄 JSON解析失败:', error);

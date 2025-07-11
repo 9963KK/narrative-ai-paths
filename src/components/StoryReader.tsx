@@ -100,9 +100,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [isPreGenerating, setIsPreGenerating] = useState(false); // 是否正在预生成选项
   const [preGenerationStartTime, setPreGenerationStartTime] = useState<number>(0); // 预生成开始时间
   
-  // 调试：监控isProcessingChoice状态变化
+  // 监控isProcessingChoice状态变化
   useEffect(() => {
-    console.log('🎯 isProcessingChoice状态变化:', isProcessingChoice);
+    // 已移除状态变化调试输出
   }, [isProcessingChoice]);
 
   // 监控选择生成超时 - 考虑重试机制，延长超时时间

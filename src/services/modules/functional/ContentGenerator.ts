@@ -121,7 +121,7 @@ export class ContentGenerator implements IContentGenerator {
    */
   async generateDialogue(characters: Character[], context: string): Promise<string> {
     try {
-      console.log('💬 开始生成对话内容...');
+      // 开始生成对话内容
 
       const prompt = this.buildDialoguePrompt(characters, context);
       const systemPrompt = this.getDialogueSystemPrompt();
@@ -138,7 +138,7 @@ export class ContentGenerator implements IContentGenerator {
       }
 
       const dialogue = response.choices[0].message.content.trim();
-      console.log('✅ 对话内容生成成功');
+      // 对话内容生成成功
       return dialogue;
     } catch (error) {
       console.error('❌ 对话生成失败:', error);

@@ -159,8 +159,7 @@ export class UnifiedAuthService {
           console.log('🔒 验证密码...');
           const passwordValid = this.verifyPassword(password, user.password_hash);
           console.log('✅ 密码验证结果:', passwordValid);
-          console.log('🔑 存储的哈希:', user.password_hash);
-          console.log('🔑 计算的哈希:', this.hashPassword(password));
+          // 已移除密码哈希调试输出保护安全
           
           if (passwordValid) {
             const authUser: AuthUser = {

@@ -94,7 +94,7 @@ class StoryAI {
    */
   async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
-      console.log('🎬 开始生成初始故事...', { config, isAdvanced });
+      console.log('🎬 开始生成初始故事...');
 
       // 使用 StoryInitializer 模块
       const response = await storyInitializer.generateInitialStory(config, isAdvanced);
@@ -154,7 +154,7 @@ class StoryAI {
       
       // 如果传入了 storyState 参数，优先使用它并同步到 storyStateManager
       if (storyState) {
-        console.log('📝 使用传入的故事状态并同步到 storyStateManager');
+        console.log('📝 使用传入的故事状态并同步到storyStateManager');
         storyStateManager.setState(storyState);
         currentState = storyState;
       }
@@ -179,7 +179,7 @@ class StoryAI {
         
         currentState = tempState;
         storyStateManager.setState(tempState);
-        console.log('📝 已创建并设置临时状态:', currentState);
+        console.log('📝 已创建并设置临时状态');
       }
       
       if (!currentState) {
@@ -276,7 +276,7 @@ class StoryAI {
    */
   async generateStoryEnding(storyState: StoryState, endingType?: string): Promise<string> {
     try {
-      console.log('🏁 开始生成故事结局...', { endingType });
+      console.log('🏁 开始生成故事结局...');
 
       // 使用 EndingGenerator 模块生成结局
       const ending = endingType 
