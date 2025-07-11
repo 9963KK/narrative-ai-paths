@@ -12,6 +12,7 @@ interface AuthContextType {
   registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => Promise<boolean>;
   signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
+  handleOAuthCallback: () => Promise<AuthUser | null>;
   logout: () => void;
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
@@ -259,6 +260,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const handleOAuthCallback = async (): Promise<AuthUser | null> => {
+    try {
+      console.log('🔄 AuthContext: 处理OAuth回调...');
+      
+      // 调用统一认证服务处理OAuth回调
+      const authUser = await unifiedAuthService.handleOAuthCallback();
+      
+      if (authUser) {
+        console.log('✅ AuthContext: OAuth用户认证成功，更新用户状态');
+        setUser(authUser);
+        
+        // 检查是否是首次登录，触发撒花效果
+        if (checkFirstTime(authUser.id, 'login')) {
+          setTimeout(() => {
+            celebrateFirstLogin();
+          }, 300);
+        }
+        
+        return authUser;
+      } else {
+        console.log('❌ AuthContext: OAuth回调处理失败');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ AuthContext: OAuth回调处理出错:', error);
+      return null;
+    }
+  };
+
   const connectionStatus = async () => {
     return await unifiedAuthService.getConnectionStatus();
   };
@@ -271,6 +301,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     registerFromGuest,
     loginAsGuest,
     signInWithOAuth,
+    handleOAuthCallback,
     logout,
     updateUser,
     changePassword,

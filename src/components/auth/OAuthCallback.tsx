@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { unifiedAuthService } from '@/services/unifiedAuthService';
 
 export const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, handleOAuthCallback } = useAuth();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleOAuthCallback = async () => {
+    const processOAuthCallback = async () => {
       try {
         console.log('🔄 处理OAuth回调...');
         console.log('🔗 当前URL:', window.location.href);
@@ -27,7 +26,7 @@ export const OAuthCallback: React.FC = () => {
         }
         
         // 处理OAuth回调并获取用户信息
-        const authUser = await unifiedAuthService.handleOAuthCallback();
+        const authUser = await handleOAuthCallback();
         
         if (authUser) {
           console.log('✅ OAuth登录成功，用户信息:', authUser.username);
@@ -73,8 +72,8 @@ export const OAuthCallback: React.FC = () => {
       return;
     }
 
-    handleOAuthCallback();
-  }, [navigate, user]);
+    processOAuthCallback();
+  }, [navigate, user, handleOAuthCallback]);
 
   if (isProcessing) {
     return (
