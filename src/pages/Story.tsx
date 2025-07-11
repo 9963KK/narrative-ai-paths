@@ -17,11 +17,12 @@ const Story: React.FC = () => {
     lastPlayTime: Date;
     progress: number;
     genre: string;
+    isCompleted: boolean;
   }>>([]);
   
   // 用户交互数据统计
   const [userStats, setUserStats] = useState({
-    totalTokens: 0,
+    totalWordCount: 0,
     totalPlayTime: 0, // 分钟
     recentGenres: [] as string[],
     totalStories: 0,
@@ -37,16 +38,18 @@ const Story: React.FC = () => {
     setSavedContextsCount(contextArray.length);
     
     // 计算用户统计数据
-    let totalTokens = 0;
+    let totalWordCount = 0;
     let totalPlayTime = 0;
     let completedCount = 0;
     const allGenres: string[] = [];
     
     contextArray.forEach(context => {
-      // 估算token使用（基于章节数和字数）
-      const estimatedTokens = (context.storyState.chapter || 1) * 500 + 
-                             ((context.storyState.current_scene?.length || 0) / 4);
-      totalTokens += Math.round(estimatedTokens);
+      // 计算故事正文字数（基于当前场景和章节数估算）
+      const sceneWordCount = context.storyState.current_scene?.length || 0;
+      const chapterMultiplier = context.storyState.chapter || 1;
+      // 估算每章节平均字数约为当前场景字数，总字数为章节数乘以场景字数
+      const estimatedWordCount = sceneWordCount * chapterMultiplier;
+      totalWordCount += estimatedWordCount;
       
       // 累计游玩时间（秒转分钟）
       totalPlayTime += (context.playTime || 0) / 60;
@@ -68,16 +71,15 @@ const Story: React.FC = () => {
       .map(context => context.genre || context.storyState.genre || '未知类型');
     
     setUserStats({
-      totalTokens: Math.round(totalTokens),
+      totalWordCount: Math.round(totalWordCount),
       totalPlayTime: Math.round(totalPlayTime),
       recentGenres,
       totalStories: contextArray.length,
       completedStories: completedCount
     });
     
-    // 获取最近的两个未完结故事
+    // 获取最近的两个故事存档（包括完结和未完结）
     const recentStoriesData = contextArray
-      .filter(context => !context.storyState.is_completed) // 过滤掉已完结的故事
       .sort((a, b) => new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime())
       .slice(0, 2)
       .map(context => ({
@@ -85,7 +87,8 @@ const Story: React.FC = () => {
         title: context.title,
         lastPlayTime: new Date(context.lastPlayTime),
         progress: context.storyState.story_progress || Math.min(75, context.storyState.chapter * 12.5),
-        genre: context.genre || context.storyState.genre || '未知类型'
+        genre: context.genre || context.storyState.genre || '未知类型',
+        isCompleted: context.storyState.is_completed || false
       }));
     
     setRecentStories(recentStoriesData);
@@ -193,8 +196,8 @@ const Story: React.FC = () => {
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">{userStats.totalTokens.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">Token消耗</div>
+                    <div className="text-2xl font-bold text-blue-600 mb-1">{userStats.totalWordCount.toLocaleString()}</div>
+                    <div className="text-sm text-gray-600">总字数</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-600 mb-1">{userStats.totalPlayTime}</div>
@@ -245,7 +248,7 @@ const Story: React.FC = () => {
               {/* 继续故事区域 */}
               {recentStories && recentStories.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">继续您的冒险</h3>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">最近的故事</h3>
                 </div>
               )}
               
@@ -263,7 +266,8 @@ const Story: React.FC = () => {
                     <div className="flex-grow">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="font-bold text-gray-800 text-lg">{story.title}</h3>
-                        <Star className="w-4 h-4 text-yellow-500" />
+                        {story.isCompleted && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">已完结</span>}
+                        {!story.isCompleted && <Star className="w-4 h-4 text-yellow-500" />}
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                         <div className="flex items-center space-x-1">
@@ -275,79 +279,36 @@ const Story: React.FC = () => {
                           <span>{story.genre}</span>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className={`h-3 rounded-full ${index === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`} 
-                          style={{width: `${Math.min(100, Math.max(5, story.progress))}%`}}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                          进度 {Math.round(Math.min(100, Math.max(5, story.progress)))}%
-                        </span>
-                        <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
-                          点击继续 →
-                        </span>
-                      </div>
+                      {/* 只有未完结的故事才显示进度条 */}
+                      {!story.isCompleted && (
+                        <>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div 
+                              className={`h-3 rounded-full ${index === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`} 
+                              style={{width: `${Math.min(100, Math.max(5, story.progress))}%`}}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                              进度 {Math.round(Math.min(100, Math.max(5, story.progress)))}%
+                            </span>
+                            <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
+                              点击继续 →
+                            </span>
+                          </div>
+                        </>
+                      )}
+                      {/* 已完结的故事显示完结信息 */}
+                      {story.isCompleted && (
+                        <div className="mt-2">
+                          <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
+                            点击重温 →
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
-                
-                {/* 如果只有一个故事，显示占位符 */}
-                {recentStories && recentStories.length === 1 && (
-                  <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-blue-200/50"
-                       onClick={() => navigate('/app/quick')}>
-                    <div className="flex items-center space-x-5">
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                        <Sparkles className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-grow">
-                        <h3 className="font-bold text-gray-800 text-lg mb-1">开启全新冒险</h3>
-                        <p className="text-sm text-gray-600 mb-3">无限可能等你探索</p>
-                        <div className="flex items-center space-x-2 text-blue-600">
-                          <span className="text-xs font-medium bg-blue-100 px-2 py-1 rounded-full">点击开始创作 →</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 如果没有故事，显示引导卡片 */}
-                {(!recentStories || recentStories.length === 0) && (
-                  <>
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                         onClick={() => navigate('/app/quick')}>
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                          <Wand2 className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="font-bold text-gray-800 text-lg mb-1">快速开始</h3>
-                          <p className="text-sm text-gray-600 mb-3">简单配置，即刻冒险</p>
-                          <div className="flex items-center space-x-2 text-emerald-600">
-                            <span className="text-xs font-medium">3分钟开始故事</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-violet-50 to-purple-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                         onClick={() => navigate('/app/advanced')}>
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                          <Settings className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="font-bold text-gray-800 text-lg mb-1">深度定制</h3>
-                          <p className="text-sm text-gray-600 mb-3">详细配置，精心雕琢</p>
-                          <div className="flex items-center space-x-2 text-violet-600">
-                            <span className="text-xs font-medium">高级设定模式</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             </section>
           )}
