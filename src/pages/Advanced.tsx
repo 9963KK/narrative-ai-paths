@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Settings, ArrowLeft, Wrench, Users, Target, MapPin, Sparkles, FileText } from 'lucide-react';
+import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
@@ -218,54 +219,59 @@ const Advanced: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Page Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl mb-6 shadow-xl">
-              <Wrench className="w-10 h-10 text-white" />
+          <AnimatedHeader>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl mb-6 shadow-xl">
+                <Wrench className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-3">
+                专业创作模式
+              </h1>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                精确控制故事的每一个细节，全面定制角色、情节、世界观，打造您的完美作品
+              </p>
             </div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-3">
-              专业创作模式
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              精确控制故事的每一个细节，全面定制角色、情节、世界观，打造您的完美作品
-            </p>
-          </div>
+          </AnimatedHeader>
 
           {/* Progress Steps */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center space-x-4 mb-4">
-              {[
-                { step: 1, label: '基础设定', icon: FileText },
-                { step: 2, label: '角色塑造', icon: Users },
-                { step: 3, label: '世界构建', icon: MapPin },
-                { step: 4, label: '目标设定', icon: Target }
-              ].map(({ step, label, icon: Icon }) => (
-                <div key={step} className="flex flex-col items-center">
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                    currentStep >= step 
-                      ? 'bg-purple-600 border-purple-600 text-white shadow-lg' 
-                      : 'bg-white border-gray-300 text-gray-400'
-                  }`}>
-                    <Icon className="w-5 h-5" />
+          <AnimatedCard index={1}>
+            <div className="mb-8">
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                {[
+                  { step: 1, label: '基础设定', icon: FileText },
+                  { step: 2, label: '角色塑造', icon: Users },
+                  { step: 3, label: '世界构建', icon: MapPin },
+                  { step: 4, label: '目标设定', icon: Target }
+                ].map(({ step, label, icon: Icon }) => (
+                  <div key={step} className="flex flex-col items-center">
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                      currentStep >= step 
+                        ? 'bg-purple-600 border-purple-600 text-white shadow-lg' 
+                        : 'bg-white border-gray-300 text-gray-400'
+                    }`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-sm mt-2 transition-colors ${
+                      currentStep >= step ? 'text-purple-600 font-medium' : 'text-gray-500'
+                    }`}>
+                      {label}
+                    </span>
                   </div>
-                  <span className={`text-sm mt-2 transition-colors ${
-                    currentStep >= step ? 'text-purple-600 font-medium' : 'text-gray-500'
-                  }`}>
-                    {label}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${(currentStep / 4) * 100}%` }}
-              ></div>
-            </div>
-          </div>
+          </AnimatedCard>
 
           {/* Step 1: 基础设定 */}
           {currentStep === 1 && (
-            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <AnimatedCard index={2}>
+              <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <div className="space-y-6">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
@@ -367,12 +373,14 @@ const Advanced: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </AnimatedCard>
           )}
 
           {/* Step 2: 角色塑造 */}
           {currentStep === 2 && (
-            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <AnimatedCard index={2}>
+              <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <div className="space-y-6">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-4">
@@ -550,12 +558,14 @@ const Advanced: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </AnimatedCard>
           )}
 
           {/* Step 3: 世界构建 */}
           {currentStep === 3 && (
-            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <AnimatedCard index={2}>
+              <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <div className="space-y-6">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl mb-4">
@@ -635,12 +645,14 @@ const Advanced: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </AnimatedCard>
           )}
 
           {/* Step 4: 目标设定 */}
           {currentStep === 4 && (
-            <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <AnimatedCard index={2}>
+              <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <div className="space-y-6">
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-4">
@@ -787,7 +799,8 @@ const Advanced: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </AnimatedCard>
           )}
         </div>
       </div>
