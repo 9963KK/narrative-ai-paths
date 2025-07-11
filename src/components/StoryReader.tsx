@@ -1744,7 +1744,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 {/* 简化统计信息 */}
                 <div className="text-xs text-gray-500 bg-slate-50 p-2 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span>选择: {story.choices_made?.length || 0}</span>
+                    <span>字数: {(() => {
+                      const wordCount = currentText.length;
+                      return wordCount > 1000 ? `${(wordCount / 1000).toFixed(1)}K` : wordCount;
+                    })()}</span>
                     <span>角色: {story.characters?.length || 0}</span>
                     {story.mood && (
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
