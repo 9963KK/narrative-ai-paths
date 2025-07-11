@@ -1,7 +1,7 @@
 {
-    "name": "AI小说创作平台",
-    "short_name": "AI故事",
-    "description": "体验AI驱动的互动式小说创作平台，定制您的专属故事冒险",
+    "name": "织梦师",
+    "short_name": "织梦师",
+    "description": "织梦师：体验AI驱动的互动式故事创作平台，编织您的专属故事冒险",
     "icons": [
         {
             "src": "/favicon-16x16.png",

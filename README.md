@@ -1,6 +1,6 @@
-# 🎭 AI互动故事系统 (Narrative AI Paths)
+# 🎭 织梦师 (Weaver of Dreams)
 
-一个基于AI的智能互动故事生成器，让用户通过选择决定故事走向，体验个性化的叙事冒险。
+一个基于AI的智能互动故事生成器，让用户通过选择决定故事走向，编织属于自己的专属故事冒险。
 
 ![故事系统预览](https://img.shields.io/badge/状态-完整功能-brightgreen)
 ![React](https://img.shields.io/badge/React-18.0+-blue)

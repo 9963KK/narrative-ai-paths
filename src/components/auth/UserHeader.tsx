@@ -37,7 +37,7 @@ export const UserHeader: React.FC = () => {
   return (
     <div className="flex items-center justify-between p-4 bg-white shadow-sm border-b">
       <div className="flex items-center space-x-3">
-        <h1 className="text-xl font-semibold text-gray-800">叙事AI路径</h1>
+        <h1 className="text-xl font-semibold text-gray-800">织梦师</h1>
         {isGuest && (
           <div className="flex items-center text-orange-600 text-sm bg-orange-50 px-2 py-1 rounded-full">
             <AlertTriangle className="w-3 h-3 mr-1" />

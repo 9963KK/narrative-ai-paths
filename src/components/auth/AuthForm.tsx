@@ -175,7 +175,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
             </svg>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">
-            叙事AI路径
+            织梦师
           </h1>
           <p className="text-gray-600">开启您的创作之旅</p>
         </div>
