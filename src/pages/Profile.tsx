@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock, Archive } from 'lucide-react';
+import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 import { getSavedContexts } from '@/services/contextManager';
 import SaveManager from '@/components/SaveManager';
 
@@ -117,29 +118,32 @@ const Profile: React.FC = () => {
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回主页
-            </Button>
-            <div className="text-center">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
-                <User className="h-10 w-10 text-blue-600" />
-                个人资料
-              </h1>
-              <p className="text-slate-600 mt-2 text-lg">查看您的账户信息和创作统计</p>
+          <AnimatedHeader>
+            <div className="flex items-center justify-between mb-8">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/app')}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回主页
+              </Button>
+              <div className="text-center">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                  <User className="h-10 w-10 text-blue-600" />
+                  个人资料
+                </h1>
+                <p className="text-slate-600 mt-2 text-lg">查看您的账户信息和创作统计</p>
+              </div>
+              <div className="w-20"></div>
             </div>
-            <div className="w-20"></div>
-          </div>
+          </AnimatedHeader>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 用户信息卡片 */}
             <div className="lg:col-span-1">
-              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <AnimatedCard index={1}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader className="text-center pb-2">
                   <div className="flex justify-center mb-4">
                     <div className="relative">
@@ -198,7 +202,8 @@ const Profile: React.FC = () => {
             {/* 统计信息 */}
             <div className="lg:col-span-2 space-y-6">
               {/* 创作统计 */}
-              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <AnimatedCard index={2}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
@@ -233,10 +238,12 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </AnimatedCard>
 
               {/* 成就系统 */}
-              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <AnimatedCard index={3}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
@@ -299,10 +306,12 @@ const Profile: React.FC = () => {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </AnimatedCard>
 
               {/* 存档管理 */}
-              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <AnimatedCard index={4}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
@@ -320,10 +329,12 @@ const Profile: React.FC = () => {
                     }}
                   />
                 </CardContent>
-              </Card>
+                </Card>
+              </AnimatedCard>
 
               {/* 账户操作 */}
-              <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <AnimatedCard index={5}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">
                     <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
@@ -379,7 +390,10 @@ const Profile: React.FC = () => {
                     )}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </AnimatedCard>
+                </Card>
+              </AnimatedCard>
             </div>
           </div>
         </div>
