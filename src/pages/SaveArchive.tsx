@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FolderOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import SaveManager from '@/components/SaveManager';
 import { contextManager } from '@/services/contextManager';
@@ -32,9 +32,9 @@ const SaveArchive: React.FC = () => {
       <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
-          {/* Page Header */}
+          {/* Back Button */}
           <AnimatedHeader>
-            <div className="flex items-center justify-between mb-8">
+            <div className="mb-8">
               <Button
                 variant="ghost"
                 onClick={() => navigate('/app')}
@@ -43,14 +43,6 @@ const SaveArchive: React.FC = () => {
                 <ArrowLeft className="h-4 w-4" />
                 返回主页
               </Button>
-              <div className="text-center">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
-                  <FolderOpen className="h-10 w-10 text-blue-600" />
-                  故事存档
-                </h1>
-                <p className="text-slate-600 mt-2 text-lg">管理您的所有故事存档</p>
-              </div>
-              <div className="w-20"></div>
             </div>
           </AnimatedHeader>
 
