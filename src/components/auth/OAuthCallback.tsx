@@ -30,16 +30,23 @@ export const OAuthCallback: React.FC = () => {
         
         if (authUser) {
           console.log('✅ OAuth登录成功，用户信息:', authUser.username);
+          console.log('🔧 用户角色:', authUser.role);
+          console.log('🚀 准备跳转到应用页面...');
           
           // 清理URL中的token参数
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          // 根据用户角色跳转到相应页面
-          if (authUser.role === 'admin') {
-            navigate('/admin', { replace: true });
-          } else {
-            navigate('/app', { replace: true });
-          }
+          // 添加短暂延迟确保用户状态完全更新
+          setTimeout(() => {
+            // 根据用户角色跳转到相应页面
+            if (authUser.role === 'admin') {
+              console.log('🔄 跳转到管理员页面...');
+              navigate('/admin', { replace: true });
+            } else {
+              console.log('🔄 跳转到应用主页面...');
+              navigate('/app', { replace: true });
+            }
+          }, 500); // 增加延迟时间到500ms
         } else {
           console.log('❌ OAuth回调处理失败');
           setError('OAuth登录失败，请重试');
@@ -62,8 +69,12 @@ export const OAuthCallback: React.FC = () => {
       }
     };
 
-    // 如果用户已经登录，直接跳转
-    if (user) {
+    // 只处理一次OAuth回调，避免重复处理
+    let hasProcessed = false;
+    
+    // 只有在非处理中状态且用户已登录时才直接跳转
+    if (user && !isProcessing && !hasProcessed) {
+      console.log('👤 用户已存在，直接跳转到应用页面...');
       if (user.role === 'admin') {
         navigate('/admin');
       } else {
@@ -72,8 +83,12 @@ export const OAuthCallback: React.FC = () => {
       return;
     }
 
-    processOAuthCallback();
-  }, [navigate, user, handleOAuthCallback]);
+    // 只有在用户不存在且未处理过时才处理OAuth回调
+    if (!user && !hasProcessed) {
+      hasProcessed = true;
+      processOAuthCallback();
+    }
+  }, [navigate, handleOAuthCallback]); // 移除user依赖，避免重复触发
 
   if (isProcessing) {
     return (
