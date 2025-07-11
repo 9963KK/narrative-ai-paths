@@ -18,25 +18,25 @@ export interface DeviceInfo {
   isLowEnd: boolean;
 }
 
-// 性能等级配置
+// 性能等级配置 - 优化动画速度以提升观感
 const animationLevels = {
   high: {
-    delay: 150,
-    duration: 500,
-    easing: 'ease-out',
-    stagger: 150
+    delay: 200,
+    duration: 800,
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // 更加优雅的缓动曲线
+    stagger: 200
   },
   medium: {
-    delay: 100,
-    duration: 300,
-    easing: 'ease-out',
-    stagger: 100
+    delay: 150,
+    duration: 600,
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    stagger: 150
   },
   low: {
-    delay: 0,
-    duration: 150,
-    easing: 'ease',
-    stagger: 50
+    delay: 100,
+    duration: 400,
+    easing: 'ease-out',
+    stagger: 100
   }
 };
 

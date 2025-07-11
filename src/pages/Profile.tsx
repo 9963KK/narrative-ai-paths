@@ -8,10 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock, Archive } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 import { getSavedContexts } from '@/services/contextManager';
-import SaveManager from '@/components/SaveManager';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -310,31 +309,8 @@ const Profile: React.FC = () => {
                 </Card>
               </AnimatedCard>
 
-              {/* 存档管理 */}
-              <AnimatedCard index={4}>
-                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
-                      <Archive className="h-5 w-5 text-white" />
-                    </div>
-                    存档管理
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SaveManager 
-                    showInHomePage={true}
-                    onLoadStory={(contextId) => {
-                      // 加载故事并导航
-                      navigate('/app');
-                    }}
-                  />
-                </CardContent>
-                </Card>
-              </AnimatedCard>
-
               {/* 账户操作 */}
-              <AnimatedCard index={5}>
+              <AnimatedCard index={4}>
                 <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">

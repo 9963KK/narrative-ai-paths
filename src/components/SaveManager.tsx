@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2, ArrowLeft } from 'lucide-react';
+import { AnimatedCard } from './AnimatedCard';
 import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
 
 interface SaveManagerProps {
@@ -154,11 +155,11 @@ const SaveManager: React.FC<SaveManagerProps> = ({
             
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {sortedContexts.map((context, index) => (
-                <div 
-                  key={context.id} 
-                  className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50 aspect-square"
-                  onClick={() => handleLoadContext(context.id)}
-                >
+                <AnimatedCard key={context.id} index={index}>
+                  <div 
+                    className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50 aspect-square"
+                    onClick={() => handleLoadContext(context.id)}
+                  >
                   <div className="p-4 h-full flex flex-col">
                     {/* 头部图标和标题 */}
                     <div className="flex flex-col items-center text-center mb-3">
@@ -293,7 +294,8 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                  </div>
+                </AnimatedCard>
               ))}
             </div>
           </>
@@ -378,11 +380,11 @@ const SaveManager: React.FC<SaveManagerProps> = ({
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedContexts.map((context, index) => (
-              <div 
-                key={context.id} 
-                className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50 cursor-pointer transform hover:scale-105 hover:-translate-y-1 aspect-square"
-                onClick={() => handleLoadContext(context.id)}
-              >
+              <AnimatedCard key={context.id} index={index}>
+                <div 
+                  className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200/50 hover:border-gray-300/50 cursor-pointer transform hover:scale-105 hover:-translate-y-1 aspect-square"
+                  onClick={() => handleLoadContext(context.id)}
+                >
                 <div className="p-4 h-full flex flex-col">
                   {/* 头部图标和标题 */}
                   <div className="flex flex-col items-center text-center mb-3">
@@ -531,7 +533,8 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
+              </AnimatedCard>
             ))}
           </div>
         )}

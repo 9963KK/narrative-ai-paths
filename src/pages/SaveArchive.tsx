@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FolderOpen } from 'lucide-react';
+import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import SaveManager from '@/components/SaveManager';
 import { contextManager } from '@/services/contextManager';
 
@@ -31,14 +32,37 @@ const SaveArchive: React.FC = () => {
       <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
+          {/* Page Header */}
+          <AnimatedHeader>
+            <div className="flex items-center justify-between mb-8">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/app')}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回主页
+              </Button>
+              <div className="text-center">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+                  <FolderOpen className="h-10 w-10 text-blue-600" />
+                  故事存档
+                </h1>
+                <p className="text-slate-600 mt-2 text-lg">管理您的所有故事存档</p>
+              </div>
+              <div className="w-20"></div>
+            </div>
+          </AnimatedHeader>
 
           {/* SaveManager */}
-          <SaveManager
-            onLoadStory={handleLoadStory}
-            currentStoryExists={false}
-            showInHomePage={false}
-            onClose={() => navigate('/app')}
-          />
+          <AnimatedCard index={1}>
+            <SaveManager
+              onLoadStory={handleLoadStory}
+              currentStoryExists={false}
+              showInHomePage={false}
+              onClose={() => navigate('/app')}
+            />
+          </AnimatedCard>
         </div>
       </div>
     </div>
