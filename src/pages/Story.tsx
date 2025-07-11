@@ -27,8 +27,9 @@ const Story: React.FC = () => {
     const contextArray = Object.values(savedContexts);
     setSavedContextsCount(contextArray.length);
     
-    // 获取最近的两个故事
+    // 获取最近的两个故事（排除已完结的故事）
     const recentStoriesData = contextArray
+      .filter(context => !context.storyState.is_completed) // 过滤掉已完结的故事
       .sort((a, b) => new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime())
       .slice(0, 2)
       .map(context => ({
