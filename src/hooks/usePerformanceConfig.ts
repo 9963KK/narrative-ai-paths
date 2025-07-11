@@ -18,25 +18,25 @@ export interface DeviceInfo {
   isLowEnd: boolean;
 }
 
-// 性能等级配置 - 优化动画速度以提升观感
+// 性能等级配置 - 进一步调慢动画速度，创造更舒缓的堆列效果
 const animationLevels = {
   high: {
-    delay: 200,
-    duration: 800,
+    delay: 300,
+    duration: 1200,
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // 更加优雅的缓动曲线
-    stagger: 200
+    stagger: 300
   },
   medium: {
-    delay: 150,
-    duration: 600,
+    delay: 250,
+    duration: 900,
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-    stagger: 150
+    stagger: 250
   },
   low: {
-    delay: 100,
-    duration: 400,
+    delay: 200,
+    duration: 600,
     easing: 'ease-out',
-    stagger: 100
+    stagger: 200
   }
 };
 
