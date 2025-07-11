@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { unifiedAuthService, AuthUser } from '@/services/unifiedAuthService';
 import { userStorage } from '@/services/userStorage';
+import { celebrateFirstLogin, celebrateRegistration } from '@/components/ConfettiWrapper';
 import type { OAuthProvider } from '@/lib/supabase';
 
 interface AuthContextType {
@@ -28,6 +29,18 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 检查是否是首次登录/注册
+  const checkFirstTime = (userId: string, action: 'login' | 'register'): boolean => {
+    const key = `first_${action}_${userId}`;
+    const hasBeenShown = localStorage.getItem(key);
+    
+    if (!hasBeenShown) {
+      localStorage.setItem(key, 'true');
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -64,6 +77,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const loggedInUser = await unifiedAuthService.login(email, password);
       if (loggedInUser) {
         setUser(loggedInUser);
+        
+        // 检查是否是首次登录，触发撒花效果
+        if (checkFirstTime(loggedInUser.id, 'login')) {
+          setTimeout(() => {
+            celebrateFirstLogin();
+          }, 300); // 延迟一点让页面先渲染
+        }
+        
         return true;
       }
       return false;
@@ -75,7 +96,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (username: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      return await unifiedAuthService.register(username, email, password);
+      const result = await unifiedAuthService.register(username, email, password);
+      
+      // 如果注册成功，触发撒花效果
+      if (result.success) {
+        setTimeout(() => {
+          celebrateRegistration();
+        }, 300);
+      }
+      
+      return result;
     } catch (error) {
       console.error('Register error:', error);
       return { success: false, error: '注册失败，请稍后重试' };
@@ -168,6 +198,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(newUser);
       console.log('✅ 游客数据已迁移到新账户');
+      
+      // 游客转正式用户也是一种"首次注册"，触发撒花效果
+      setTimeout(() => {
+        celebrateRegistration();
+      }, 300);
+      
       return true;
     } catch (error) {
       console.error('Register from guest error:', error);

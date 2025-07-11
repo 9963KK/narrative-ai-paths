@@ -6,6 +6,7 @@ import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { Settings, Wand2, Wrench, Upload, BookOpen, FolderOpen, Sparkles, TrendingUp, Clock, Star } from 'lucide-react';
 import { getSavedContexts, contextManager, SavedStoryContext } from '@/services/contextManager';
+import { AnimatedHeader, AnimatedStats, AnimatedCard, AnimatedGrid } from '@/components/AnimatedCard';
 
 const Story: React.FC = () => {
   const { user } = useAuth();
@@ -166,7 +167,7 @@ const Story: React.FC = () => {
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <header className="text-center mb-12">
+          <AnimatedHeader className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -176,7 +177,7 @@ const Story: React.FC = () => {
               欢迎回来，{user?.username}
             </h1>
             <p className="text-lg text-gray-600">选择您的创作方式，继续您的故事之旅</p>
-          </header>
+          </AnimatedHeader>
 
           {/* Continue Section */}
           {savedContextsCount > 0 && (
@@ -193,7 +194,7 @@ const Story: React.FC = () => {
               </div>
               
               {/* 统计数据区域 */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8">
+              <AnimatedStats className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600 mb-1">{userStats.totalWordCount.toLocaleString()}</div>
@@ -243,24 +244,25 @@ const Story: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </AnimatedStats>
 
               {/* 继续故事区域 */}
               {recentStories && recentStories.length > 0 && (
-                <div className="mb-6">
+                <AnimatedCard index={2} className="mb-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-4">最近的故事</h3>
-                </div>
+                </AnimatedCard>
               )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 显示最近的故事 */}
                 {recentStories && recentStories.slice(0, 2).map((story, index) => (
-                  <div 
+                  <AnimatedCard
                     key={story.id}
-                    className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 flex items-center space-x-5 cursor-pointer transform hover:scale-105 hover:-translate-y-1 border border-gray-200/50"
+                    index={3 + index}
+                    className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200 ease-out flex items-center space-x-5 cursor-pointer will-change-transform hover:scale-[1.02] hover:translate-y-[-4px] border border-gray-200/50"
                     onClick={() => handleContinueStory(story.id)}
                   >
-                    <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
+                    <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-200 ease-out will-change-transform ${index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                       <BookOpen className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-grow">
@@ -307,63 +309,66 @@ const Story: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </AnimatedCard>
                 ))}
               </div>
             </section>
           )}
 
           {/* Divider */}
-          <div className="text-center my-12">
+          <AnimatedCard index={5} className="text-center my-12">
             <div className="relative">
               <hr className="border-gray-200" />
               <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-gray-50 px-6 text-sm text-gray-500 font-medium">
                 {savedContextsCount > 0 ? '或者，开启一段全新的故事' : '开启您的故事之旅'}
               </span>
             </div>
-          </div>
+          </AnimatedCard>
 
           {/* New Story Section */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <AnimatedGrid 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            startIndex={6}
+          >
             {/* Card 1: Quick Start */}
             <div 
-              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-500 border border-gray-200/50 hover:transform hover:-translate-y-3 hover:shadow-2xl hover:bg-white"
+              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-200 ease-out border border-gray-200/50 will-change-transform hover:translate-y-[-8px] hover:shadow-2xl hover:bg-white"
               onClick={() => navigate('/app/quick')}
             >
-              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
+              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-105 transition-all duration-200 ease-out will-change-transform">
                 <Wand2 className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors duration-300">快速创作</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">提供一个想法，AI自动补全所有细节。快速开始，轻松创作。</p>
-              <span className="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">新手首选</span>
+              <span className="inline-block bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out will-change-transform group-hover:scale-105">新手首选</span>
             </div>
 
             {/* Card 2: Advanced */}
             <div 
-              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-500 border border-gray-200/50 hover:transform hover:-translate-y-3 hover:shadow-2xl hover:bg-white"
+              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-200 ease-out border border-gray-200/50 will-change-transform hover:translate-y-[-8px] hover:shadow-2xl hover:bg-white"
               onClick={() => navigate('/app/advanced')}
             >
-              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
+              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-105 transition-all duration-200 ease-out will-change-transform">
                 <Settings className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors duration-300">高级定制</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">全面掌控故事的每个细节，自定义角色、情节、世界观。</p>
-              <span className="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">专业创作者</span>
+              <span className="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out will-change-transform group-hover:scale-105">专业创作者</span>
             </div>
 
             {/* Card 3: Document Analysis */}
             <div 
-              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-500 border border-gray-200/50 hover:transform hover:-translate-y-3 hover:shadow-2xl hover:bg-white"
+              className="group bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center cursor-pointer transition-all duration-200 ease-out border border-gray-200/50 will-change-transform hover:translate-y-[-8px] hover:shadow-2xl hover:bg-white"
               onClick={() => navigate('/app/filebase')}
             >
-              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-500">
+              <div className="mx-auto w-24 h-24 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl mb-6 shadow-xl group-hover:shadow-2xl group-hover:scale-105 transition-all duration-200 ease-out will-change-transform">
                 <Upload className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 group-hover:text-emerald-600 transition-colors duration-300">文档基础创作</h3>
               <p className="text-gray-600 mt-3 mb-6 leading-relaxed">上传您的小说草稿，AI 提取核心元素，基于现有内容激发续写灵感。</p>
-              <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">基于文档创作</span>
+              <span className="inline-block bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out will-change-transform group-hover:scale-105">基于文档创作</span>
             </div>
-          </section>
+          </AnimatedGrid>
         </div>
       </div>
     </div>
