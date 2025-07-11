@@ -19,12 +19,12 @@ const SaveArchive: React.FC = () => {
       return;
     }
 
-    // 根据用户ID和故事ID生成路由
+    // 根据用户ID和上下文ID生成路由
     const userId = user?.id || 'guest';
-    const storyId = context.storyState.story_id;
+    const contextId = context.id; // 使用上下文ID而不是故事ID
     
     // 导航到故事页面
-    navigate(`/app/story?userId=${userId}&storyId=${storyId}`);
+    navigate(`/app/story?userId=${userId}&storyId=${contextId}`);
   };
 
   return (

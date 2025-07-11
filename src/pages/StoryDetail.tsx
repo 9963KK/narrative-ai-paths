@@ -17,78 +17,83 @@ const StoryDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 加载用户的真实配置
-    const userModelConfig = loadModelConfig();
-    
-    // 创建一个模拟的故事上下文用于界面预览
-    const mockStoryContext = {
-      id: 'demo-story-id',
-      title: '示例故事：魔法学院的冒险',
-      lastPlayTime: new Date().toISOString(),
-      genre: '奇幻冒险',
-      storyState: {
-        story_id: 'ST_DEMO_123',
-        current_scene: '你站在魔法学院的大门前，古老的石门上雕刻着神秘的符文。夜幕降临，远处传来奇异的魔法波动。作为一名新入学的学生，你必须在今晚完成入学试炼。前方有三条路径：左边通往图书馆，中间直达宿舍，右边是神秘的魔法实验室。',
-        characters: [
-          {
-            name: '阿斯莫德',
-            role: '魔法导师',
-            traits: '智慧, 神秘, 严格',
-            appearance: '银白长发，深邃的蓝眼睛，身穿深蓝色法师袍',
-            backstory: '学院最年轻的导师，精通多种魔法'
-          },
-          {
-            name: '你',
-            role: '新生',
-            traits: '好奇, 勇敢, 渴望学习',
-            appearance: '年轻的面孔，眼中闪烁着对魔法的渴望',
-            backstory: '刚刚觉醒魔法天赋的普通人'
+    const loadStoryContext = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // 从URL参数获取storyId
+        const storyId = searchParams.get('storyId');
+        const userId = searchParams.get('userId');
+        
+        console.log('📖 StoryDetail - 获取URL参数:', { storyId, userId });
+        
+        if (!storyId) {
+          throw new Error('未提供故事ID');
+        }
+        
+        // 尝试从contextManager加载故事上下文
+        let storyContext = null;
+        
+        // 首先尝试直接使用storyId加载
+        try {
+          storyContext = contextManager.loadStoryContext(storyId);
+          console.log('📚 直接加载故事上下文结果:', storyContext ? '成功' : '失败');
+        } catch (err) {
+          console.log('❌ 直接加载失败:', err);
+        }
+        
+        // 如果直接加载失败，尝试查找匹配的上下文
+        if (!storyContext) {
+          const allContexts = contextManager.getSavedContexts();
+          console.log('🔍 搜索所有上下文，总数:', Object.keys(allContexts).length);
+          
+          // 尝试通过story_id匹配
+          storyContext = Object.values(allContexts).find(ctx => 
+            ctx.storyState.story_id === storyId
+          );
+          
+          if (!storyContext) {
+            // 尝试通过context id匹配
+            storyContext = Object.values(allContexts).find(ctx => 
+              ctx.id === storyId
+            );
           }
-        ],
-        setting: '古老的魔法学院，充满神秘力量的地方',
-        chapter: 3,
-        chapter_title: '入学试炼',
-        choices_made: ['选择进入魔法学院', '接受导师的指导'],
-        mood: '紧张而兴奋',
-        tension_level: 7,
-        needs_choice: true,
-        scene_type: 'exploration',
-        is_completed: false,
-        story_progress: 35,
-        main_goal_status: 'in_progress',
-        story_goals: [
-          {
-            id: 'goal_1',
-            description: '完成入学试炼',
-            type: 'main',
-            priority: 'high',
-            status: 'in_progress',
-            completion_chapter: 3
-          },
-          {
-            id: 'goal_2',
-            description: '找到魔法导师',
-            type: 'sub',
-            priority: 'medium',
-            status: 'completed',
-            completion_chapter: 2
-          }
-        ]
-      },
-      modelConfig: userModelConfig || {
-        provider: 'openai',
-        model: 'gpt-4',
-        apiKey: '',
-        temperature: 0.7,
-        maxTokens: 4000
-      },
-      conversationHistory: [],
-      summaryState: null
+          
+          console.log('🎯 匹配搜索结果:', storyContext ? '找到匹配' : '未找到匹配');
+        }
+        
+        if (!storyContext) {
+          throw new Error(`未找到ID为 ${storyId} 的故事存档`);
+        }
+        
+        // 加载用户的模型配置
+        const userModelConfig = loadModelConfig();
+        
+        // 确保故事上下文有完整的配置
+        if (!storyContext.modelConfig && userModelConfig) {
+          storyContext.modelConfig = userModelConfig;
+        }
+        
+        console.log('✅ 成功加载故事上下文:', {
+          id: storyContext.id,
+          title: storyContext.title,
+          chapter: storyContext.storyState.chapter,
+          progress: storyContext.storyState.story_progress
+        });
+        
+        setLoadedStoryContext(storyContext);
+        
+      } catch (err) {
+        console.error('❌ 加载故事上下文失败:', err);
+        setError(err instanceof Error ? err.message : '加载故事失败');
+      } finally {
+        setIsLoading(false);
+      }
     };
-
-    setLoadedStoryContext(mockStoryContext);
-    setIsLoading(false);
-  }, []);
+    
+    loadStoryContext();
+  }, [searchParams]);
 
   const handleReturnToHome = () => {
     navigate('/app');
