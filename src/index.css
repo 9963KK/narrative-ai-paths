@@ -415,6 +415,21 @@
     transition: box-shadow 0.3s ease;
   }
   
+  /* 内容区域自适应高度 */
+  .content-fit-height {
+    min-height: fit-content !important;
+    height: fit-content !important;
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
+  }
+  
+  /* 处理选项时的卡片样式 */
+  .processing-choice-card {
+    flex: 0 0 auto !important;
+    min-height: fit-content !important;
+    height: auto !important;
+  }
+  
   /* 打字机效果优化 */
   .typewriter-cursor {
     animation: typewriterBlink 1s infinite;
