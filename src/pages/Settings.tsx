@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
@@ -98,6 +98,11 @@ const Settings: React.FC = () => {
     { id: 'privacy' as const, label: '隐私安全', icon: Shield, description: '数据和隐私设置' }
   ];
 
+  // 使用 useMemo 优化内容渲染，避免不必要的重新渲染
+  const tabContent = useMemo(() => {
+    return activeTab;
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/20 via-gray-50 to-gray-50">
       <UserHeader />
@@ -150,13 +155,13 @@ const Settings: React.FC = () => {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all duration-300 transform hover:scale-105 ${
+                        className={`w-full flex items-center gap-3 p-4 rounded-2xl text-left transition-all duration-200 ${
                           activeTab === tab.id
                             ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200/50 shadow-md'
                             : 'text-slate-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                         }`}
                       >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 ${
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all duration-200 ${
                           activeTab === tab.id
                             ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
                             : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600'
@@ -176,10 +181,10 @@ const Settings: React.FC = () => {
 
             {/* Content */}
             <div className="lg:col-span-3">
-              {/* AI模型配置 */}
-              <AnimatedCard index={3} key={`tab-${activeTab}`}>
-                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                  {activeTab === 'model' && (
+              <AnimatedCard index={3}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-200">
+                  {/* AI模型配置 */}
+                  {tabContent === 'model' && (
                     <>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl">
@@ -205,7 +210,7 @@ const Settings: React.FC = () => {
                   )}
 
                   {/* 账户设置 */}
-                  {activeTab === 'account' && (
+                  {tabContent === 'account' && (
                     <>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl">
@@ -287,7 +292,7 @@ const Settings: React.FC = () => {
                   )}
 
                   {/* 通知设置 */}
-                  {activeTab === 'notifications' && (
+                  {tabContent === 'notifications' && (
                     <>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl">
@@ -330,7 +335,7 @@ const Settings: React.FC = () => {
                   )}
 
                   {/* 隐私安全 */}
-                  {activeTab === 'privacy' && (
+                  {tabContent === 'privacy' && (
                     <>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl">
