@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStackedCardAnimation } from '@/hooks/useCardAnimation';
+import { useOptimizedAnimation } from '@/hooks/useCardAnimation';
 
 interface AnimatedCardProps {
   children: React.ReactNode;
@@ -7,22 +7,30 @@ interface AnimatedCardProps {
   className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   children,
   index = 0,
   className = '',
-  style,
-  onClick
+  style: customStyle,
+  onClick,
+  disabled = false
 }) => {
-  const { ref, animationClass } = useStackedCardAnimation(index);
+  const { ref, animationClass, style: animationStyle } = useOptimizedAnimation(index);
+
+  // 合并样式
+  const combinedStyle = {
+    ...animationStyle,
+    ...customStyle
+  };
 
   return (
     <div
       ref={ref}
-      className={`transform transition-all duration-500 ease-out will-change-transform ${animationClass} ${className}`}
-      style={style}
+      className={`transform ${animationClass} ${className}`}
+      style={combinedStyle}
       onClick={onClick}
     >
       {children}
@@ -40,12 +48,13 @@ export const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   children,
   className = ''
 }) => {
-  const { ref, animationClass } = useStackedCardAnimation(0); // 标头最先出现
+  const { ref, animationClass, style } = useOptimizedAnimation(0); // 标头最先出现
 
   return (
     <div
       ref={ref}
-      className={`transform transition-all duration-600 ease-out will-change-transform ${animationClass} ${className}`}
+      className={`transform ${animationClass} ${className}`}
+      style={style}
     >
       {children}
     </div>
@@ -62,12 +71,13 @@ export const AnimatedStats: React.FC<AnimatedStatsProps> = ({
   children,
   className = ''
 }) => {
-  const { ref, animationClass } = useStackedCardAnimation(1); // 第二个出现
+  const { ref, animationClass, style } = useOptimizedAnimation(1); // 第二个出现
 
   return (
     <div
       ref={ref}
-      className={`transform transition-all duration-500 ease-out will-change-transform ${animationClass} ${className}`}
+      className={`transform ${animationClass} ${className}`}
+      style={style}
     >
       {children}
     </div>
@@ -92,6 +102,29 @@ export const AnimatedGrid: React.FC<AnimatedGridProps> = ({
     <div className={className}>
       {childrenArray.map((child, index) => (
         <AnimatedCard key={index} index={startIndex + index}>
+          {child}
+        </AnimatedCard>
+      ))}
+    </div>
+  );
+};
+
+// 页面布局动画组件
+interface AnimatedPageLayoutProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const AnimatedPageLayout: React.FC<AnimatedPageLayoutProps> = ({
+  children,
+  className = ''
+}) => {
+  const childrenArray = React.Children.toArray(children);
+  
+  return (
+    <div className={className}>
+      {childrenArray.map((child, index) => (
+        <AnimatedCard key={index} index={index}>
           {child}
         </AnimatedCard>
       ))}

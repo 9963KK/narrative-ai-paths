@@ -19,6 +19,7 @@ import {
   FileText,
   Share2
 } from 'lucide-react';
+import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <AnimatedHeader className="text-center">
             <Badge className="mb-6 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border-0">
               <Sparkles className="w-4 h-4 mr-2" />
               AI 驱动的创作平台
@@ -124,6 +125,8 @@ const Home: React.FC = () => {
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
               通过AI智能辅助，打造引人入胜的交互式故事。无论您是作家、教育工作者还是内容创作者，都能在这里找到无限可能。
             </p>
+          </AnimatedHeader>
+          <AnimatedCard index={1}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/login">
                 <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
@@ -136,7 +139,7 @@ const Home: React.FC = () => {
                 查看示例
               </Button>
             </div>
-          </div>
+          </AnimatedCard>
         </div>
 
         {/* 装饰性元素 - 优化性能 */}
@@ -147,33 +150,37 @@ const Home: React.FC = () => {
       {/* Stats Section */}
       <section className="py-16 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl mx-auto mb-4">
-                  {stat.icon}
+          <AnimatedCard index={2}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl mx-auto mb-4">
+                    {stat.icon}
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
+                  <div className="text-gray-600">{stat.label}</div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </AnimatedCard>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              强大的功能特性
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              我们提供全方位的创作工具，帮助您轻松构建精彩的交互式故事体验
-            </p>
-          </div>
+          <AnimatedCard index={3}>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                强大的功能特性
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                我们提供全方位的创作工具，帮助您轻松构建精彩的交互式故事体验
+              </p>
+            </div>
+          </AnimatedCard>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <AnimatedGrid startIndex={4} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="group bg-white/80 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 will-change-transform">
                 <CardHeader className="text-center pb-4">
@@ -191,61 +198,65 @@ const Home: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </AnimatedGrid>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            准备开始您的创作之旅了吗？
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            加入我们的创作者社区，体验AI辅助创作的无限可能
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/login">
-              <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                立即注册
-                <Star className="ml-2 w-5 h-5" />
+          <AnimatedCard index={8}>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              准备开始您的创作之旅了吗？
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              加入我们的创作者社区，体验AI辅助创作的无限可能
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/login">
+                <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                  立即注册
+                  <Star className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={handleQuickStart}
+                className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-medium transition-all duration-300"
+              >
+                游客体验
+                <Zap className="ml-2 w-5 h-5" />
               </Button>
-            </Link>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              onClick={handleQuickStart}
-              className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-medium transition-all duration-300"
-            >
-              游客体验
-              <Zap className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
+            </div>
+          </AnimatedCard>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
+          <AnimatedCard index={9}>
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-3 mb-6">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <span className="text-xl font-bold text-white">织梦师</span>
               </div>
-              <span className="text-xl font-bold text-white">织梦师</span>
+              <p className="text-gray-400 mb-4">
+                让AI成为您创作路上的最佳伙伴
+              </p>
+              <p className="text-sm text-gray-500">
+                © 2025 织梦师. 保留所有权利.
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                官方邮箱: ai_novel_official@ai-novel.top
+              </p>
             </div>
-            <p className="text-gray-400 mb-4">
-              让AI成为您创作路上的最佳伙伴
-            </p>
-            <p className="text-sm text-gray-500">
-              © 2025 织梦师. 保留所有权利.
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              官方邮箱: ai_novel_official@ai-novel.top
-            </p>
-          </div>
+          </AnimatedCard>
         </div>
       </footer>
     </div>
