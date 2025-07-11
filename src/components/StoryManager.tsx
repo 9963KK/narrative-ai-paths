@@ -919,6 +919,12 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     setCurrentStory(null);
     setAiError(null);
     setCurrentContextId(null);
+    storyAI.clearConversationHistory();
+    
+    // 调用回调函数返回主页，开启新冒险
+    if (onReturnToHome) {
+      onReturnToHome();
+    }
   };
 
   const handleReturnHome = () => {
