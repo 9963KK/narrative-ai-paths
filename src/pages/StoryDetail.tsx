@@ -5,6 +5,7 @@ import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { BookOpen, AlertCircle, ArrowLeft } from 'lucide-react';
+import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import { contextManager, SavedStoryContext } from '@/services/contextManager';
 import { loadModelConfig } from '@/services/configStorage';
 
@@ -106,14 +107,16 @@ const StoryDetail: React.FC = () => {
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="text-center bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-lg border border-gray-200/50">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
-                  <BookOpen className="w-8 h-8 text-white" />
+              <AnimatedHeader>
+                <div className="text-center bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-lg border border-gray-200/50">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
+                    <BookOpen className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-6"></div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">正在加载故事</h3>
+                  <p className="text-gray-600">请稍候，正在为您准备精彩的冒险...</p>
                 </div>
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-6"></div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">正在加载故事</h3>
-                <p className="text-gray-600">请稍候，正在为您准备精彩的冒险...</p>
-              </div>
+              </AnimatedHeader>
             </div>
           </div>
         </div>
