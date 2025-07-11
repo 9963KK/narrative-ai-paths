@@ -1094,8 +1094,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             
             {/* 移动端顶部状态栏 - 包含操作按钮 */}
             <div className="lg:hidden">
-              <Card className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50 rounded-xl">
-                <CardContent className="pt-4 pb-3">
+              <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+                <CardContent className="pt-6 pb-6">
                   {/* 第一行：章节和进度信息 */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -1162,7 +1162,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
             {/* 主要故事内容 - 移到最前面 */}
             <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden flex-1">
-              <CardContent className="pt-6 h-full">
+              <CardContent className="pt-6 pb-6 h-full">
                 <div className="prose prose-slate max-w-none h-full">
                   <div className="text-slate-800 text-lg leading-relaxed whitespace-pre-wrap min-h-[300px]">
                     {currentText}
@@ -1174,8 +1174,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
             {/* 选择处理中 - 优化版 */}
             {isProcessingChoice && (
-              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-4 pb-4">
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-6 pb-6">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
@@ -1207,8 +1207,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
             {/* 选择项预生成中 - 新增 */}
             {(isPreGenerating || isGeneratingChoices) && !isProcessingChoice && !showChoices && (
-              <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-4 pb-4">
+              <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-6 pb-6">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
@@ -1219,14 +1219,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                         {isTyping ? '正在准备选项...' : '正在生成选择项...'}
                       </span>
                     </div>
-                    
-                    {isTyping && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-blue-700 text-sm">
-                          🚀 正在与打字效果并行生成选项，阅读完成后即可看到选项
-                        </p>
-                      </div>
-                    )}
                     
                     <div className="flex items-center justify-center space-x-1">
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
@@ -1243,8 +1235,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             
             {/* 选项已预生成完成，等待打字机结束 */}
             {pendingChoices && pendingChoices.length > 0 && isTyping && !showChoices && (
-              <Card className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 backdrop-blur-sm shadow-xl border border-green-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-4 pb-4">
+              <Card className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 backdrop-blur-sm shadow-xl border border-green-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-6 pb-6">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -1257,7 +1249,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <p className="text-green-700 text-sm">
-                        ✨ {pendingChoices.length}个选项已生成完成，阅读完成后将立即显示
+                        ✨ 选项已准备完成
                       </p>
                     </div>
                   </div>
@@ -1527,8 +1519,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {/* 移动端角色信息 - 在底部操作按钮之前 */}
             <div className="lg:hidden">
               {story.characters && story.characters.length > 0 && (
-                <Card className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50 rounded-xl">
-                  <CardContent className="pt-4 pb-3">
+                <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+                  <CardContent className="pt-6 pb-6">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-slate-800">角色信息</h3>
                       <span className="text-xs text-slate-500">{story.characters.length}个角色</span>
