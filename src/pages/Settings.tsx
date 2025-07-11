@@ -177,206 +177,202 @@ const Settings: React.FC = () => {
             {/* Content */}
             <div className="lg:col-span-3">
               {/* AI模型配置 */}
-              {activeTab === 'model' && (
-                <AnimatedCard index={3}>
-                  <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <Bot className="h-5 w-5 text-white" />
-                        </div>
-                        AI模型配置
-                      </CardTitle>
-                      <p className="text-slate-600 text-sm mt-2">
-                        配置您的AI模型提供商、API密钥和生成参数
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <ModelConfig
-                        config={modelConfig}
-                        onConfigChange={handleModelConfigSave}
-                        onClose={() => {}} // 设置页面不需要关闭功能
-                        showCloseButton={false}
-                        embedded={true}
-                      />
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* 账户设置 */}
-              {activeTab === 'account' && (
-                <AnimatedCard index={3}>
-                  <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <User className="h-5 w-5 text-white" />
-                        </div>
-                        账户设置
-                      </CardTitle>
-                      <p className="text-slate-600 text-sm mt-2">
-                        管理您的个人信息和账户偏好
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {isGuest && (
-                        <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200/50 rounded-2xl flex items-center gap-3 shadow-lg backdrop-blur-sm">
-                          <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                            <AlertCircle className="h-4 w-4 text-white" />
+              <AnimatedCard index={3} key={`tab-${activeTab}`}>
+                <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                  {activeTab === 'model' && (
+                    <>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3 text-xl">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <Bot className="h-5 w-5 text-white" />
                           </div>
-                          <div>
-                            <p className="text-orange-800 font-semibold">游客模式</p>
-                            <p className="text-orange-700 text-sm">您正在使用游客模式，数据不会永久保存</p>
+                          AI模型配置
+                        </CardTitle>
+                        <p className="text-slate-600 text-sm mt-2">
+                          配置您的AI模型提供商、API密钥和生成参数
+                        </p>
+                      </CardHeader>
+                      <CardContent>
+                        <ModelConfig
+                          config={modelConfig}
+                          onConfigChange={handleModelConfigSave}
+                          onClose={() => {}} // 设置页面不需要关闭功能
+                          showCloseButton={false}
+                          embedded={true}
+                        />
+                      </CardContent>
+                    </>
+                  )}
+
+                  {/* 账户设置 */}
+                  {activeTab === 'account' && (
+                    <>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3 text-xl">
+                          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <User className="h-5 w-5 text-white" />
                           </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="username">用户名</Label>
-                          <Input 
-                            id="username" 
-                            value={user?.username || ''} 
-                            disabled={isGuest}
-                            readOnly={isGuest}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="email">邮箱</Label>
-                          <Input 
-                            id="email" 
-                            type="email" 
-                            value={isGuest ? '游客模式' : user?.email || ''} 
-                            disabled={isGuest}
-                            readOnly={isGuest}
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <h3 className="font-medium text-slate-800">应用偏好</h3>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label htmlFor="auto-save">自动保存故事</Label>
-                            <p className="text-sm text-slate-500">在故事进行过程中自动保存进度</p>
-                          </div>
-                          <Switch
-                            id="auto-save"
-                            checked={autoSaveEnabled}
-                            onCheckedChange={setAutoSaveEnabled}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleSettingsSave} 
-                          disabled={isSaving}
-                          className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {isSaving ? '保存中...' : '保存设置'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* 通知设置 */}
-              {activeTab === 'notifications' && (
-                <AnimatedCard index={3}>
-                  <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <Bell className="h-5 w-5 text-white" />
-                        </div>
-                        通知设置
-                      </CardTitle>
-                      <p className="text-slate-600 text-sm mt-2">
-                        管理您的通知和提醒偏好
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label htmlFor="notifications">启用通知</Label>
-                            <p className="text-sm text-slate-500">接收重要的应用通知</p>
-                          </div>
-                          <Switch
-                            id="notifications"
-                            checked={notificationsEnabled}
-                            onCheckedChange={setNotificationsEnabled}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleSettingsSave} 
-                          disabled={isSaving}
-                          className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                        >
-                          <Save className="h-4 w-4 mr-2" />
-                          {isSaving ? '保存中...' : '保存设置'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* 隐私安全 */}
-              {activeTab === 'privacy' && (
-                <AnimatedCard index={3}>
-                  <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <Shield className="h-5 w-5 text-white" />
-                        </div>
-                        隐私安全
-                      </CardTitle>
-                      <p className="text-slate-600 text-sm mt-2">
-                        管理您的数据隐私和安全设置
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-6">
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200/50 rounded-2xl">
-                          <h3 className="font-semibold text-blue-800 flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
-                              <Shield className="w-3 h-3 text-white" />
+                          账户设置
+                        </CardTitle>
+                        <p className="text-slate-600 text-sm mt-2">
+                          管理您的个人信息和账户偏好
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {isGuest && (
+                          <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200/50 rounded-2xl flex items-center gap-3 shadow-lg backdrop-blur-sm">
+                            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                              <AlertCircle className="h-4 w-4 text-white" />
                             </div>
-                            数据存储
-                          </h3>
-                          <p className="text-sm text-blue-700">
-                            您的故事数据存储在浏览器本地存储中，只有您可以访问
-                          </p>
-                        </div>
-                        <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200/50 rounded-2xl">
-                          <h3 className="font-semibold text-green-800 flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
-                              <Shield className="w-3 h-3 text-white" />
+                            <div>
+                              <p className="text-orange-800 font-semibold">游客模式</p>
+                              <p className="text-orange-700 text-sm">您正在使用游客模式，数据不会永久保存</p>
                             </div>
-                            API密钥安全
-                          </h3>
-                          <p className="text-sm text-green-700">
-                            您的API密钥仅存储在本地，不会上传到服务器
-                          </p>
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="username">用户名</Label>
+                            <Input 
+                              id="username" 
+                              value={user?.username || ''} 
+                              disabled={isGuest}
+                              readOnly={isGuest}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="email">邮箱</Label>
+                            <Input 
+                              id="email" 
+                              type="email" 
+                              value={isGuest ? '游客模式' : user?.email || ''} 
+                              disabled={isGuest}
+                              readOnly={isGuest}
+                              className="mt-1"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                          <h3 className="font-medium text-slate-800">应用偏好</h3>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label htmlFor="auto-save">自动保存故事</Label>
+                              <p className="text-sm text-slate-500">在故事进行过程中自动保存进度</p>
+                            </div>
+                            <Switch
+                              id="auto-save"
+                              checked={autoSaveEnabled}
+                              onCheckedChange={setAutoSaveEnabled}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleSettingsSave} 
+                            disabled={isSaving}
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {isSaving ? '保存中...' : '保存设置'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </>
+                  )}
+
+                  {/* 通知设置 */}
+                  {activeTab === 'notifications' && (
+                    <>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3 text-xl">
+                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <Bell className="h-5 w-5 text-white" />
+                          </div>
+                          通知设置
+                        </CardTitle>
+                        <p className="text-slate-600 text-sm mt-2">
+                          管理您的通知和提醒偏好
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label htmlFor="notifications">启用通知</Label>
+                              <p className="text-sm text-slate-500">接收重要的应用通知</p>
+                            </div>
+                            <Switch
+                              id="notifications"
+                              checked={notificationsEnabled}
+                              onCheckedChange={setNotificationsEnabled}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleSettingsSave} 
+                            disabled={isSaving}
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {isSaving ? '保存中...' : '保存设置'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </>
+                  )}
+
+                  {/* 隐私安全 */}
+                  {activeTab === 'privacy' && (
+                    <>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3 text-xl">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <Shield className="h-5 w-5 text-white" />
+                          </div>
+                          隐私安全
+                        </CardTitle>
+                        <p className="text-slate-600 text-sm mt-2">
+                          管理您的数据隐私和安全设置
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="space-y-6">
+                          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200/50 rounded-2xl">
+                            <h3 className="font-semibold text-blue-800 flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                                <Shield className="w-3 h-3 text-white" />
+                              </div>
+                              数据存储
+                            </h3>
+                            <p className="text-sm text-blue-700">
+                              您的故事数据存储在浏览器本地存储中，只有您可以访问
+                            </p>
+                          </div>
+                          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200/50 rounded-2xl">
+                            <h3 className="font-semibold text-green-800 flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
+                                <Shield className="w-3 h-3 text-white" />
+                              </div>
+                              API密钥安全
+                            </h3>
+                            <p className="text-sm text-green-700">
+                              您的API密钥仅存储在本地，不会上传到服务器
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </>
+                  )}
+                </Card>
+              </AnimatedCard>
             </div>
           </div>
         </div>
