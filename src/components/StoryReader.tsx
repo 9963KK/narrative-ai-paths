@@ -1161,22 +1161,20 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             </div>
 
             {/* 主要故事内容 - 移到最前面 */}
-            <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden story-content-card transition-all duration-500 ${
+            <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden transition-shadow duration-300 ${
               isTyping ? 'flex-shrink-0 shadow-lg' : 'flex-1 shadow-xl'
             }`}>
               <CardContent className="pt-6 pb-6">
                 <div className="prose prose-slate max-w-none">
-                  <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap transition-all duration-500 ease-out ${
+                  <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap transition-opacity duration-300 ${
                     isTyping 
-                      ? 'min-h-[100px] opacity-95' 
-                      : 'min-h-[200px] opacity-100'
-                  }`}>
-                    <div className={`transform transition-all duration-500 ease-out ${
-                      isTyping ? 'scale-[0.99]' : 'scale-100'
-                    }`}>
+                      ? 'opacity-95' 
+                      : 'opacity-100'
+                  }`} style={{ minHeight: 'auto' }}>
+                    <div className="transform">
                       {currentText}
                       {isTyping && (
-                        <span className="inline-block ml-1 typewriter-cursor text-blue-500 font-normal animate-pulse">
+                        <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
                           |
                         </span>
                       )}
