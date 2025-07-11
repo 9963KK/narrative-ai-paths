@@ -345,7 +345,7 @@ class ContextManager {
         console.log('🔄 更新现有手动存档:', title);
       } else {
         // 创建或更新自动保存
-        title = `[自动保存] ${this.generateStoryTitle(storyState)}`;
+        title = this.generateStoryTitle(storyState);
         isAutoSave = true;
         console.log('🔄 更新自动保存');
       }
@@ -528,14 +528,13 @@ class ContextManager {
   private generateStoryTitle(storyState: StoryState): string {
     const genre = this.extractGenre(storyState);
     const chapter = storyState.chapter;
-    const timestamp = new Date().toLocaleDateString();
     
     if (storyState.characters.length > 0) {
       const mainCharacter = storyState.characters[0].name;
-      return `${mainCharacter}的${genre}冒险 - 第${chapter}章 (${timestamp})`;
+      return `${mainCharacter}的${genre}冒险 - 第${chapter}章`;
     }
     
-    return `${genre}故事 - 第${chapter}章 (${timestamp})`;
+    return `${genre}故事 - 第${chapter}章`;
   }
 
   /**
