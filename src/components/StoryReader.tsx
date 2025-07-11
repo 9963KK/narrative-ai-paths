@@ -50,12 +50,14 @@ interface StoryReaderProps {
   modelConfig?: any; // AI模型配置
   aiError?: string | null; // AI错误信息
   isProcessingChoice?: boolean; // 是否正在处理选择
-  onSaveStory?: (title?: string) => void; // 保存故事回调
+  onSaveStory?: (title?: string, currentChoices?: Choice[]) => void; // 保存故事回调
   onShowSaveManager?: () => void; // 显示存档管理器
   onReturnHome?: () => void; // 返回主页回调
   autoSaveEnabled?: boolean; // 自动保存是否启用
   onToggleAutoSave?: (enabled: boolean) => void; // 切换自动保存状态
   hasSavedProgress?: boolean; // 当前是否有已保存的进度
+  savedChoices?: Choice[]; // 从存档中加载的选项
+  onChoicesUpdate?: (choices: Choice[]) => void; // 选项更新回调
 }
 
 const StoryReader: React.FC<StoryReaderProps> = ({ 
@@ -71,7 +73,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   onReturnHome,
   autoSaveEnabled,
   onToggleAutoSave,
-  hasSavedProgress
+  hasSavedProgress,
+  savedChoices,
+  onChoicesUpdate
 }) => {
   const [story, setStory] = useState<StoryState>(initialStory);
   const [currentText, setCurrentText] = useState('');
@@ -141,7 +145,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     
     setIsSaving(true);
     try {
-      await onSaveStory();
+      await onSaveStory(undefined, choices.length > 0 ? choices : undefined);
       setHasUnsavedProgress(false);
       toast({
         title: "保存成功",
@@ -670,12 +674,20 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         story_progress: story.story_progress,
         shouldShowChoices,
         scene_length: story.current_scene?.length,
-        chapter: story.chapter
+        chapter: story.chapter,
+        hasSavedChoices: savedChoices?.length || 0
       });
       
-      // 立即开始预生成选项（与打字机并行）
+      // 检查是否有保存的选项可以复用
       if (shouldShowChoices) {
-        preGenerateChoices(story.current_scene, story.characters);
+        if (savedChoices && savedChoices.length > 0) {
+          console.log('🎉 发现保存的选项，将在打字机完成后直接显示:', savedChoices);
+          setPendingChoices(savedChoices);
+        } else {
+          // 没有保存的选项，需要生成新的
+          console.log('📝 没有保存的选项，开始预生成...');
+          preGenerateChoices(story.current_scene, story.characters);
+        }
       }
       
       // 打字机效果（与选项生成并行）
@@ -697,6 +709,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 console.log('🎉 选项已预生成完成，立即显示!');
                 setChoices(pendingChoices);
                 setShowChoices(true);
+                // 通知父组件选项已更新
+                onChoicesUpdate?.(pendingChoices);
                 setPendingChoices(null);
                 // 确保清除加载状态
                 setIsPreGenerating(false);
@@ -714,6 +728,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   if (newChoices && newChoices.length > 0) {
                     setChoices(newChoices);
                     setShowChoices(true);
+                    onChoicesUpdate?.(newChoices);
                     console.log('✅ 重新生成的选项已显示');
                   } else {
                     console.error('❌ 重新生成也失败，使用回退选项');
@@ -725,6 +740,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     ];
                     setChoices(fallbackChoices);
                     setShowChoices(true);
+                    onChoicesUpdate?.(fallbackChoices);
                   }
                   setIsGeneratingChoices(false);
                 })();
@@ -752,6 +768,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         if (!isTyping && pendingChoices && pendingChoices.length > 0 && !showChoices) {
           setChoices(pendingChoices);
           setShowChoices(true);
+          onChoicesUpdate?.(pendingChoices);
           setPendingChoices(null);
           // 清除所有加载状态
           setIsPreGenerating(false);

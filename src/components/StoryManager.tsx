@@ -11,7 +11,8 @@ import {
   SavedStoryContext, 
   ConversationMessage,
   autoSaveContext,
-  saveStoryProgress 
+  saveStoryProgress,
+  Choice
 } from '../services/contextManager';
 
 // 导入新的配置类型
@@ -62,6 +63,12 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   const [showDebugManager, setShowDebugManager] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // 自动保存状态
   const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
+  const [currentChoices, setCurrentChoices] = useState<Choice[]>([]); // 当前选项
+
+  // 处理选项更新
+  const handleChoicesUpdate = (choices: Choice[]) => {
+    setCurrentChoices(choices);
+  };
 
   // 标准化角色数据，确保所有字段都有值
   const normalizeCharacters = (characters: any[]): any[] => {
@@ -927,7 +934,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   };
 
   // 保存故事进度
-  const handleSaveStory = async (title?: string) => {
+  const handleSaveStory = async (title?: string, currentChoices?: Choice[]) => {
     if (!currentStory || !currentModelConfig) {
       console.warn('无法保存：缺少故事状态或模型配置');
       return;
@@ -951,7 +958,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         { 
           title,
           createSnapshot: false, // 更新主存档，不创建快照
-          summaryState // 包含摘要状态
+          summaryState, // 包含摘要状态
+          currentChoices // 包含当前选项
         }
       );
 
@@ -1084,8 +1092,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 获取摘要状态
       const summaryState = storyAI.getSummaryState();
 
-      // 更新自动保存以包含摘要状态
-      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState);
+      // 更新自动保存以包含摘要状态和当前选项
+      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, currentChoices);
       if (contextId) {
         setCurrentContextId(contextId);
       }
@@ -1311,6 +1319,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       autoSaveEnabled={autoSaveEnabled}
       onToggleAutoSave={handleToggleAutoSave}
       hasSavedProgress={hasSavedProgress}
+      savedChoices={preloadedContext?.currentChoices}
+      onChoicesUpdate={handleChoicesUpdate}
     />
   );
 };

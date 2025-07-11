@@ -37,6 +37,15 @@ export interface StoryState {
   genre?: string;
 }
 
+// 选择项接口
+export interface Choice {
+  id: number;
+  text: string;
+  description: string;
+  difficulty?: number;
+  consequences?: string;
+}
+
 // 保存的故事上下文接口
 export interface SavedStoryContext {
   id: string; // 唯一标识符
@@ -57,6 +66,8 @@ export interface SavedStoryContext {
     summaryTriggerCount: number;
     lastSummaryIndex: number;
   };
+  // 新增：保存当前可用的选项
+  currentChoices?: Choice[];
 }
 
 // 存档列表接口
@@ -92,6 +103,7 @@ class ContextManager {
         summaryTriggerCount: number;
         lastSummaryIndex: number;
       };
+      currentChoices?: Choice[];
     } = {}
   ): string {
     try {
@@ -128,7 +140,8 @@ class ContextManager {
         playTime: this.calculatePlayTime(storyState.chapter),
         thumbnail: this.generateThumbnail(storyState),
         genre: this.extractGenre(storyState),
-        summaryState: options.summaryState // 保存摘要状态
+        summaryState: options.summaryState, // 保存摘要状态
+        currentChoices: options.currentChoices // 保存当前选项
       };
       
       // 添加或更新存档
@@ -271,6 +284,7 @@ class ContextManager {
         summaryTriggerCount: number;
         lastSummaryIndex: number;
       };
+      currentChoices?: Choice[];
     } = {}
   ): string {
     const primarySaveId = `story_${storyState.story_id}`;
@@ -282,7 +296,8 @@ class ContextManager {
         title: options.title || `[快照] ${this.generateStoryTitle(storyState)}`,
         isAutoSave: false,
         customId: snapshotId,
-        summaryState: options.summaryState
+        summaryState: options.summaryState,
+        currentChoices: options.currentChoices
       });
     } else {
       // 更新主存档（升级为手动保存）
@@ -290,7 +305,8 @@ class ContextManager {
         title: options.title || this.generateStoryTitle(storyState),
         isAutoSave: false,
         customId: primarySaveId,
-        summaryState: options.summaryState
+        summaryState: options.summaryState,
+        currentChoices: options.currentChoices
       });
     }
   }
@@ -307,7 +323,8 @@ class ContextManager {
       historySummary: string;
       summaryTriggerCount: number;
       lastSummaryIndex: number;
-    }
+    },
+    currentChoices?: Choice[]
   ): string | null {
     try {
       // 使用统一的故事主存档ID
@@ -337,7 +354,8 @@ class ContextManager {
         title,
         isAutoSave,
         customId: primarySaveId,
-        summaryState
+        summaryState,
+        currentChoices
       });
       
     } catch (error) {
