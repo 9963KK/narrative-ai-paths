@@ -1338,16 +1338,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-white bg-opacity-50 rounded-lg p-4 border border-purple-200">
-                    <h4 className="font-semibold text-purple-800 mb-2">故事总结</h4>
-                    <p className="text-purple-700 text-sm">
-                      经过 {story.choices_made.length} 个重要选择和 {story.chapter} 章的精彩冒险，
-                      {story.characters[0]?.name || '主角'}的故事画下了
-                      {story.completion_type === 'success' ? '完美的句号' : 
-                       story.completion_type === 'failure' ? '悲壮的终章' :
-                       story.completion_type === 'neutral' ? '意味深长的省略号' : '引人遐想的破折号'}。
-                    </p>
-                  </div>
                   
                   {/* 故事目标状态 */}
                   {story.story_goals && story.story_goals.length > 0 && (
@@ -1364,11 +1354,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                               }`}>
                                 {goal.description}
                               </span>
-                              {goal.completion_chapter && (
-                                <span className="text-xs text-purple-600 ml-2">
-                                  (第{goal.completion_chapter}章)
-                                </span>
-                              )}
                             </div>
                             <div className="flex items-center space-x-1 ml-2">
                               {goal.type === 'main' && (
