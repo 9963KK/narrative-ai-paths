@@ -1162,9 +1162,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       )}
                     </div>
                     
-                    {/* 右侧信息：角色数量和氛围 */}
+                    {/* 右侧信息：字数统计和角色数量 */}
                     <div className="flex items-center space-x-2 text-xs text-slate-500">
-                      <span>选择: {story.choices_made?.length || 0}</span>
+                      <span>字数: {(() => {
+                        const wordCount = currentText.length;
+                        return wordCount > 1000 ? `${(wordCount / 1000).toFixed(1)}K` : wordCount;
+                      })()}</span>
                       <span>角色: {story.characters?.length || 0}</span>
                       {story.mood && (
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
