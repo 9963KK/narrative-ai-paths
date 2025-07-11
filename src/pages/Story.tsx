@@ -167,7 +167,7 @@ const Story: React.FC = () => {
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <AnimatedHeader className="text-center mb-12">
+          <AnimatedHeader className="text-center mb-12" usePageNavigation={true}>
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -194,7 +194,7 @@ const Story: React.FC = () => {
               </div>
               
               {/* 统计数据区域 */}
-              <AnimatedStats className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8">
+              <AnimatedStats className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-6 mb-8" usePageNavigation={true}>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600 mb-1">{userStats.totalWordCount.toLocaleString()}</div>
@@ -248,7 +248,7 @@ const Story: React.FC = () => {
 
               {/* 继续故事区域 */}
               {recentStories && recentStories.length > 0 && (
-                <AnimatedCard index={2} className="mb-6">
+                <AnimatedCard index={2} className="mb-6" usePageNavigation={true}>
                   <h3 className="text-xl font-bold text-gray-800 mb-4">最近的故事</h3>
                 </AnimatedCard>
               )}
@@ -261,6 +261,7 @@ const Story: React.FC = () => {
                     index={3 + index}
                     className="group bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200 ease-out flex items-center space-x-5 cursor-pointer will-change-transform hover:scale-[1.02] hover:translate-y-[-4px] border border-gray-200/50"
                     onClick={() => handleContinueStory(story.id)}
+                    usePageNavigation={true}
                   >
                     <div className={`p-4 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-200 ease-out will-change-transform ${index === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                       <BookOpen className="w-6 h-6 text-white" />
@@ -316,7 +317,7 @@ const Story: React.FC = () => {
           )}
 
           {/* Divider */}
-          <AnimatedCard index={5} className="text-center my-12">
+          <AnimatedCard index={5} className="text-center my-12" usePageNavigation={true}>
             <div className="relative">
               <hr className="border-gray-200" />
               <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-gray-50 px-6 text-sm text-gray-500 font-medium">
@@ -329,6 +330,7 @@ const Story: React.FC = () => {
           <AnimatedGrid 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             startIndex={6}
+            usePageNavigation={true}
           >
             {/* Card 1: Quick Start */}
             <div 

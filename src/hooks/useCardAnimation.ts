@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { usePerformanceConfig } from './usePerformanceConfig';
+import { usePerformanceConfig, usePageNavigationConfig } from './usePerformanceConfig';
 
 interface UseCardAnimationOptions {
   delay?: number;
@@ -126,18 +126,42 @@ export const usePageEnterAnimation = () => {
 };
 
 // 高性能动画Hook（用于低配置设备）
-export const useOptimizedAnimation = (index: number = 0): UseCardAnimationReturn => {
+export const useOptimizedAnimation = (index: number = 0, customDelay?: number): UseCardAnimationReturn => {
   const performanceConfig = usePerformanceConfig();
   
   // 低性能设备使用简化动画
   if (performanceConfig.performanceLevel === 'low') {
     return useCardAnimation({
       index,
+      delay: customDelay,
       duration: 150,
       threshold: 0.2, // 更高的触发阈值
       rootMargin: '100px' // 更大的根边距
     });
   }
   
-  return useStackedCardAnimation(index);
+  return useStackedCardAnimation(index, { delay: customDelay });
+};
+
+// 页面导航感知的优化动画Hook（专用于应用内页面）
+export const usePageNavigationAnimation = (index: number = 0, customDelay?: number): UseCardAnimationReturn => {
+  const navigationConfig = usePageNavigationConfig();
+  
+  // 低性能设备使用简化动画
+  if (navigationConfig.performanceLevel === 'low') {
+    return useCardAnimation({
+      index,
+      delay: customDelay,
+      duration: 150,
+      threshold: 0.2,
+      rootMargin: '100px'
+    });
+  }
+  
+  return useCardAnimation({
+    index,
+    delay: customDelay,
+    threshold: 0.1,
+    rootMargin: '50px'
+  });
 };

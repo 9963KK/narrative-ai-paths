@@ -7,17 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, 
   Sparkles, 
-  Users, 
-  Shield, 
   Zap, 
   PenTool,
   ArrowRight,
   Star,
-  Globe,
   Brain,
   Layers,
   FileText,
-  Share2
+  Share2,
+  CheckCircle,
+  Settings,
+  Target,
+  Cpu,
+  Users2,
+  Palette
 } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 
@@ -68,11 +71,37 @@ const Home: React.FC = () => {
     }
   ];
 
-  const stats = [
-    { number: "10K+", label: "创作故事", icon: <BookOpen className="w-5 h-5" /> },
-    { number: "5K+", label: "活跃用户", icon: <Users className="w-5 h-5" /> },
-    { number: "99.9%", label: "系统稳定性", icon: <Shield className="w-5 h-5" /> },
-    { number: "24/7", label: "技术支持", icon: <Globe className="w-5 h-5" /> }
+  const platformFeatures = [
+    {
+      icon: <Users2 className="w-6 h-6 text-blue-600" />,
+      title: "用户自主选择",
+      description: "每个故事节点都提供多个选择分支，您的决定决定故事走向，真正的互动式阅读体验。"
+    },
+    {
+      icon: <Target className="w-6 h-6 text-purple-600" />,
+      title: "故事结局定制化",
+      description: "根据您的选择路径和偏好，AI智能生成个性化结局，每次体验都独一无二。"
+    },
+    {
+      icon: <Cpu className="w-6 h-6 text-green-600" />,
+      title: "多模型适配",
+      description: "支持多种AI模型无缝切换，从轻量快速到深度创作，满足不同场景需求。"
+    },
+    {
+      icon: <Palette className="w-6 h-6 text-orange-600" />,
+      title: "风格自适应",
+      description: "AI学习您的阅读偏好，自动调整故事风格、语言特色和情节节奏。"
+    },
+    {
+      icon: <Settings className="w-6 h-6 text-indigo-600" />,
+      title: "深度定制化",
+      description: "从角色设定到世界观构建，支持全方位个性化定制，打造专属故事宇宙。"
+    },
+    {
+      icon: <CheckCircle className="w-6 h-6 text-emerald-600" />,
+      title: "智能续写辅助",
+      description: "AI实时分析故事脉络，提供续写建议和情节优化，让创作更加流畅自然。"
+    }
   ];
 
   return (
@@ -147,29 +176,10 @@ const Home: React.FC = () => {
         <div className="absolute bottom-20 right-4 w-72 h-72 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mix-blend-multiply filter blur-lg opacity-15 will-change-transform"></div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedCard index={2}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl mx-auto mb-4">
-                    {stat.icon}
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
-                  <div className="text-gray-600">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </AnimatedCard>
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedCard index={3}>
+          <AnimatedCard index={2}>
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
                 强大的功能特性
@@ -180,7 +190,7 @@ const Home: React.FC = () => {
             </div>
           </AnimatedCard>
           
-          <AnimatedGrid startIndex={4} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <AnimatedGrid startIndex={3} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="group bg-white/80 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 will-change-transform">
                 <CardHeader className="text-center pb-4">
@@ -202,10 +212,48 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Platform Features Section */}
+      <section className="py-20 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedCard index={7}>
+            <div className="text-center mb-16">
+              <Badge className="mb-6 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-0">
+                <Sparkles className="w-4 h-4 mr-2" />
+                平台核心优势
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                为什么选择织梦师？
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                我们专注于打造最智能、最个性化的AI故事创作平台，让每一个故事都成为独特的艺术品
+              </p>
+            </div>
+          </AnimatedCard>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {platformFeatures.map((feature, index) => (
+              <AnimatedCard key={index} index={8 + index}>
+                <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 h-full">
+                  <div className="flex items-center mb-6">
+                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">{feature.title}</h3>
+                  </div>
+                  <p className="text-gray-600 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </AnimatedCard>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <AnimatedCard index={8}>
+          <AnimatedCard index={0} delay={100}>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               准备开始您的创作之旅了吗？
             </h2>
@@ -223,7 +271,7 @@ const Home: React.FC = () => {
                 size="lg" 
                 variant="outline" 
                 onClick={handleQuickStart}
-                className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-medium transition-all duration-300"
+                className="w-full sm:w-auto border-white/80 text-white bg-white/10 hover:bg-white hover:text-blue-600 backdrop-blur-sm px-8 py-4 text-lg font-medium transition-all duration-300 hover:border-white shadow-xl hover:shadow-2xl"
               >
                 游客体验
                 <Zap className="ml-2 w-5 h-5" />
@@ -236,7 +284,7 @@ const Home: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedCard index={9}>
+          <AnimatedCard index={0} delay={200}>
             <div className="text-center">
               <div className="flex items-center justify-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">

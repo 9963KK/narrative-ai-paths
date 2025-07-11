@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOptimizedAnimation } from '@/hooks/useCardAnimation';
+import { useOptimizedAnimation, usePageNavigationAnimation } from '@/hooks/useCardAnimation';
 
 interface AnimatedCardProps {
   children: React.ReactNode;
@@ -8,6 +8,8 @@ interface AnimatedCardProps {
   style?: React.CSSProperties;
   onClick?: () => void;
   disabled?: boolean;
+  usePageNavigation?: boolean; // 新增属性，用于指示是否使用页面导航感知动画
+  delay?: number; // 自定义延迟时间（毫秒）
 }
 
 export const AnimatedCard: React.FC<AnimatedCardProps> = ({
@@ -16,9 +18,13 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   className = '',
   style: customStyle,
   onClick,
-  disabled = false
+  disabled = false,
+  usePageNavigation = false,
+  delay
 }) => {
-  const { ref, animationClass, style: animationStyle } = useOptimizedAnimation(index);
+  const { ref, animationClass, style: animationStyle } = usePageNavigation 
+    ? usePageNavigationAnimation(index, delay)
+    : useOptimizedAnimation(index, delay);
 
   // 合并样式
   const combinedStyle = {
@@ -42,13 +48,17 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
 interface AnimatedHeaderProps {
   children: React.ReactNode;
   className?: string;
+  usePageNavigation?: boolean;
 }
 
 export const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
   children,
-  className = ''
+  className = '',
+  usePageNavigation = false
 }) => {
-  const { ref, animationClass, style } = useOptimizedAnimation(0); // 标头最先出现
+  const { ref, animationClass, style } = usePageNavigation 
+    ? usePageNavigationAnimation(0) 
+    : useOptimizedAnimation(0); // 标头最先出现
 
   return (
     <div
@@ -65,13 +75,17 @@ export const AnimatedHeader: React.FC<AnimatedHeaderProps> = ({
 interface AnimatedStatsProps {
   children: React.ReactNode;
   className?: string;
+  usePageNavigation?: boolean;
 }
 
 export const AnimatedStats: React.FC<AnimatedStatsProps> = ({
   children,
-  className = ''
+  className = '',
+  usePageNavigation = false
 }) => {
-  const { ref, animationClass, style } = useOptimizedAnimation(1); // 第二个出现
+  const { ref, animationClass, style } = usePageNavigation 
+    ? usePageNavigationAnimation(1) 
+    : useOptimizedAnimation(1); // 第二个出现
 
   return (
     <div
@@ -89,19 +103,21 @@ interface AnimatedGridProps {
   children: React.ReactNode;
   className?: string;
   startIndex?: number;
+  usePageNavigation?: boolean;
 }
 
 export const AnimatedGrid: React.FC<AnimatedGridProps> = ({
   children,
   className = '',
-  startIndex = 2
+  startIndex = 2,
+  usePageNavigation = false
 }) => {
   const childrenArray = React.Children.toArray(children);
   
   return (
     <div className={className}>
       {childrenArray.map((child, index) => (
-        <AnimatedCard key={index} index={startIndex + index}>
+        <AnimatedCard key={index} index={startIndex + index} usePageNavigation={usePageNavigation}>
           {child}
         </AnimatedCard>
       ))}

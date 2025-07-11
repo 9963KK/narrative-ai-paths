@@ -18,25 +18,99 @@ export interface DeviceInfo {
   isLowEnd: boolean;
 }
 
-// 性能等级配置 - 进一步调慢动画速度，创造更舒缓的堆列效果
+// 检测用户访问状态
+const detectUserVisitStatus = (): 'first-time' | 'returning' => {
+  try {
+    const lastVisit = localStorage.getItem('lastVisitTime');
+    const currentTime = Date.now();
+    
+    if (!lastVisit) {
+      // 首次访问，记录时间
+      localStorage.setItem('lastVisitTime', currentTime.toString());
+      return 'first-time';
+    }
+    
+    const timeSinceLastVisit = currentTime - parseInt(lastVisit);
+    // 如果距离上次访问超过1小时，认为是返回用户，否则是同一次会话
+    if (timeSinceLastVisit > 60 * 60 * 1000) { // 1小时
+      localStorage.setItem('lastVisitTime', currentTime.toString());
+      return 'returning';
+    }
+    
+    return 'first-time'; // 同一次会话继续
+  } catch (error) {
+    return 'first-time';
+  }
+};
+
+// 检测页面内导航状态（专用于应用内页面跳转）
+const detectPageNavigationStatus = (): 'first-visit' | 'page-return' => {
+  try {
+    const currentPath = window.location.pathname;
+    const lastPath = sessionStorage.getItem('lastPagePath');
+    const currentTime = Date.now();
+    const lastPageTime = sessionStorage.getItem('lastPageTime');
+    
+    // 更新当前页面路径和时间
+    sessionStorage.setItem('lastPagePath', currentPath);
+    sessionStorage.setItem('lastPageTime', currentTime.toString());
+    
+    // 如果有之前的路径记录且不是同一个页面，且时间间隔较短（说明是页面间跳转）
+    if (lastPath && lastPath !== currentPath && lastPageTime) {
+      const timeSinceLastPage = currentTime - parseInt(lastPageTime);
+      // 5分钟内的页面跳转认为是应用内导航
+      if (timeSinceLastPage < 5 * 60 * 1000) {
+        return 'page-return';
+      }
+    }
+    
+    return 'first-visit';
+  } catch (error) {
+    return 'first-visit';
+  }
+};
+
+// 性能等级配置 - 优化动画速度，平衡视觉效果与用户体验
 const animationLevels = {
   high: {
-    delay: 300,
-    duration: 1200,
+    delay: 150,
+    duration: 600,
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // 更加优雅的缓动曲线
-    stagger: 300
+    stagger: 150
   },
   medium: {
-    delay: 250,
-    duration: 900,
+    delay: 120,
+    duration: 500,
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-    stagger: 250
+    stagger: 120
   },
   low: {
-    delay: 200,
-    duration: 600,
+    delay: 100,
+    duration: 400,
     easing: 'ease-out',
-    stagger: 200
+    stagger: 100
+  }
+};
+
+// 返回用户的快速动画配置（只缩短触发间隔，保持动画播放时间）
+const returningUserAnimationLevels = {
+  high: {
+    delay: 80,
+    duration: 600, // 保持与原来相同的播放时间
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    stagger: 80 // 只缩短触发间隔
+  },
+  medium: {
+    delay: 60,
+    duration: 500, // 保持与原来相同的播放时间
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    stagger: 60 // 只缩短触发间隔
+  },
+  low: {
+    delay: 50,
+    duration: 400, // 保持与原来相同的播放时间
+    easing: 'ease-out',
+    stagger: 50 // 只缩短触发间隔
   }
 };
 
@@ -135,8 +209,11 @@ export const usePerformanceConfig = (): AnimationConfig => {
     const performanceLevel = evaluatePerformanceLevel(deviceInfo);
     const reducedMotion = detectReducedMotion();
     const userPrefs = getUserAnimationPreferences();
+    const userVisitStatus = detectUserVisitStatus();
     
-    const baseConfig = animationLevels[performanceLevel];
+    // 根据用户访问状态选择动画配置
+    const configLevels = userVisitStatus === 'returning' ? returningUserAnimationLevels : animationLevels;
+    const baseConfig = configLevels[performanceLevel];
     
     return {
       performanceLevel,
@@ -207,6 +284,53 @@ export const usePerformanceAwareAnimation = (options: {
     rootMargin,
     config
   };
+};
+
+// 页面导航感知的动画配置Hook
+export const usePageNavigationConfig = (): AnimationConfig => {
+  const [config, setConfig] = useState<AnimationConfig>(() => {
+    // 初始化时的默认配置
+    const deviceInfo = detectDevicePerformance();
+    const performanceLevel = evaluatePerformanceLevel(deviceInfo);
+    const reducedMotion = detectReducedMotion();
+    const userPrefs = getUserAnimationPreferences();
+    const navigationStatus = detectPageNavigationStatus();
+    
+    // 根据导航状态选择动画配置
+    const configLevels = navigationStatus === 'page-return' ? returningUserAnimationLevels : animationLevels;
+    const baseConfig = configLevels[performanceLevel];
+    
+    return {
+      performanceLevel,
+      enableAnimations: !reducedMotion && userPrefs.enableAnimations,
+      reducedMotion,
+      ...baseConfig
+    };
+  });
+
+  useEffect(() => {
+    // 监听reduced-motion偏好变化
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      setConfig(prev => ({
+        ...prev,
+        reducedMotion: e.matches,
+        enableAnimations: !e.matches && getUserAnimationPreferences().enableAnimations
+      }));
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      // 兼容老版本浏览器
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
+
+  return config;
 };
 
 export default usePerformanceConfig;
