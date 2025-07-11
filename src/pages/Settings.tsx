@@ -239,6 +239,7 @@ const Settings: React.FC = () => {
                             id="username" 
                             value={user?.username || ''} 
                             disabled={isGuest}
+                            readOnly={isGuest}
                             className="mt-1"
                           />
                         </div>
@@ -249,6 +250,7 @@ const Settings: React.FC = () => {
                             type="email" 
                             value={isGuest ? '游客模式' : user?.email || ''} 
                             disabled={isGuest}
+                            readOnly={isGuest}
                             className="mt-1"
                           />
                         </div>
