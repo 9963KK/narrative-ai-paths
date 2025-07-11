@@ -75,7 +75,7 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 will-change-scroll">
       {/* Header */}
       <header className="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,9 +139,9 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* 装饰性元素 */}
-        <div className="absolute top-20 left-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-20 right-4 w-72 h-72 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        {/* 装饰性元素 - 优化性能 */}
+        <div className="absolute top-20 left-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mix-blend-multiply filter blur-lg opacity-15 will-change-transform"></div>
+        <div className="absolute bottom-20 right-4 w-72 h-72 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mix-blend-multiply filter blur-lg opacity-15 will-change-transform"></div>
       </section>
 
       {/* Stats Section */}
@@ -175,9 +175,9 @@ const Home: React.FC = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="group bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-2">
+              <Card key={index} className="group bg-white/80 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 will-change-transform">
                 <CardHeader className="text-center pb-4">
-                  <div className={`inline-flex items-center justify-center w-20 h-20 ${feature.bgColor} rounded-3xl mx-auto mb-6 shadow-xl group-hover:shadow-2xl transform group-hover:scale-110 transition-all duration-500`}>
+                  <div className={`inline-flex items-center justify-center w-20 h-20 ${feature.bgColor} rounded-3xl mx-auto mb-6 shadow-lg group-hover:shadow-xl transform group-hover:scale-105 transition-all duration-300 will-change-transform`}>
                     {feature.icon}
                   </div>
                   <CardTitle className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">

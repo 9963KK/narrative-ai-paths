@@ -100,6 +100,25 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* 优化滚动性能 */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* 为动画元素添加硬件加速 */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-scroll {
+    will-change: scroll-position;
+  }
 }
 
 /* 防止意外选中页面文字，提升用户体验 */
@@ -119,6 +138,26 @@
     user-select: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 优化滚动性能的工具类 */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* 减少重绘的动画 */
+  .optimized-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .optimized-hover:hover {
+    transform: translateY(-2px) translateZ(0);
   }
   
   /* 确保输入框和文本区域仍然可选中 */
