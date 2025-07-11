@@ -95,6 +95,11 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
   
+  // 新增：选项预生成状态管理
+  const [pendingChoices, setPendingChoices] = useState<Choice[] | null>(null); // 预生成的选项
+  const [isPreGenerating, setIsPreGenerating] = useState(false); // 是否正在预生成选项
+  const [preGenerationStartTime, setPreGenerationStartTime] = useState<number>(0); // 预生成开始时间
+  
   // 调试：监控isProcessingChoice状态变化
   useEffect(() => {
     console.log('🎯 isProcessingChoice状态变化:', isProcessingChoice);
@@ -613,14 +618,62 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     }
   };
 
-  // 模拟打字机效果
+  // 预生成选项的函数
+  const preGenerateChoices = async (scene: string, characters: any[]) => {
+    setIsPreGenerating(true);
+    setPreGenerationStartTime(Date.now());
+    console.log('🚀 故事内容解析完成，立即开始预生成选项...');
+    
+    try {
+      const newChoices = await generateAIChoices(scene, characters);
+      if (newChoices && newChoices.length > 0) {
+        setPendingChoices(newChoices);
+        console.log('✅ 选项预生成完成，等待打字机效果结束', newChoices);
+      } else {
+        console.warn('⚠️ 选项预生成失败，将在打字机结束后重试');
+        setPendingChoices(null);
+      }
+    } catch (error) {
+      console.error('❌ 选项预生成遇到错误:', error);
+      setPendingChoices(null);
+    } finally {
+      setIsPreGenerating(false);
+    }
+  };
+
+  // 优化的打字机效果 - 并行处理
   useEffect(() => {
     if (story.current_scene && story.current_scene !== currentText) {
       setIsTyping(true);
       setCurrentText('');
       setShowChoices(false);
       setChoices([]);
+      setPendingChoices(null); // 清空之前的预生成选项
       
+      // 检查是否需要生成选项
+      const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
+      const shouldShowChoices = story.needs_choice !== false && 
+                              !story.is_completed && 
+                              !initialStory.is_completed &&
+                              !hasReachedEndingCondition;
+      
+      console.log('🎯 检查是否需要生成选项:', {
+        needs_choice: story.needs_choice,
+        is_completed: story.is_completed,
+        initialStory_is_completed: initialStory.is_completed,
+        hasReachedEndingCondition,
+        story_progress: story.story_progress,
+        shouldShowChoices,
+        scene_length: story.current_scene?.length,
+        chapter: story.chapter
+      });
+      
+      // 立即开始预生成选项（与打字机并行）
+      if (shouldShowChoices) {
+        preGenerateChoices(story.current_scene, story.characters);
+      }
+      
+      // 打字机效果（与选项生成并行）
       let index = 0;
       const interval = setInterval(() => {
         if (index < story.current_scene.length) {
@@ -628,53 +681,46 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           index++;
         } else {
           setIsTyping(false);
-          // 打字完成后立即显示选择项
-          (async () => {
-            // 检查是否需要显示选择项 - 增强逻辑，明确检查故事状态
-            // 当达到结局条件时不再生成AI选择，而是显示结局选择
-            const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
-            const shouldShowChoices = story.needs_choice !== false && 
-                                    !story.is_completed && 
-                                    !initialStory.is_completed &&
-                                    !hasReachedEndingCondition;
-            
-            console.log('🎯 检查是否需要显示选择项:', {
-              needs_choice: story.needs_choice,
-              is_completed: story.is_completed,
-              initialStory_is_completed: initialStory.is_completed,
-              hasReachedEndingCondition,
-              story_progress: story.story_progress,
-              shouldShowChoices,
-              scene_length: story.current_scene?.length,
-              chapter: story.chapter
-            });
-            
-            if (shouldShowChoices) {
-              console.log('✅ 开始生成选择项...');
-              const newChoices = await generateAIChoices(story.current_scene, story.characters);
-              console.log('🎯 生成的选择项:', newChoices);
-              
-              if (newChoices && newChoices.length > 0) {
-                setChoices(newChoices);
-                setShowChoices(true);
-                console.log('✅ 选择项已设置并显示');
-              } else {
-                console.error('⚠️ 所有选择项生成方法都失败（AI重试3次+智能回退+通用回退），故事真的卡住了');
-                setIsStoryStuck(true);
-                // 即使生成失败，也提供基本选择
-                const fallbackChoices = [
-                  { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
-                  { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
-                  { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
-                ];
-                setChoices(fallbackChoices);
-                setShowChoices(true);
-                console.log('🚨 使用紧急回退选择');
-              }
+          console.log('✅ 打字机效果完成，检查选项状态...');
+          
+          // 打字完成后检查选项状态
+          if (shouldShowChoices) {
+            if (pendingChoices && pendingChoices.length > 0) {
+              // 选项已经预生成完成，立即显示
+              console.log('🎉 选项已预生成完成，立即显示!');
+              setChoices(pendingChoices);
+              setShowChoices(true);
+              setPendingChoices(null);
+            } else if (isPreGenerating) {
+              // 选项还在生成中，等待完成
+              console.log('⏳ 选项还在生成中，等待完成...');
+              // 这种情况下，会由下面的useEffect来处理显示
             } else {
-              console.log('❌ 不需要显示选择项，或故事已完成');
+              // 选项预生成失败，现在重新生成
+              console.log('⚠️ 选项预生成失败，现在重新生成...');
+              (async () => {
+                const newChoices = await generateAIChoices(story.current_scene, story.characters);
+                if (newChoices && newChoices.length > 0) {
+                  setChoices(newChoices);
+                  setShowChoices(true);
+                  console.log('✅ 重新生成的选项已显示');
+                } else {
+                  console.error('❌ 重新生成也失败，使用回退选项');
+                  setIsStoryStuck(true);
+                  const fallbackChoices = [
+                    { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
+                    { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
+                    { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
+                  ];
+                  setChoices(fallbackChoices);
+                  setShowChoices(true);
+                }
+              })();
             }
-          })();
+          } else {
+            console.log('❌ 不需要显示选择项，或故事已完成');
+          }
+          
           clearInterval(interval);
         }
       }, 30); // 稍微加快打字速度
@@ -682,6 +728,16 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       return () => clearInterval(interval);
     }
   }, [story.current_scene]);
+  
+  // 监听预生成完成，如果打字机已结束则立即显示
+  useEffect(() => {
+    if (pendingChoices && pendingChoices.length > 0 && !isTyping && !showChoices) {
+      console.log('🎉 预生成完成且打字机已结束，立即显示选项!');
+      setChoices(pendingChoices);
+      setShowChoices(true);
+      setPendingChoices(null);
+    }
+  }, [pendingChoices, isTyping, showChoices]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
@@ -1123,16 +1179,61 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Card>
             )}
 
-            {/* 选择项生成中 - 优化版 */}
-            {isGeneratingChoices && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-xl overflow-hidden">
+            {/* 选择项预生成中 - 新增 */}
+            {(isPreGenerating || isGeneratingChoices) && !isProcessingChoice && (
+              <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
                 <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="relative">
-                      <div className="w-6 h-6 border-2 border-indigo-200 rounded-full"></div>
-                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <div className="w-6 h-6 border-2 border-blue-200 rounded-full"></div>
+                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                      </div>
+                      <span className="text-slate-700 font-medium">
+                        {isTyping ? '正在准备选项...' : '正在生成选择项...'}
+                      </span>
                     </div>
-                    <span className="text-slate-600 font-medium">正在生成选择项...</span>
+                    
+                    {isTyping && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-blue-700 text-sm">
+                          🚀 正在与打字效果并行生成选项，阅读完成后即可看到选项
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-center space-x-1">
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-150"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300"></div>
+                      <span className="ml-3 text-xs text-slate-500">
+                        {modelConfig?.apiKey ? `${modelConfig.provider}正在生成中...` : '选项生成中...'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* 选项已预生成完成，等待打字机结束 */}
+            {pendingChoices && pendingChoices.length > 0 && isTyping && (
+              <Card className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 backdrop-blur-sm shadow-xl border border-green-200/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="pt-4 pb-4">
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-slate-700 font-medium">选项已准备完成</span>
+                    </div>
+                    
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-green-700 text-sm">
+                        ✨ {pendingChoices.length}个选项已生成完成，阅读完成后将立即显示
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
