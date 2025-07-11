@@ -197,6 +197,7 @@ const Profile: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
+              </AnimatedCard>
             </div>
 
             {/* 统计信息 */}
@@ -390,8 +391,6 @@ const Profile: React.FC = () => {
                     )}
                   </div>
                 </CardContent>
-                </Card>
-              </AnimatedCard>
                 </Card>
               </AnimatedCard>
             </div>
