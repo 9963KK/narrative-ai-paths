@@ -27,10 +27,15 @@ import {
   RefreshCw,
   Zap,
   Target,
-  Activity
+  Activity,
+  Globe,
+  Key,
+  Download,
+  AlertTriangle
 } from 'lucide-react';
 import { userModelConfigService, type SystemModelPool, type UserModelConfig, type AvailableModel } from '@/services/userModelConfigService';
 import { cloudAuthService } from '@/services/cloudAuthService';
+import { modelDiscoveryService, type DiscoveredModel } from '@/services/modelDiscoveryService';
 
 interface User {
   id: string;
@@ -59,6 +64,17 @@ export const ModelManagementTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedModelForView, setSelectedModelForView] = useState<SystemModelPool | null>(null);
   const [userModelsMap, setUserModelsMap] = useState<Record<string, UserModelConfig[]>>({});
+
+  // 模型发现相关状态
+  const [showModelDiscovery, setShowModelDiscovery] = useState(false);
+  const [discoveryData, setDiscoveryData] = useState({
+    baseUrl: '',
+    apiKey: '',
+    provider: '' as 'openai' | 'claude' | ''
+  });
+  const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [selectedDiscoveredModels, setSelectedDiscoveredModels] = useState<string[]>([]);
 
   // 表单数据
   const [assignmentData, setAssignmentData] = useState<ModelAssignmentData>({
@@ -179,6 +195,103 @@ export const ModelManagementTab: React.FC = () => {
     }
   };
 
+  // 模型发现处理函数
+  const handleDiscoverModels = async () => {
+    if (!discoveryData.baseUrl || !discoveryData.apiKey) {
+      alert('请填写BaseURL和API密钥');
+      return;
+    }
+
+    setIsDiscovering(true);
+    try {
+      const models = await modelDiscoveryService.discoverModels(
+        discoveryData.baseUrl,
+        discoveryData.apiKey,
+        discoveryData.provider || undefined
+      );
+      
+      setDiscoveredModels(models);
+      console.log(`🎉 发现 ${models.length} 个模型:`, models);
+      
+      if (models.length === 0) {
+        alert('未发现任何模型，请检查BaseURL和API密钥是否正确');
+      }
+    } catch (error) {
+      console.error('模型发现失败:', error);
+      alert(`模型发现失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setDiscoveredModels([]);
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  // 添加发现的模型到系统模型池
+  const handleAddDiscoveredModels = async () => {
+    if (selectedDiscoveredModels.length === 0) {
+      alert('请选择要添加的模型');
+      return;
+    }
+
+    try {
+      const modelsToAdd = discoveredModels.filter(model => 
+        selectedDiscoveredModels.includes(model.id)
+      );
+
+      // 转换发现的模型为系统模型格式
+      const systemModels = modelsToAdd.map(model => ({
+        provider: model.provider,
+        model: model.name,
+        internalName: `${model.provider}-${model.name}`,
+        displayName: model.displayName,
+        description: model.description,
+        capabilityTags: ['creative', 'general'], // 默认标签
+        performanceLevel: 'standard' as const, // 默认标准级别
+        costPer1kTokens: 0.002, // 默认成本，管理员可后续调整
+        apiConfig: {
+          api_key: discoveryData.apiKey,
+          base_url: discoveryData.baseUrl
+        },
+        isActive: true
+      }));
+
+      console.log('准备添加模型:', systemModels);
+
+      const result = await userModelConfigService.addSystemModels(systemModels);
+      
+      if (result.success > 0) {
+        alert(`成功添加 ${result.success} 个模型，失败 ${result.failed} 个`);
+        if (result.errors.length > 0) {
+          console.error('添加错误:', result.errors);
+        }
+        
+        // 重新加载数据
+        await loadData();
+        
+        // 重置发现表单
+        resetDiscoveryForm();
+      } else {
+        alert('模型添加失败，请检查控制台错误信息');
+        console.error('添加失败，错误:', result.errors);
+      }
+      
+    } catch (error) {
+      console.error('添加模型失败:', error);
+      alert(`添加模型失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  };
+
+  // 重置模型发现表单
+  const resetDiscoveryForm = () => {
+    setDiscoveryData({
+      baseUrl: '',
+      apiKey: '',
+      provider: ''
+    });
+    setDiscoveredModels([]);
+    setSelectedDiscoveredModels([]);
+    setShowModelDiscovery(false);
+  };
+
   // 获取性能等级颜色
   const getPerformanceColor = (level: string) => {
     switch (level) {
@@ -225,10 +338,19 @@ export const ModelManagementTab: React.FC = () => {
       {/* 系统模型池概览 */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Cpu className="h-5 w-5" />
-            系统模型池
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5" />
+              系统模型池
+            </CardTitle>
+            <Button
+              onClick={() => setShowModelDiscovery(true)}
+              className="flex items-center gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              发现模型
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -570,6 +692,192 @@ export const ModelManagementTab: React.FC = () => {
                         {tag}
                       </Badge>
                     ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 模型发现弹窗 */}
+      {showModelDiscovery && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  发现模型
+                </CardTitle>
+                <Button variant="ghost" onClick={resetDiscoveryForm}>
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* 配置表单 */}
+              <div className="space-y-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="provider-type">提供商类型</Label>
+                    <Select 
+                      value={discoveryData.provider} 
+                      onValueChange={(value: 'openai' | 'claude') => setDiscoveryData(prev => ({ ...prev, provider: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择提供商类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI兼容</SelectItem>
+                        <SelectItem value="claude">Claude兼容</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="base-url">Base URL</Label>
+                    <Input
+                      id="base-url"
+                      value={discoveryData.baseUrl}
+                      onChange={(e) => setDiscoveryData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                      placeholder="https://api.example.com/v1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="api-key">API 密钥</Label>
+                    <Input
+                      id="api-key"
+                      type="password"
+                      value={discoveryData.apiKey}
+                      onChange={(e) => setDiscoveryData(prev => ({ ...prev, apiKey: e.target.value }))}
+                      placeholder="sk-..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleDiscoverModels}
+                    disabled={isDiscovering || !discoveryData.baseUrl || !discoveryData.apiKey}
+                    className="flex items-center gap-2"
+                  >
+                    {isDiscovering ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                    {isDiscovering ? '发现中...' : '发现模型'}
+                  </Button>
+                  
+                  {discoveredModels.length > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDiscoveredModels([]);
+                        setSelectedDiscoveredModels([]);
+                      }}
+                    >
+                      清除结果
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* 发现结果 */}
+              {discoveredModels.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">
+                      发现的模型 ({discoveredModels.length} 个)
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allIds = discoveredModels.map(m => m.id);
+                          setSelectedDiscoveredModels(
+                            selectedDiscoveredModels.length === allIds.length ? [] : allIds
+                          );
+                        }}
+                      >
+                        {selectedDiscoveredModels.length === discoveredModels.length ? '取消全选' : '全选'}
+                      </Button>
+                      <Button
+                        onClick={handleAddDiscoveredModels}
+                        disabled={selectedDiscoveredModels.length === 0}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        添加选中模型 ({selectedDiscoveredModels.length})
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">选择</TableHead>
+                          <TableHead>模型名称</TableHead>
+                          <TableHead>显示名称</TableHead>
+                          <TableHead>提供商</TableHead>
+                          <TableHead>描述</TableHead>
+                          <TableHead>推荐</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {discoveredModels.map((model) => (
+                          <TableRow key={model.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedDiscoveredModels.includes(model.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedDiscoveredModels(prev => [...prev, model.id]);
+                                  } else {
+                                    setSelectedDiscoveredModels(prev => prev.filter(id => id !== model.id));
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{model.name}</TableCell>
+                            <TableCell className="font-medium">{model.displayName}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{model.provider}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">{model.description}</TableCell>
+                            <TableCell>
+                              {model.isRecommended && (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  <Star className="h-3 w-3 mr-1" />
+                                  推荐
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* 使用说明 */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">使用说明</h4>
+                    <ul className="text-sm text-blue-700 mt-1 space-y-1">
+                      <li>• <strong>OpenAI兼容:</strong> 支持OpenAI、DeepSeek、Moonshot、智谱AI等使用OpenAI格式的API</li>
+                      <li>• <strong>Claude兼容:</strong> 支持Anthropic Claude API格式</li>
+                      <li>• <strong>Base URL:</strong> API的基础地址，如 https://api.deepseek.com/v1</li>
+                      <li>• <strong>API密钥:</strong> 该服务商提供的API密钥</li>
+                      <li>• 发现成功后可选择要添加到系统的模型</li>
+                    </ul>
                   </div>
                 </div>
               </div>

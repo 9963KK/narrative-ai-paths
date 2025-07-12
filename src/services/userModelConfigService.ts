@@ -531,6 +531,126 @@ class UserModelConfigService {
       return false;
     }
   }
+
+  /**
+   * 添加系统模型到模型池（管理员功能）
+   */
+  async addSystemModel(
+    provider: string,
+    model: string,
+    internalName: string,
+    displayName: string,
+    description: string,
+    capabilityTags: string[],
+    performanceLevel: 'basic' | 'standard' | 'advanced' | 'premium',
+    costPer1kTokens: number,
+    apiConfig: any,
+    isActive: boolean = true
+  ): Promise<boolean> {
+    try {
+      const isAdmin = await unifiedAuthService.isAdmin();
+      if (!isAdmin) {
+        console.warn('非管理员用户，无法添加系统模型');
+        return false;
+      }
+
+      const adminId = unifiedAuthService.getCurrentUserId();
+      if (!adminId || !this.isValidUUID(adminId)) {
+        console.warn('无效的管理员ID');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('system_model_pool')
+        .insert({
+          provider,
+          model,
+          internal_name: internalName,
+          display_name: displayName,
+          description,
+          capability_tags: capabilityTags,
+          performance_level: performanceLevel,
+          cost_per_1k_tokens: costPer1kTokens,
+          api_config: apiConfig,
+          is_active: isActive,
+          created_by: adminId
+        });
+
+      if (error) {
+        console.error('添加系统模型失败:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('添加系统模型服务错误:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 批量添加系统模型（管理员功能）
+   */
+  async addSystemModels(models: Array<{
+    provider: string;
+    model: string;
+    internalName: string;
+    displayName: string;
+    description: string;
+    capabilityTags: string[];
+    performanceLevel: 'basic' | 'standard' | 'advanced' | 'premium';
+    costPer1kTokens: number;
+    apiConfig: any;
+    isActive?: boolean;
+  }>): Promise<{ success: number; failed: number; errors: string[] }> {
+    const result = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    try {
+      const isAdmin = await unifiedAuthService.isAdmin();
+      if (!isAdmin) {
+        result.errors.push('非管理员用户，无法添加系统模型');
+        return result;
+      }
+
+      const adminId = unifiedAuthService.getCurrentUserId();
+      if (!adminId || !this.isValidUUID(adminId)) {
+        result.errors.push('无效的管理员ID');
+        return result;
+      }
+
+      for (const modelData of models) {
+        const success = await this.addSystemModel(
+          modelData.provider,
+          modelData.model,
+          modelData.internalName,
+          modelData.displayName,
+          modelData.description,
+          modelData.capabilityTags,
+          modelData.performanceLevel,
+          modelData.costPer1kTokens,
+          modelData.apiConfig,
+          modelData.isActive ?? true
+        );
+
+        if (success) {
+          result.success++;
+        } else {
+          result.failed++;
+          result.errors.push(`添加模型 ${modelData.displayName} 失败`);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('批量添加系统模型服务错误:', error);
+      result.errors.push(`批量添加服务错误: ${error}`);
+      return result;
+    }
+  }
 }
 
 // 导出单例服务实例
