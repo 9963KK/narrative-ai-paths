@@ -153,15 +153,6 @@ export function CreditBadge({
         </div>
       </div>
 
-      {/* 积分说明 */}
-      <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-        <div className="font-medium mb-1">💡 积分说明：</div>
-        <ul className="space-y-1">
-          <li>• 1积分 ≈ 1000 tokens（根据AI模型不同有所调整）</li>
-          <li>• 新用户赠送100积分</li>
-          <li>• 积分在AI创作时自动扣除</li>
-        </ul>
-      </div>
     </div>
   );
 }
