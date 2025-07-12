@@ -36,6 +36,7 @@ import {
 import { userModelConfigService, type SystemModelPool, type UserModelConfig, type AvailableModel } from '@/services/userModelConfigService';
 import { cloudAuthService } from '@/services/cloudAuthService';
 import { modelDiscoveryService, type DiscoveredModel } from '@/services/modelDiscoveryService';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -167,7 +168,6 @@ export const ModelManagementTab: React.FC = () => {
       const result = await userModelConfigService.batchAssignModelsToUsers(
         selectedUsers,
         assignmentData.modelPoolId,
-        assignmentData.displayName,
         assignmentData.description,
         assignmentData.isDefault,
         assignmentData.priority,
@@ -252,7 +252,6 @@ export const ModelManagementTab: React.FC = () => {
         provider: model.provider,
         model: model.name,
         internalName: `${model.provider}-${model.name}`,
-        displayName: model.displayName,
         description: model.description,
         capabilityTags: ['creative', 'general'], // 默认标签
         performanceLevel: 'standard' as const, // 默认标准级别
@@ -306,7 +305,6 @@ export const ModelManagementTab: React.FC = () => {
   const handleEditModel = (model: SystemModelPool) => {
     setEditingModel(model);
     setEditFormData({
-      displayName: model.display_name,
       description: model.description,
       costPer1kTokens: model.cost_per_1k_tokens,
       isActive: model.is_active
@@ -323,7 +321,6 @@ export const ModelManagementTab: React.FC = () => {
       const { error } = await supabase
         .from('system_model_pool')
         .update({
-          display_name: editFormData.displayName,
           description: editFormData.description,
           cost_per_1k_tokens: editFormData.costPer1kTokens,
           is_active: editFormData.isActive,
@@ -344,7 +341,6 @@ export const ModelManagementTab: React.FC = () => {
       setShowEditForm(false);
       setEditingModel(null);
       setEditFormData({
-        displayName: '',
         description: '',
         costPer1kTokens: 0,
         isActive: true
@@ -357,7 +353,7 @@ export const ModelManagementTab: React.FC = () => {
 
   // 处理删除模型
   const handleDeleteModel = async (model: SystemModelPool) => {
-    if (!confirm(`确定要删除模型 "${model.display_name}" 吗？\n\n注意：这将影响所有使用此模型的用户配置。`)) {
+    if (!confirm(`确定要删除模型 "${model.model}" 吗？\n\n注意：这将影响所有使用此模型的用户配置。`)) {
       return;
     }
 
@@ -510,7 +506,7 @@ export const ModelManagementTab: React.FC = () => {
                 <TableRow key={model.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{model.display_name}</div>
+                      <div className="font-medium">{model.model}</div>
                       <div className="text-sm text-gray-500">{model.internal_name}</div>
                     </div>
                   </TableCell>
@@ -594,7 +590,7 @@ export const ModelManagementTab: React.FC = () => {
                       setAssignmentData(prev => ({
                         ...prev,
                         modelPoolId: value,
-                        displayName: selectedModel?.display_name || '',
+                        displayName: selectedModel?.model || '',
                         description: selectedModel?.description || ''
                       }));
                     }}
@@ -609,7 +605,7 @@ export const ModelManagementTab: React.FC = () => {
                             <Badge className={getPerformanceColor(model.performance_level)}>
                               {model.performance_level}
                             </Badge>
-                            <span>{model.display_name}</span>
+                            <span>{model.model}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -618,12 +614,13 @@ export const ModelManagementTab: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="display-name">用户可见名称</Label>
+                  <Label htmlFor="display-name">模型编号</Label>
                   <Input
                     id="display-name"
                     value={assignmentData.displayName}
                     onChange={(e) => setAssignmentData(prev => ({ ...prev, displayName: e.target.value }))}
-                    placeholder="用户看到的模型名称"
+                    placeholder="模型编号"
+                    disabled
                   />
                 </div>
 
@@ -786,7 +783,7 @@ export const ModelManagementTab: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <Label className="font-medium">显示名称</Label>
-                  <p className="text-gray-800">{selectedModelForView.display_name}</p>
+                  <p className="text-gray-800">{selectedModelForView.model}</p>
                 </div>
                 <div>
                   <Label className="font-medium">内部标识</Label>
@@ -825,7 +822,7 @@ export const ModelManagementTab: React.FC = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Edit className="h-5 w-5" />
-                  编辑模型：{editingModel.display_name}
+                  编辑模型：{editingModel.model}
                 </CardTitle>
                 <Button variant="ghost" onClick={() => setShowEditForm(false)}>
                   <XCircle className="h-4 w-4" />
@@ -835,12 +832,12 @@ export const ModelManagementTab: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit-display-name">显示名称</Label>
+                  <Label htmlFor="edit-model-name">模型编号</Label>
                   <Input
-                    id="edit-display-name"
-                    value={editFormData.displayName}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                    placeholder="用户看到的模型名称"
+                    id="edit-model-name"
+                    value={editingModel.model}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </div>
 

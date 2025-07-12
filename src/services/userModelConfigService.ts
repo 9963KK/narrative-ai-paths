@@ -7,7 +7,6 @@ export interface SystemModelPool {
   provider: string;
   model: string;
   internal_name: string;
-  display_name: string;
   description: string;
   capability_tags: string[];
   performance_level: 'basic' | 'standard' | 'advanced' | 'premium';
@@ -23,7 +22,6 @@ export interface UserModelConfig {
   id: string;
   user_id: string;
   model_pool_id: string;
-  display_name: string;
   description: string;
   is_enabled: boolean;
   priority: number;
@@ -64,18 +62,18 @@ export interface ModelPresetGroup {
 
 export interface AvailableModel {
   config_id: string;
-  display_name: string;
+  model_name: string;
   description: string;
   capability_tags: string[];
   performance_level: string;
   priority: number;
   is_default: boolean;
+  provider: string;
 }
 
 export interface DefaultModel {
   provider: string;
   model: string;
-  display_name: string;
   config_id: string;
 }
 
@@ -227,7 +225,6 @@ class UserModelConfigService {
           id,
           user_id,
           model_pool_id,
-          display_name,
           description,
           is_enabled,
           priority,
@@ -242,7 +239,6 @@ class UserModelConfigService {
             provider,
             model,
             internal_name,
-            display_name,
             description,
             capability_tags,
             performance_level,
@@ -279,9 +275,8 @@ class UserModelConfigService {
       }
 
       const { data, error } = await supabase
-        .from('system_model_pool')
+        .from('v_available_system_models')
         .select('*')
-        .eq('is_active', true)
         .order('performance_level', { ascending: true })
         .order('cost_per_1k_tokens', { ascending: true });
 
@@ -303,7 +298,6 @@ class UserModelConfigService {
   async assignModelToUser(
     targetUserId: string,
     modelPoolId: string,
-    displayName: string,
     description: string,
     isDefault: boolean = false,
     priority: number = 1,
@@ -335,7 +329,6 @@ class UserModelConfigService {
         .insert({
           user_id: targetUserId,
           model_pool_id: modelPoolId,
-          display_name: displayName,
           description: description,
           is_enabled: true,
           priority: priority,
@@ -362,7 +355,6 @@ class UserModelConfigService {
   async batchAssignModelsToUsers(
     userIds: string[],
     modelPoolId: string,
-    displayName: string,
     description: string,
     isDefault: boolean = false,
     priority: number = 1,
@@ -539,7 +531,6 @@ class UserModelConfigService {
     provider: string,
     model: string,
     internalName: string,
-    displayName: string,
     description: string,
     capabilityTags: string[],
     performanceLevel: 'basic' | 'standard' | 'advanced' | 'premium',
@@ -566,7 +557,6 @@ class UserModelConfigService {
           provider,
           model,
           internal_name: internalName,
-          display_name: displayName,
           description,
           capability_tags: capabilityTags,
           performance_level: performanceLevel,
@@ -595,7 +585,6 @@ class UserModelConfigService {
     provider: string;
     model: string;
     internalName: string;
-    displayName: string;
     description: string;
     capabilityTags: string[];
     performanceLevel: 'basic' | 'standard' | 'advanced' | 'premium';
@@ -627,7 +616,6 @@ class UserModelConfigService {
           modelData.provider,
           modelData.model,
           modelData.internalName,
-          modelData.displayName,
           modelData.description,
           modelData.capabilityTags,
           modelData.performanceLevel,
@@ -640,7 +628,7 @@ class UserModelConfigService {
           result.success++;
         } else {
           result.failed++;
-          result.errors.push(`添加模型 ${modelData.displayName} 失败`);
+          result.errors.push(`添加模型 ${modelData.model} 失败`);
         }
       }
 
