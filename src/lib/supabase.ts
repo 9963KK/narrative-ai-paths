@@ -21,7 +21,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     // OAuth配置 - 使用标准化的回调URL
     redirectTo: getCallbackUrl(),
-    storageKey: 'supabase.auth.token'
+    storageKey: 'supabase.auth.token',
+    // 确保流程类型设置为正确
+    flowType: 'implicit'
   }
 });
 

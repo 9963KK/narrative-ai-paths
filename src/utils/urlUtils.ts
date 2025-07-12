@@ -135,8 +135,7 @@ export function setupHashCleaner(): () => void {
   // 监听hash变化
   window.addEventListener('hashchange', handleHashChange);
   
-  // 初始检查
-  handleHashChange();
+  // 注意：不要进行初始检查，避免干扰OAuth回调流程
   
   // 返回清理函数
   return () => {

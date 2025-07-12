@@ -35,11 +35,7 @@ export const OAuthCallback: React.FC = () => {
     });
     localStorage.setItem('oauth_callback_visits', JSON.stringify(visits.slice(-10))); // 只保留最近10次
     
-    // 立即清理OAuth hash参数
-    if (hasOAuthHash) {
-      console.log('🧹 立即清理OAuth hash参数...');
-      cleanOAuthCallbackUrl();
-    }
+    // 注意：不要立即清理OAuth hash参数，让Supabase先处理它们
   }, []);
 
   useEffect(() => {
@@ -48,6 +44,10 @@ export const OAuthCallback: React.FC = () => {
     const processOAuthCallback = async () => {
       if (hasProcessed) return;
       hasProcessed = true;
+
+      // 给Supabase时间处理OAuth hash参数
+      console.log('⏳ 等待Supabase处理OAuth参数...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       try {
         console.log('🎯 OAuthCallback组件已加载！');
