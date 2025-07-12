@@ -24,13 +24,26 @@ class ModelConfigAdapter {
         return null;
       }
 
+      // 获取系统模型的详细配置
+      const userConfigs = await userModelConfigService.getUserModelConfigs();
+      const matchingConfig = userConfigs.find(config => config.id === defaultModel.config_id);
+      
+      if (!matchingConfig || !matchingConfig.system_model) {
+        console.warn('无法找到用户模型的系统配置');
+        return null;
+      }
+
+      const systemModel = matchingConfig.system_model;
+      
+      // 获取API配置（包含密钥）
+      const apiConfig = systemModel.api_config || {};
+      
       // 将用户模型配置转换为ModelConfig格式
-      // 注意：这里不暴露真实的模型名称给前端
       const modelConfig: ModelConfig = {
         provider: defaultModel.provider,
         model: defaultModel.model,
-        apiKey: '', // API密钥由后端管理，前端不需要
-        baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
+        apiKey: apiConfig.api_key || '', // 从系统模型配置中获取API密钥
+        baseUrl: apiConfig.base_url || this.getBaseUrlForProvider(defaultModel.provider),
         temperature: 0.8, // 使用默认设置
         maxTokens: 2000, // 使用默认设置
         customPrompt: '' // 保持空白，使用系统默认
@@ -120,11 +133,14 @@ class ModelConfigAdapter {
 
       const systemModel = matchingConfig.system_model;
       
+      // 获取API配置（包含密钥）
+      const apiConfig = systemModel.api_config || {};
+      
       const modelConfig: ModelConfig = {
         provider: systemModel.provider,
         model: systemModel.model,
-        apiKey: '', // API密钥由后端管理
-        baseUrl: this.getBaseUrlForProvider(systemModel.provider),
+        apiKey: apiConfig.api_key || '', // 从系统模型配置中获取API密钥
+        baseUrl: apiConfig.base_url || this.getBaseUrlForProvider(systemModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
         customPrompt: ''
