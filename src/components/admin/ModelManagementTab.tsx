@@ -86,6 +86,16 @@ export const ModelManagementTab: React.FC = () => {
     notes: ''
   });
 
+  // 编辑模型相关状态
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingModel, setEditingModel] = useState<SystemModelPool | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    displayName: '',
+    description: '',
+    costPer1kTokens: 0,
+    isActive: true
+  });
+
   // 加载数据
   const loadData = async () => {
     setIsLoading(true);
@@ -292,6 +302,113 @@ export const ModelManagementTab: React.FC = () => {
     setShowModelDiscovery(false);
   };
 
+  // 处理编辑模型
+  const handleEditModel = (model: SystemModelPool) => {
+    setEditingModel(model);
+    setEditFormData({
+      displayName: model.display_name,
+      description: model.description,
+      costPer1kTokens: model.cost_per_1k_tokens,
+      isActive: model.is_active
+    });
+    setShowEditForm(true);
+  };
+
+  // 保存编辑的模型
+  const handleSaveEditModel = async () => {
+    if (!editingModel) return;
+
+    try {
+      // 这里调用编辑模型的API
+      const { error } = await supabase
+        .from('system_model_pool')
+        .update({
+          display_name: editFormData.displayName,
+          description: editFormData.description,
+          cost_per_1k_tokens: editFormData.costPer1kTokens,
+          is_active: editFormData.isActive,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingModel.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('模型更新成功！');
+      
+      // 重新加载数据
+      await loadData();
+      
+      // 重置编辑表单
+      setShowEditForm(false);
+      setEditingModel(null);
+      setEditFormData({
+        displayName: '',
+        description: '',
+        costPer1kTokens: 0,
+        isActive: true
+      });
+    } catch (error) {
+      console.error('更新模型失败:', error);
+      alert(`更新模型失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  };
+
+  // 处理删除模型
+  const handleDeleteModel = async (model: SystemModelPool) => {
+    if (!confirm(`确定要删除模型 "${model.display_name}" 吗？\n\n注意：这将影响所有使用此模型的用户配置。`)) {
+      return;
+    }
+
+    try {
+      // 检查是否有用户正在使用此模型
+      const { data: userConfigs, error: checkError } = await supabase
+        .from('user_model_configs')
+        .select('id')
+        .eq('model_pool_id', model.id)
+        .eq('is_enabled', true);
+
+      if (checkError) {
+        throw checkError;
+      }
+
+      if (userConfigs && userConfigs.length > 0) {
+        if (!confirm(`此模型正被 ${userConfigs.length} 个用户配置使用。删除后这些配置将被禁用。\n\n确定继续删除吗？`)) {
+          return;
+        }
+
+        // 先禁用相关的用户配置
+        const { error: disableError } = await supabase
+          .from('user_model_configs')
+          .update({ is_enabled: false })
+          .eq('model_pool_id', model.id);
+
+        if (disableError) {
+          throw disableError;
+        }
+      }
+
+      // 删除模型
+      const { error } = await supabase
+        .from('system_model_pool')
+        .delete()
+        .eq('id', model.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('模型删除成功！');
+      
+      // 重新加载数据
+      await loadData();
+    } catch (error) {
+      console.error('删除模型失败:', error);
+      alert(`删除模型失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  };
+
   // 获取性能等级颜色
   const getPerformanceColor = (level: string) => {
     switch (level) {
@@ -410,13 +527,33 @@ export const ModelManagementTab: React.FC = () => {
                     <span className="text-sm">${model.cost_per_1k_tokens}/1K tokens</span>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedModelForView(model)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedModelForView(model)}
+                        title="查看详情"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditModel(model)}
+                        title="编辑模型"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteModel(model)}
+                        className="text-red-600 hover:text-red-800 hover:border-red-300"
+                        title="删除模型"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -673,6 +810,80 @@ export const ModelManagementTab: React.FC = () => {
                 <div>
                   <Label className="font-medium">成本</Label>
                   <p className="text-gray-800">${selectedModelForView.cost_per_1k_tokens} / 1K tokens</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 编辑模型弹窗 */}
+      {showEditForm && editingModel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl m-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Edit className="h-5 w-5" />
+                  编辑模型：{editingModel.display_name}
+                </CardTitle>
+                <Button variant="ghost" onClick={() => setShowEditForm(false)}>
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-display-name">显示名称</Label>
+                  <Input
+                    id="edit-display-name"
+                    value={editFormData.displayName}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                    placeholder="用户看到的模型名称"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-description">模型描述</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="描述模型的特点和适用场景"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-cost">成本 ($/1K tokens)</Label>
+                  <Input
+                    id="edit-cost"
+                    type="number"
+                    step="0.000001"
+                    min="0"
+                    value={editFormData.costPer1kTokens}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, costPer1kTokens: parseFloat(e.target.value) || 0 }))}
+                    placeholder="每1000个token的成本"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-is-active"
+                    checked={editFormData.isActive}
+                    onCheckedChange={(checked) => setEditFormData(prev => ({ ...prev, isActive: !!checked }))}
+                  />
+                  <Label htmlFor="edit-is-active">启用此模型</Label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button variant="outline" onClick={() => setShowEditForm(false)}>
+                    取消
+                  </Button>
+                  <Button onClick={handleSaveEditModel} disabled={!editFormData.displayName.trim()}>
+                    保存修改
+                  </Button>
                 </div>
               </div>
             </CardContent>

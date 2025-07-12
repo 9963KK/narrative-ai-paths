@@ -29,9 +29,6 @@
 ```bash
 # 保留 credit_packages 表，删除其他冗余表
 06-database-cleanup.sql
-
-# 清理能力标签数据（前端已简化）
-clean-capability-tags.sql
 ```
 
 ## 📋 脚本说明
@@ -44,7 +41,6 @@ clean-capability-tags.sql
 | `04-user-model-config-production.sql` | 新模型配置系统（生产版本） | ✅ 推荐 |
 | `05-setup-existing-users.sql` | 为现有用户分配默认模型 | ✅ 稳定 |
 | `06-database-cleanup.sql` | 清理冗余表格 | ⚠️ 可选 |
-| `clean-capability-tags.sql` | 清理能力标签数据 | ⚠️ 可选 |
 
 ## ⚠️ 注意事项
 
