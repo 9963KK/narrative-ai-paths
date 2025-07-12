@@ -16,6 +16,7 @@ import SaveArchive from "../pages/SaveArchive";
 import Settings from "../pages/Settings";
 import Profile from "../pages/Profile";
 import StoryCreating from "../pages/StoryCreating";
+import AuthCallbackTest from "../pages/AuthCallbackTest";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
   {
     path: "/auth/callback",
     element: <OAuthCallback />,
+  },
+  {
+    path: "/auth/test",
+    element: <AuthCallbackTest />,
   },
   {
     path: "/app",

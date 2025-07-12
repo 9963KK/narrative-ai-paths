@@ -324,7 +324,10 @@ export class SupabaseService {
   async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
     try {
       const redirectTo = typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined;
-      console.log(`🔄 启动 ${provider} OAuth登录，回调URL: ${redirectTo}`);
+      console.log(`🔄 启动 ${provider} OAuth登录`);
+      console.log(`🌐 当前域名: ${window.location.origin}`);
+      console.log(`🎯 设置的回调URL: ${redirectTo}`);
+      console.log(`⚠️  请确保在Supabase Dashboard中配置了此URL: ${redirectTo}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,

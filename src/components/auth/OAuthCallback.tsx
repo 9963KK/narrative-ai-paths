@@ -8,6 +8,22 @@ export const OAuthCallback: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 在组件挂载时立即记录
+  React.useEffect(() => {
+    console.log('🚀 OAuthCallback组件已挂载！');
+    console.log('📅 时间戳:', new Date().toISOString());
+    
+    // 在localStorage中记录访问
+    const visits = JSON.parse(localStorage.getItem('oauth_callback_visits') || '[]');
+    visits.push({
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      hash: window.location.hash,
+      search: window.location.search
+    });
+    localStorage.setItem('oauth_callback_visits', JSON.stringify(visits.slice(-10))); // 只保留最近10次
+  }, []);
+
   useEffect(() => {
     let hasProcessed = false;
 
@@ -16,8 +32,11 @@ export const OAuthCallback: React.FC = () => {
       hasProcessed = true;
 
       try {
-        console.log('🔄 OAuthCallback组件处理OAuth回调...');
+        console.log('🎯 OAuthCallback组件已加载！');
         console.log('🔗 当前URL:', window.location.href);
+        console.log('🔍 URL Hash:', window.location.hash);
+        console.log('🔍 URL Search:', window.location.search);
+        console.log('📍 当前路径:', window.location.pathname);
         
         // 检查URL中是否包含OAuth回调参数
         const urlFragment = window.location.hash;
