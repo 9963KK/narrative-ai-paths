@@ -109,6 +109,12 @@ export const AuthCallbackTest: React.FC = () => {
                         <p><strong>URL:</strong> {visit.url}</p>
                         {visit.hash && <p><strong>Hash:</strong> {visit.hash}</p>}
                         {visit.search && <p><strong>Search:</strong> {visit.search}</p>}
+                        {visit.hasOAuthHash !== undefined && (
+                          <p><strong>包含OAuth Hash:</strong> <span className={visit.hasOAuthHash ? 'text-orange-600' : 'text-green-600'}>{visit.hasOAuthHash ? '是' : '否'}</span></p>
+                        )}
+                        {visit.oauthParamCount !== undefined && (
+                          <p><strong>OAuth参数数量:</strong> {visit.oauthParamCount}</p>
+                        )}
                       </div>
                     ))}
                   </div>
