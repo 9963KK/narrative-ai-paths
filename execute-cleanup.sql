@@ -38,18 +38,25 @@ BEGIN
 END $$;
 
 -- ==========================================
--- 步骤2: 删除 user_dashboard 表（用途不明）
+-- 步骤2: 删除 user_dashboard（可能是表或视图）
 -- ==========================================
 DO $$
 DECLARE
     table_exists BOOLEAN;
+    view_exists BOOLEAN;
     row_count INTEGER := 0;
 BEGIN
-    -- 检查表是否存在
+    -- 检查是否是表
     SELECT EXISTS (
         SELECT 1 FROM information_schema.tables 
         WHERE table_name = 'user_dashboard'
     ) INTO table_exists;
+    
+    -- 检查是否是视图
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.views 
+        WHERE table_name = 'user_dashboard'
+    ) INTO view_exists;
     
     IF table_exists THEN
         -- 检查数据量
@@ -59,8 +66,14 @@ BEGIN
         -- 删除表
         DROP TABLE IF EXISTS user_dashboard CASCADE;
         RAISE NOTICE '✅ 已删除 user_dashboard 表';
+    ELSIF view_exists THEN
+        RAISE NOTICE '📋 user_dashboard 是一个视图';
+        
+        -- 删除视图
+        DROP VIEW IF EXISTS user_dashboard CASCADE;
+        RAISE NOTICE '✅ 已删除 user_dashboard 视图';
     ELSE
-        RAISE NOTICE '❌ user_dashboard 表不存在';
+        RAISE NOTICE '❌ user_dashboard 不存在（既不是表也不是视图）';
     END IF;
 END $$;
 
