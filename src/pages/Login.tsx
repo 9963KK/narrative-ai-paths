@@ -9,9 +9,13 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 如果用户已登录，跳转到主页
+    // 如果用户已登录，根据角色跳转
     if (user) {
-      navigate('/app');
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/app');
+      }
     }
   }, [user, navigate]);
 

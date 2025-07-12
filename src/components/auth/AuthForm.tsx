@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
 import type { OAuthProvider } from '@/lib/supabase';
 import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
+import { useAuth } from '@/contexts/AuthContext';
 // 移除同步通知，因为新系统不需要复杂的同步逻辑
 
 const registerSchema = z.object({
@@ -48,6 +49,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
   const [activeTab, setActiveTab] = useState('login');
   const [oauthSupported, setOauthSupported] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const {
     register: registerForm,
@@ -89,8 +91,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     try {
       const success = await onLogin(data.email, data.password);
       if (success) {
-        // 登录成功后，跳转到主页
-        navigate('/app');
+        // 登录成功，跳转逻辑由Login页面的useEffect处理
+        // 这里不需要做任何导航，让AuthContext和Login页面处理
       } else {
         setError('邮箱或密码错误');
       }
