@@ -1,4 +1,5 @@
 import { supabaseService, type User, type UserProfile, type OAuthProvider, supabase } from '@/lib/supabase';
+import { creditService } from './creditService';
 
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -97,6 +98,20 @@ export class UnifiedAuthService {
 
         if (user) {
           console.log('✅ 用户已注册到Supabase');
+          
+          // 自动为新用户赠送100积分
+          try {
+            const creditInitialized = await creditService.initializeUserCredits(user.id, 100);
+            if (creditInitialized) {
+              console.log('🎁 新用户积分初始化成功：100积分');
+            } else {
+              console.log('ℹ️ 用户积分已存在，跳过初始化');
+            }
+          } catch (error) {
+            console.error('⚠️ 积分初始化失败:', error);
+            // 不影响注册成功，只记录错误
+          }
+          
           return { success: true };
         }
         return { success: false, error: '注册失败，请稍后重试' };
@@ -131,6 +146,20 @@ export class UnifiedAuthService {
       users.push(newUser);
       this.saveLocalUsers(users);
       console.log('💾 用户已注册到本地存储（备选方案）');
+      
+      // 自动为新用户赠送100积分
+      try {
+        const creditInitialized = await creditService.initializeUserCredits(newUser.id, 100);
+        if (creditInitialized) {
+          console.log('🎁 新用户积分初始化成功：100积分');
+        } else {
+          console.log('ℹ️ 用户积分已存在，跳过初始化');
+        }
+      } catch (error) {
+        console.error('⚠️ 积分初始化失败:', error);
+        // 不影响注册成功，只记录错误
+      }
+      
       return { success: true };
     }
   }

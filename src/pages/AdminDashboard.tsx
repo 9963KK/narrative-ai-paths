@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { tokenMonitor, UserTokenSummary } from '@/services/tokenMonitorService';
 import { authService, User } from '@/services/authService';
 import { cloudAuthService } from '@/services/cloudAuthService';
+import { creditService } from '@/services/creditService';
+import { CreditManagementTab } from '@/components/admin/CreditManagementTab';
 
 // 智能检测是否使用云端存储（与AuthContext保持一致）
 const USE_CLOUD_STORAGE = (() => {
@@ -39,7 +41,8 @@ import {
   UserPlus,
   Settings,
   Trash2,
-  Edit
+  Edit,
+  Coins
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -302,7 +305,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* 标签页 */}
         <Tabs defaultValue="token-usage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="token-usage" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Token使用统计
@@ -310,6 +313,10 @@ const AdminDashboard: React.FC = () => {
             <TabsTrigger value="user-management" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               用户管理
+            </TabsTrigger>
+            <TabsTrigger value="credit-management" className="flex items-center gap-2">
+              <Coins className="h-4 w-4" />
+              积分管理
             </TabsTrigger>
           </TabsList>
 
@@ -479,6 +486,11 @@ const AdminDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* 积分管理标签页 */}
+          <TabsContent value="credit-management">
+            <CreditManagementTab useCloudStorage={USE_CLOUD_STORAGE} />
           </TabsContent>
         </Tabs>
       </div>

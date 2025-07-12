@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ArrowLeft, User, Calendar, Mail, Crown, AlertTriangle, BookOpen, Trophy, Clock } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
+import { CreditBadge } from '@/components/ui/CreditBadge';
+import { CreditHistory } from '@/components/ui/CreditHistory';
 import { getSavedContexts } from '@/services/contextManager';
 
 const Profile: React.FC = () => {
@@ -213,7 +215,7 @@ const Profile: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-200">
                       <div className="text-3xl font-bold text-blue-600 mb-2">{totalStories}</div>
                       <div className="text-sm font-medium text-blue-700">总故事数</div>
@@ -236,6 +238,13 @@ const Profile: React.FC = () => {
                       <div className="text-sm font-medium text-orange-700">游戏时间</div>
                       <div className="text-xs text-orange-600 mt-1">{formatPlayTime(totalPlayTime)}</div>
                     </div>
+                    {/* 积分信息 */}
+                    {!isGuest && (
+                      <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl border border-yellow-200/50 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CreditBadge variant="compact" showRefresh={false} className="flex justify-center" />
+                        <div className="text-sm font-medium text-yellow-700 mt-2">积分余额</div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 </Card>
@@ -309,8 +318,38 @@ const Profile: React.FC = () => {
                 </Card>
               </AnimatedCard>
 
+              {/* 积分管理 */}
+              {!isGuest && (
+                <AnimatedCard index={4}>
+                  <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3 text-xl">
+                        <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                          <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        积分管理
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <CreditBadge variant="detailed" showRefresh={true} />
+                      
+                      {/* 积分使用历史 */}
+                      <div className="border-t pt-6">
+                        <CreditHistory 
+                          showActions={false} 
+                          maxHeight="max-h-64" 
+                          limit={20} 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedCard>
+              )}
+
               {/* 账户操作 */}
-              <AnimatedCard index={4}>
+              <AnimatedCard index={5}>
                 <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-xl">

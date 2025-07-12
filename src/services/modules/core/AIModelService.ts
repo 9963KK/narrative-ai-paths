@@ -6,6 +6,8 @@
 
 import { ModelConfig } from '@/components/model-config/constants';
 import { tokenMonitor } from '../../tokenMonitorService';
+import { creditService } from '../../creditService';
+import { unifiedAuthService } from '../../unifiedAuthService';
 import { 
   IAIModelService, 
   AIResponse, 
@@ -54,6 +56,53 @@ export class AIModelService implements IAIModelService {
     const startTime = Date.now();
     let attempts = 0;
 
+    // 积分系统检查
+    const currentUser = unifiedAuthService.getCurrentUser();
+    if (!currentUser) {
+      return {
+        success: false,
+        error: '用户未登录，无法使用AI服务',
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // 预估token使用量和所需积分
+    const estimatedInputTokens = this.estimateTokens(prompt + (systemPrompt || '') + JSON.stringify(conversationHistory));
+    const estimatedOutputTokens = this.modelConfig?.maxTokens || 2000;
+    
+    if (!this.modelConfig || !this.modelConfig.apiKey) {
+      return {
+        success: false,
+        error: 'AI模型配置不完整',
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // 计算所需积分
+    const creditCalculation = await creditService.calculateRequiredCredits(
+      this.modelConfig.provider,
+      this.modelConfig.model,
+      estimatedInputTokens,
+      estimatedOutputTokens
+    );
+
+    // 检查积分余额
+    const hasSufficientCredits = await creditService.checkSufficientCredits(
+      currentUser.id, 
+      creditCalculation.required_credits
+    );
+
+    if (!hasSufficientCredits) {
+      const userCredits = await creditService.getUserCredits(currentUser.id);
+      return {
+        success: false,
+        error: `积分余额不足。需要 ${creditCalculation.required_credits} 积分，当前余额：${userCredits?.balance || 0} 积分`,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    console.log(`💰 积分检查通过：需要 ${creditCalculation.required_credits} 积分，预估成本 $${creditCalculation.estimated_cost_usd.toFixed(6)}`);
+
     while (attempts < this.retryConfig.maxAttempts) {
       try {
         attempts++;
@@ -96,6 +145,35 @@ export class AIModelService implements IAIModelService {
         }
 
         const result = await response.json();
+        
+        // 计算实际使用的积分和成本
+        const actualInputTokens = result.usage?.prompt_tokens || estimatedInputTokens;
+        const actualOutputTokens = result.usage?.completion_tokens || Math.min(estimatedOutputTokens, result.usage?.total_tokens || estimatedOutputTokens);
+        
+        const actualCreditCalculation = await creditService.calculateRequiredCredits(
+          this.modelConfig.provider,
+          this.modelConfig.model,
+          actualInputTokens,
+          actualOutputTokens
+        );
+
+        // 扣除积分
+        const deductSuccess = await creditService.deductCredits(
+          currentUser.id,
+          actualCreditCalculation.required_credits,
+          this.modelConfig.provider,
+          this.modelConfig.model,
+          actualInputTokens + actualOutputTokens,
+          actualCreditCalculation.estimated_cost_usd,
+          `AI服务调用 - ${this.modelConfig.provider}/${this.modelConfig.model}`
+        );
+
+        if (!deductSuccess) {
+          console.error('❌ 积分扣除失败，但AI调用已成功');
+          // 这里可以记录异常，但不影响返回结果
+        } else {
+          console.log(`💳 积分扣除成功：${actualCreditCalculation.required_credits} 积分，实际成本 $${actualCreditCalculation.estimated_cost_usd.toFixed(6)}`);
+        }
         
         // 记录Token使用情况
         this.logTokenUsage(result, forceJsonOutput);

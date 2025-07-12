@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GuestToRegisterDialog } from './GuestToRegisterDialog';
+import { CreditBadge } from '@/components/ui/CreditBadge';
 // 移除同步状态徽章，新系统不需要复杂的同步逻辑
 import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -51,7 +52,11 @@ export const UserHeader: React.FC = () => {
         )}
       </div>
       
-      <DropdownMenu>
+      <div className="flex items-center space-x-4">
+        {/* 只有非游客用户才显示积分 */}
+        {!isGuest && <CreditBadge variant="compact" showRefresh={false} />}
+        
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
             <Avatar className="h-9 w-9 shadow-md">
@@ -113,7 +118,8 @@ export const UserHeader: React.FC = () => {
             </>
           )}
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
+      </div>
     </div>
   );
 };
