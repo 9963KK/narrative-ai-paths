@@ -14,6 +14,7 @@ interface AuthContextType {
   signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
   handleOAuthCallback: () => Promise<AuthUser | null>;
   logout: () => void;
+  forceSignOut: () => Promise<void>;
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
@@ -178,6 +179,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const forceSignOut = async () => {
+    console.log('🧹 AuthContext执行强制登出...');
+    
+    const currentUser = unifiedAuthService.getCurrentUser();
+    
+    // 如果是游客用户，清理临时数据
+    if (currentUser?.isGuest) {
+      userStorage.clearUserData();
+      console.log('🗑️ 游客模式数据已清理');
+    }
+    
+    await unifiedAuthService.forceSignOut();
+    setUser(null);
+  };
+
   const updateUser = async (updates: Partial<Pick<AuthUser, 'username' | 'email'>>): Promise<boolean> => {
     try {
       const success = await unifiedAuthService.updateUser(updates);
@@ -325,6 +341,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithOAuth,
     handleOAuthCallback,
     logout,
+    forceSignOut,
     updateUser,
     changePassword,
     deleteAccount,

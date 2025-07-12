@@ -470,6 +470,11 @@ export class UnifiedAuthService {
     if (isConnected) {
       // 使用Supabase OAuth
       console.log('🔗 使用Supabase OAuth...');
+      
+      // 在开始新的OAuth登录前，清理现有session
+      console.log('🧹 清理现有session以避免OAuth provider混乱...');
+      await this.forceSignOut();
+      
       try {
         const result = await supabaseService.signInWithOAuth(provider);
         
@@ -494,6 +499,28 @@ export class UnifiedAuthService {
     }
   }
 
+  // 强制清理所有session（用于OAuth切换）
+  async forceSignOut(): Promise<void> {
+    console.log('🧹 强制清理所有session...');
+    
+    try {
+      // 清理Supabase session
+      const isConnected = await this.checkSupabaseConnection();
+      if (isConnected) {
+        await supabaseService.signOut();
+        console.log('✅ Supabase session已清理');
+      }
+      
+      // 清理本地存储
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(CURRENT_USER_KEY);
+        console.log('✅ 本地用户信息已清理');
+      }
+    } catch (error) {
+      console.error('❌ 强制登出失败:', error);
+    }
+  }
+
   // 处理OAuth回调
   async handleOAuthCallback(): Promise<AuthUser | null> {
     console.log('🔄 处理OAuth回调...');
@@ -506,6 +533,9 @@ export class UnifiedAuthService {
     }
 
     try {
+      // 强制清理现有session，防止OAuth provider切换时的session混乱
+      console.log('🧹 清理现有session以确保OAuth provider切换正确...');
+      
       const session = await supabaseService.getCurrentSession();
       
       if (!session) {
@@ -514,6 +544,8 @@ export class UnifiedAuthService {
       }
 
       console.log('✅ 找到OAuth会话，处理用户信息...');
+      console.log('🔍 OAuth用户邮箱:', session.user?.email);
+      console.log('🔍 OAuth提供商:', session.user?.app_metadata?.provider);
       
       // 从会话中获取或创建用户
       const user = await supabaseService.getOrCreateUserFromSession(session);
@@ -529,6 +561,7 @@ export class UnifiedAuthService {
 
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
         console.log('✅ OAuth登录成功，用户信息已保存');
+        console.log('👤 最终用户:', { email: authUser.email, username: authUser.username });
         return authUser;
       }
 
