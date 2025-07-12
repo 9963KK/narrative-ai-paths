@@ -7,6 +7,14 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
 ![AI支持](https://img.shields.io/badge/AI-多模型支持-orange)
 
+## 🌿 分支说明
+
+- **🔧 `dev`**: 开发分支 - 新功能开发和测试
+- **🚀 `prod`**: 生产分支 - 稳定版本，用于生产部署  
+- **🌿 `main`**: 主分支 - 与prod保持同步
+
+> 📖 详细分支策略请查看 [BRANCH_STRATEGY.md](./BRANCH_STRATEGY.md)
+
 ## ✨ 主要功能
 
 ### 🤖 **智能AI故事生成**
