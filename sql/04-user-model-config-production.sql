@@ -259,26 +259,26 @@ INSERT INTO system_model_pool (
     capability_tags, performance_level, cost_per_1k_tokens, is_active, api_config
 ) VALUES
 -- DeepSeek模型（默认模型）
-('deepseek', 'deepseek-chat', 'deepseek-chat', '智能创作助手', '高性价比的AI创作伙伴，擅长逻辑推理和创意生成', 
-    '["creative", "logical", "cost-effective"]', 'standard', 0.001, true, 
+('deepseek', 'deepseek-chat', 'deepseek-chat', 'deepseek-chat', '逻辑推理能力强，擅长悬疑推理和科幻故事创作', 
+    '["悬疑", "科幻", "推理", "现实"]', 'standard', 0.001, true, 
     '{"api_key": "sk-07fdcb3b72d9408f8571be98dd785615", "base_url": "https://api.deepseek.com/v1"}'),
 
 -- OpenAI兼容格式的预留模型（管理员后续配置）
-('openai', 'gpt-3.5-turbo', 'openai-gpt35-turbo', '经典创作助手', '经典的AI创作模型，需要管理员配置API密钥', 
-    '["creative", "versatile"]', 'standard', 0.002, false, 
+('openai', 'gpt-3.5-turbo', 'openai-gpt35-turbo', 'gpt-3.5-turbo', '通用创作模型，适合日常轻松故事', 
+    '["日常", "青春", "都市", "轻松"]', 'standard', 0.002, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
-('openai', 'gpt-4', 'openai-gpt4', '专业创作顾问', '高级AI创作模型，需要管理员配置API密钥', 
-    '["creative", "detailed", "professional"]', 'standard', 0.03, false, 
+('openai', 'gpt-4', 'openai-gpt4', 'gpt-4', '专业创作模型，适合复杂深度故事', 
+    '["历史", "文学", "深度", "经典"]', 'standard', 0.03, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
 -- Claude兼容格式的预留模型（管理员后续配置）
-('anthropic', 'claude-3-haiku', 'anthropic-haiku', '快速创作伙伴', '轻量快速的AI创作助手，需要管理员配置API密钥', 
-    '["creative", "fast", "efficient"]', 'standard', 0.00025, false, 
+('anthropic', 'claude-3-haiku', 'anthropic-haiku', 'claude-3-haiku', '轻快简洁的创作风格，适合治愈温暖故事', 
+    '["治愈", "温暖", "日常", "简约"]', 'standard', 0.00025, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}'),
 
-('anthropic', 'claude-3-sonnet', 'anthropic-sonnet', '均衡创作师', '均衡的AI创作能力，需要管理员配置API密钥', 
-    '["creative", "balanced", "versatile"]', 'standard', 0.003, false, 
+('anthropic', 'claude-3-sonnet', 'anthropic-sonnet', 'claude-3-sonnet', '均衡的创作能力，擅长情感和心理描写', 
+    '["情感", "心理", "人文", "细腻"]', 'standard', 0.003, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}')
 
 ON CONFLICT (provider, model) DO UPDATE SET
@@ -345,8 +345,8 @@ BEGIN
     ) VALUES (
         target_user_id,
         deepseek_model_id,
-        '智能创作助手',
-        '您的专属AI创作伙伴，帮助您轻松创造精彩故事',
+        'deepseek-chat',
+        '逻辑推理能力强，擅长悬疑推理和科幻故事创作',
         true,
         1,
         true
