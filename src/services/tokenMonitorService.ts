@@ -81,11 +81,8 @@ export class TokenMonitorService {
     return logs.filter(log => log.userId === targetUserId);
   }
 
-  // 获取所有用户的Token使用汇总（仅管理员）
+  // 获取所有用户的Token使用汇总
   getUserTokenSummaries(): UserTokenSummary[] {
-    if (!authService.isAdmin()) {
-      return [];
-    }
 
     const logs = this.getTokenUsageLogs();
     const userSummaries = new Map<string, UserTokenSummary>();
@@ -181,7 +178,6 @@ export class TokenMonitorService {
 
   // 清理旧的使用记录（保留最近30天）
   cleanupOldLogs(): void {
-    if (!authService.isAdmin()) return;
 
     const logs = this.getTokenUsageLogs();
     const thirtyDaysAgo = new Date();
@@ -197,7 +193,6 @@ export class TokenMonitorService {
 
   // 导出使用记录（CSV格式）
   exportUsageData(): string {
-    if (!authService.isAdmin()) return '';
 
     const logs = this.getTokenUsageLogs();
     const headers = [

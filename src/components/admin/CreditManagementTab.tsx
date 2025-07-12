@@ -54,13 +54,14 @@ export const CreditManagementTab: React.FC<CreditManagementTabProps> = ({ useClo
       const overview = await creditService.getCreditSystemOverview();
       setSystemOverview(overview);
 
-      // 加载所有用户
-      const users = useCloudStorage ? await cloudAuthService.getAllUsers() : authService.getAllUsers();
-      setAllUsers(users);
+      // 加载所有用户（仅使用cloudAuthService）
+      const users = await cloudAuthService.getAllUsers();
+      setAllUsers(users || []);
 
       // 加载用户积分信息
       const creditsMap: { [userId: string]: UserCredit } = {};
-      for (const userData of users) {
+      const validUsers = users || [];
+      for (const userData of validUsers) {
         const credits = await creditService.getUserCredits(userData.id);
         if (credits) {
           creditsMap[userData.id] = credits;
@@ -69,9 +70,9 @@ export const CreditManagementTab: React.FC<CreditManagementTabProps> = ({ useClo
       setUserCredits(creditsMap);
 
       // 加载最近交易记录（取所有用户的最近50条记录）
-      if (users.length > 0) {
+      if (validUsers.length > 0) {
         const allTransactions: CreditTransaction[] = [];
-        for (const userData of users.slice(0, 10)) { // 限制查询前10个用户，避免性能问题
+        for (const userData of validUsers.slice(0, 10)) { // 限制查询前10个用户，避免性能问题
           const transactions = await creditService.getUserTransactions(userData.id, 10);
           allTransactions.push(...transactions);
         }

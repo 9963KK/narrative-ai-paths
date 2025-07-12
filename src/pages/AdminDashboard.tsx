@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminDataService, type AdminDashboardStats, type UserUsageSummary } from '@/services/adminDataService';
 import { cloudAuthService } from '@/services/cloudAuthService';
+import { unifiedAuthService } from '@/services/unifiedAuthService';
 import { creditService } from '@/services/creditService';
 import { CreditManagementTab } from '@/components/admin/CreditManagementTab';
 import type { User } from '@/lib/supabase';
@@ -52,6 +53,8 @@ const AdminDashboard: React.FC = () => {
   const [userSummaries, setUserSummaries] = useState<UserUsageSummary[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<AdminDashboardStats>({
     totalUsers: 0,
     totalRequests: 0,
@@ -63,13 +66,52 @@ const AdminDashboard: React.FC = () => {
   });
 
   // 检查管理员权限
-  if (!user || isGuest || user.role !== 'admin') {
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      setIsCheckingAuth(true);
+      
+      // 基本权限检查
+      if (!user || isGuest) {
+        setHasAdminAccess(false);
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      // 验证Supabase管理员权限
+      try {
+        const isAdmin = await unifiedAuthService.isAdmin();
+        setHasAdminAccess(isAdmin);
+      } catch (error) {
+        console.error('检查管理员权限失败:', error);
+        setHasAdminAccess(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, [user, isGuest]);
+
+  // 权限检查中
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2">
+          <RefreshCw className="h-5 w-5 animate-spin" />
+          <span>验证权限中...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 无权限访问
+  if (!hasAdminAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Alert className="max-w-md" variant="destructive">
           <Shield className="h-4 w-4" />
           <AlertDescription>
-            访问被拒绝：您需要管理员权限才能访问此页面。
+            访问被拒绝：您需要Supabase管理员权限才能访问此页面。
           </AlertDescription>
         </Alert>
       </div>

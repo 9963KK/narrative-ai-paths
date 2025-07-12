@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GuestToRegisterDialog } from './GuestToRegisterDialog';
 import { CreditBadge } from '@/components/ui/CreditBadge';
+import { unifiedAuthService } from '@/services/unifiedAuthService';
 // 移除同步状态徽章，新系统不需要复杂的同步逻辑
 import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,26 @@ import { useNavigate } from 'react-router-dom';
 export const UserHeader: React.FC = () => {
   const { user, logout, isGuest } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // 检查管理员权限
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user && !isGuest) {
+        try {
+          const adminStatus = await unifiedAuthService.isAdmin();
+          setIsAdmin(adminStatus);
+        } catch (error) {
+          console.error('检查管理员权限失败:', error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, isGuest]);
 
   if (!user) return null;
 
@@ -101,7 +122,7 @@ export const UserHeader: React.FC = () => {
                 <Settings className="mr-2 h-4 w-4" />
                 <span>设置</span>
               </DropdownMenuItem>
-              {user.role === 'admin' && (
+              {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>

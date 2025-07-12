@@ -266,18 +266,46 @@ export class UnifiedAuthService {
     return currentUser?.isGuest === true;
   }
 
-  // 检查是否为管理员
-  isAdmin(): boolean {
+  // 检查是否为管理员（仅检查Supabase用户）
+  async isAdmin(): Promise<boolean> {
     const currentUser = this.getCurrentUser();
-    return currentUser?.role === 'admin';
+    if (!currentUser) {
+      return false;
+    }
+
+    // 只有Supabase中的用户才能成为管理员
+    const isConnected = await this.checkSupabaseConnection();
+    if (!isConnected) {
+      return false;
+    }
+
+    try {
+      // 从Supabase验证用户角色
+      const user = await supabaseService.findUserById(currentUser.id);
+      return user?.role === 'admin';
+    } catch (error) {
+      console.error('验证管理员权限失败:', error);
+      return false;
+    }
   }
 
-  // 创建默认管理员账户
+  // 检查是否为管理员（同步版本，仅用于兼容性）
+  isAdminSync(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.role === 'admin' && this.isValidUUID(currentUser.id);
+  }
+
+  // 检查是否为有效的UUID格式
+  private isValidUUID(id: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  }
+
+  // 创建默认管理员账户（仅在Supabase中）
   async createDefaultAdmin(): Promise<boolean> {
     const isConnected = await this.checkSupabaseConnection();
     
     if (isConnected) {
-      // 使用Supabase
       try {
         const success = await supabaseService.createDefaultAdmin();
         if (success) {
@@ -286,47 +314,19 @@ export class UnifiedAuthService {
         }
         return false;
       } catch (error) {
-        console.error('Supabase创建默认管理员失败，尝试本地存储:', error);
-        // 如果Supabase失败，尝试本地存储
-        return this.createDefaultAdminLocally();
+        console.error('Supabase创建默认管理员失败:', error);
+        return false;
       }
     } else {
-      // 使用本地存储（备选方案）
-      return this.createDefaultAdminLocally();
+      console.warn('⚠️ 无法创建管理员：需要Supabase连接');
+      return false;
     }
-  }
-
-  // 本地创建默认管理员
-  private createDefaultAdminLocally(): boolean {
-    const users = this.getLocalUsers();
-    const existingAdminIndex = users.findIndex((user: any) => user.username === 'admin');
-    
-    const adminUser = {
-      id: 'admin_' + Date.now(),
-      username: 'admin',
-      email: 'admin@ainovel.com',
-      password: this.hashPassword('cjh180498'),
-      createdAt: new Date().toISOString(),
-      role: 'admin'
-    };
-
-    if (existingAdminIndex !== -1) {
-      // 更新现有管理员账户
-      users[existingAdminIndex] = { ...users[existingAdminIndex], ...adminUser };
-      console.log('🔄 默认管理员账户已更新（本地存储）');
-    } else {
-      // 创建新的管理员账户
-      users.push(adminUser);
-      console.log('🔑 默认管理员账户已创建（本地存储）');
-    }
-
-    this.saveLocalUsers(users);
-    return true;
   }
 
   // 获取所有用户（仅管理员可用）
   async getAllUsers(): Promise<User[] | null> {
-    if (!this.isAdmin()) {
+    const isAdminUser = await this.isAdmin();
+    if (!isAdminUser) {
       return null;
     }
 
