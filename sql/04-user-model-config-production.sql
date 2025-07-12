@@ -259,26 +259,26 @@ INSERT INTO system_model_pool (
     capability_tags, performance_level, cost_per_1k_tokens, is_active, api_config
 ) VALUES
 -- DeepSeek模型（默认模型）
-('deepseek', 'deepseek-chat', 'deepseek-chat', 'deepseek-chat', '逻辑推理能力强，擅长悬疑推理和科幻故事创作', 
-    '["悬疑", "科幻", "推理", "现实"]', 'standard', 0.001, true, 
+('deepseek', 'deepseek-chat', 'deepseek-chat', 'deepseek-chat', '逻辑推理能力强，擅长科幻悬疑和推理故事创作', 
+    '["科幻", "悬疑", "现代", "推理"]', 'standard', 0.001, true, 
     '{"api_key": "sk-07fdcb3b72d9408f8571be98dd785615", "base_url": "https://api.deepseek.com/v1"}'),
 
 -- OpenAI兼容格式的预留模型（管理员后续配置）
-('openai', 'gpt-3.5-turbo', 'openai-gpt35-turbo', 'gpt-3.5-turbo', '通用创作模型，适合日常轻松故事', 
-    '["日常", "青春", "都市", "轻松"]', 'standard', 0.002, false, 
+('openai', 'gpt-3.5-turbo', 'openai-gpt35-turbo', 'gpt-3.5-turbo', '通用创作模型，适合日常生活和轻松故事', 
+    '["日常生活", "现代", "言情", "轻松"]', 'standard', 0.002, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
-('openai', 'gpt-4', 'openai-gpt4', 'gpt-4', '专业创作模型，适合复杂深度故事', 
-    '["历史", "文学", "深度", "经典"]', 'standard', 0.03, false, 
+('openai', 'gpt-4', 'openai-gpt4', 'gpt-4', '专业创作模型，适合历史奇幻等复杂故事', 
+    '["历史", "奇幻", "文学", "深度"]', 'standard', 0.03, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
 -- Claude兼容格式的预留模型（管理员后续配置）
-('anthropic', 'claude-3-haiku', 'anthropic-haiku', 'claude-3-haiku', '轻快简洁的创作风格，适合治愈温暖故事', 
-    '["治愈", "温暖", "日常", "简约"]', 'standard', 0.00025, false, 
+('anthropic', 'claude-3-haiku', 'anthropic-haiku', 'claude-3-haiku', '轻快简洁的创作风格，适合日常生活和言情故事', 
+    '["日常生活", "言情", "治愈", "简约"]', 'standard', 0.00025, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}'),
 
-('anthropic', 'claude-3-sonnet', 'anthropic-sonnet', 'claude-3-sonnet', '均衡的创作能力，擅长情感和心理描写', 
-    '["情感", "心理", "人文", "细腻"]', 'standard', 0.003, false, 
+('anthropic', 'claude-3-sonnet', 'anthropic-sonnet', 'claude-3-sonnet', '均衡的创作能力，擅长言情和现代故事描写', 
+    '["言情", "现代", "心理", "细腻"]', 'standard', 0.003, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}')
 
 ON CONFLICT (provider, model) DO UPDATE SET
@@ -346,7 +346,7 @@ BEGIN
         target_user_id,
         deepseek_model_id,
         'deepseek-chat',
-        '逻辑推理能力强，擅长悬疑推理和科幻故事创作',
+        '逻辑推理能力强，擅长科幻悬疑和推理故事创作',
         true,
         1,
         true

@@ -29,6 +29,9 @@
 ```bash
 # 保留 credit_packages 表，删除其他冗余表
 06-database-cleanup.sql
+
+# 更新模型名称和故事类型标签（与前端保持一致）
+update-model-story-tags.sql
 ```
 
 ## 📋 脚本说明
@@ -41,6 +44,7 @@
 | `04-user-model-config-production.sql` | 新模型配置系统（生产版本） | ✅ 推荐 |
 | `05-setup-existing-users.sql` | 为现有用户分配默认模型 | ✅ 稳定 |
 | `06-database-cleanup.sql` | 清理冗余表格 | ⚠️ 可选 |
+| `update-model-story-tags.sql` | 更新模型故事类型标签 | ✅ 推荐 |
 
 ## ⚠️ 注意事项
 
