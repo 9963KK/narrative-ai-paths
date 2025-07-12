@@ -108,9 +108,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
     try {
       const result = await onRegister(data.username, data.email, data.password);
       if (result.success) {
-        resetRegister();
-        setActiveTab('login');
-        setError('');
+        // 注册成功后直接登录
+        const loginSuccess = await onLogin(data.email, data.password);
+        if (loginSuccess) {
+          // 登录成功，跳转到应用页面
+          navigate('/app');
+        } else {
+          // 如果自动登录失败，切换到登录标签页
+          resetRegister();
+          setActiveTab('login');
+          setError('注册成功！请使用您的账户登录。');
+        }
       } else {
         setError(result.error || '注册失败，请稍后重试');
       }
@@ -360,7 +368,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuest
                 </div>
                 
                   <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
-                    {isLoading ? '注册中...' : '注册'}
+                    {isLoading ? '注册中...' : '注册并开始创作'}
                   </Button>
                 </form>
               </TabsContent>
