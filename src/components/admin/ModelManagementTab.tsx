@@ -385,7 +385,6 @@ export const ModelManagementTab: React.FC = () => {
                 <TableHead>提供商</TableHead>
                 <TableHead>性能等级</TableHead>
                 <TableHead>成本</TableHead>
-                <TableHead>能力标签</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -409,15 +408,6 @@ export const ModelManagementTab: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">${model.cost_per_1k_tokens}/1K tokens</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {model.capability_tags.map((tag: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
                   </TableCell>
                   <TableCell>
                     <Button
@@ -683,16 +673,6 @@ export const ModelManagementTab: React.FC = () => {
                 <div>
                   <Label className="font-medium">成本</Label>
                   <p className="text-gray-800">${selectedModelForView.cost_per_1k_tokens} / 1K tokens</p>
-                </div>
-                <div>
-                  <Label className="font-medium">能力标签</Label>
-                  <div className="flex gap-1 flex-wrap mt-1">
-                    {selectedModelForView.capability_tags.map((tag: string, index: number) => (
-                      <Badge key={index} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               </div>
             </CardContent>
