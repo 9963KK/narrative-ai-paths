@@ -65,6 +65,28 @@ const AdminDashboard: React.FC = () => {
     profitMargin: 0
   });
 
+  // 加载数据的函数
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // 并行获取数据
+      const [stats, summaries, users] = await Promise.all([
+        adminDataService.getDashboardStats(),
+        adminDataService.getUserSummaries(),
+        cloudAuthService.getAllUsers()
+      ]);
+      
+      setDashboardStats(stats);
+      setUserSummaries(summaries);
+      setAllUsers(users || []);
+      
+    } catch (error) {
+      console.error('加载数据失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 检查管理员权限
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -92,6 +114,13 @@ const AdminDashboard: React.FC = () => {
     checkAdminAccess();
   }, [user, isGuest]);
 
+  // 加载数据
+  useEffect(() => {
+    if (hasAdminAccess && !isCheckingAuth) {
+      loadData();
+    }
+  }, [hasAdminAccess, isCheckingAuth]);
+
   // 权限检查中
   if (isCheckingAuth) {
     return (
@@ -117,31 +146,6 @@ const AdminDashboard: React.FC = () => {
       </div>
     );
   }
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // 并行获取数据
-      const [stats, summaries, users] = await Promise.all([
-        adminDataService.getDashboardStats(),
-        adminDataService.getUserSummaries(),
-        cloudAuthService.getAllUsers()
-      ]);
-      
-      setDashboardStats(stats);
-      setUserSummaries(summaries);
-      setAllUsers(users || []);
-      
-    } catch (error) {
-      console.error('加载数据失败:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleExportData = async () => {
     try {
