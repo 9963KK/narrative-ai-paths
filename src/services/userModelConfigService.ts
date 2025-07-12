@@ -389,7 +389,6 @@ class UserModelConfigService {
         const success = await this.assignModelToUser(
           userId,
           modelPoolId,
-          displayName,
           description,
           isDefault,
           priority,
