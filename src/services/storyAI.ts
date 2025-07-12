@@ -6,6 +6,7 @@
 
 import { ModelConfig } from '@/components/model-config/constants';
 import type { StoryConfig } from '@/components/StoryInitializer';
+import { modelConfigAdapter } from './modelConfigAdapter';
 
 // 导入新的模块化架构
 import {
@@ -87,6 +88,70 @@ class StoryAI {
     return aiModelService.getModelConfig();
   }
 
+  /**
+   * 智能选择并设置用户模型配置
+   * @param usageType 使用类型
+   */
+  async setupUserModelConfig(usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation'): Promise<boolean> {
+    try {
+      // 确保用户有可用模型
+      await modelConfigAdapter.ensureUserHasModels();
+      
+      // 获取推荐的模型配置
+      const recommendedConfig = await modelConfigAdapter.getRecommendedModel(usageType);
+      
+      if (recommendedConfig) {
+        this.setModelConfig(recommendedConfig);
+        console.log('🎯 已自动设置推荐的用户模型配置');
+        return true;
+      } else {
+        console.warn('⚠️ 无法获取推荐的模型配置');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ 设置用户模型配置失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 记录模型使用情况
+   * @param sessionId 会话ID
+   * @param usageType 使用类型
+   * @param tokensUsed 使用的token数量
+   * @param creditsConsumed 消耗的积分
+   * @param success 是否成功
+   * @param errorMessage 错误信息
+   */
+  async logModelUsage(
+    sessionId: string,
+    usageType: 'story_generation' | 'choice_generation' | 'analysis' | 'other',
+    tokensUsed: number,
+    creditsConsumed: number,
+    success: boolean = true,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      await modelConfigAdapter.logModelUsage(
+        sessionId,
+        usageType,
+        tokensUsed,
+        creditsConsumed,
+        success,
+        errorMessage
+      );
+    } catch (error) {
+      console.error('❌ 记录模型使用失败:', error);
+    }
+  }
+
+  /**
+   * 检查用户是否有可用模型
+   */
+  async hasUserModels(): Promise<boolean> {
+    return await modelConfigAdapter.hasAvailableModels();
+  }
+
   // ==================== 故事生成核心方法 ====================
 
   /**
@@ -95,6 +160,16 @@ class StoryAI {
   async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
       console.log('🎬 开始生成初始故事...');
+
+      // 智能设置用户模型配置
+      const modelSetup = await this.setupUserModelConfig('story_generation');
+      if (!modelSetup) {
+        return {
+          success: false,
+          content: null,
+          error: '用户模型配置失败，请联系管理员'
+        };
+      }
 
       // 使用 StoryInitializer 模块
       const response = await storyInitializer.generateInitialStory(config, isAdvanced);
@@ -243,6 +318,9 @@ class StoryAI {
     try {
       console.log('🎯 开始生成选择项...');
 
+      // 智能设置用户模型配置
+      await this.setupUserModelConfig('choice_generation');
+
       const currentState = storyStateManager.getState();
       if (!currentState) {
         console.warn('⚠️ 未找到当前故事状态，使用传入参数');
@@ -352,6 +430,9 @@ class StoryAI {
    */
   async generateStoryOutlines(userIdea: string, genre: string, mainGoal?: string): Promise<string[]> {
     try {
+      // 智能设置用户模型配置
+      await this.setupUserModelConfig('story_generation');
+
       const config: StoryConfig = {
         genre,
         story_idea: userIdea,
