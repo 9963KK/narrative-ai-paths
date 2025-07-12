@@ -233,6 +233,12 @@ export class UnifiedAuthService {
     return userData ? JSON.parse(userData) : null;
   }
 
+  // 获取当前用户ID
+  getCurrentUserId(): string | null {
+    const currentUser = this.getCurrentUser();
+    return currentUser ? currentUser.id : null;
+  }
+
   // 用户登出
   logout(): void {
     if (typeof window !== 'undefined') {
