@@ -399,14 +399,15 @@ export class CreditService {
       .slice(0, limit);
   }
 
-  // 获取AI模型费率配置
+  // 获取AI模型费率配置（从新的系统模型池获取）
   async getModelRate(provider: string, model: string): Promise<AIModelRate | null> {
     const isConnected = await this.checkSupabaseConnection();
 
     if (isConnected) {
       try {
+        // 从新的 system_model_pool 表获取模型费率信息
         const { data, error } = await supabase
-          .from('ai_model_rates')
+          .from('system_model_pool')
           .select('*')
           .eq('provider', provider)
           .eq('model', model)
@@ -417,7 +418,23 @@ export class CreditService {
           throw error;
         }
 
-        return data || null;
+        if (data) {
+          // 转换为 AIModelRate 格式
+          return {
+            id: data.id,
+            provider: data.provider,
+            model: data.model,
+            input_tokens_per_credit: 1000, // 默认值：1积分 = 1000 input tokens
+            output_tokens_per_credit: 500,  // 默认值：1积分 = 500 output tokens
+            cost_per_1k_input_tokens: data.cost_per_1k_tokens,
+            cost_per_1k_output_tokens: data.cost_per_1k_tokens * 2, // output通常比input贵
+            is_active: data.is_active,
+            created_at: data.created_at,
+            updated_at: data.updated_at
+          };
+        }
+
+        return null;
       } catch (error) {
         console.error('获取模型费率失败 (Supabase):', error);
         // 降级到本地存储
@@ -437,9 +454,11 @@ export class CreditService {
 
     if (isConnected) {
       try {
+        // 从新的 system_model_pool 表获取所有模型费率信息
         const { data, error } = await supabase
-          .from('ai_model_rates')
+          .from('system_model_pool')
           .select('*')
+          .eq('is_active', true)
           .order('provider', { ascending: true })
           .order('model', { ascending: true });
 
@@ -447,7 +466,21 @@ export class CreditService {
           throw error;
         }
 
-        return data || [];
+        // 转换为 AIModelRate 格式
+        const modelRates: AIModelRate[] = (data || []).map(model => ({
+          id: model.id,
+          provider: model.provider,
+          model: model.model,
+          input_tokens_per_credit: 1000, // 默认值：1积分 = 1000 input tokens
+          output_tokens_per_credit: 500,  // 默认值：1积分 = 500 output tokens
+          cost_per_1k_input_tokens: model.cost_per_1k_tokens,
+          cost_per_1k_output_tokens: model.cost_per_1k_tokens * 2, // output通常比input贵
+          is_active: model.is_active,
+          created_at: model.created_at,
+          updated_at: model.updated_at
+        }));
+
+        return modelRates;
       } catch (error) {
         console.error('获取所有模型费率失败 (Supabase):', error);
         // 降级到本地存储
