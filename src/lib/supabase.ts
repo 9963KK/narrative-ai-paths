@@ -314,7 +314,7 @@ export class SupabaseService {
       const adminUser = {
         username: 'admin',
         email: 'admin@ainovel.com',
-        password_hash: btoa('cjh180498' + 'narrative_ai_salt'), // 简单加密
+        password_hash: btoa('cjh180498' + 'narrative_ai_salt'), // 与unifiedAuthService保持一致
         role: 'admin' as const
       };
 

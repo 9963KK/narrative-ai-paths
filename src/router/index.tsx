@@ -17,6 +17,7 @@ import Settings from "../pages/Settings";
 import Profile from "../pages/Profile";
 import StoryCreating from "../pages/StoryCreating";
 import AuthCallbackTest from "../pages/AuthCallbackTest";
+import DatabaseTest from "../pages/DatabaseTest";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
   {
     path: "/auth/test",
     element: <AuthCallbackTest />,
+  },
+  {
+    path: "/db/test",
+    element: <DatabaseTest />,
   },
   {
     path: "/app",
