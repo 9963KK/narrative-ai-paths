@@ -24,3 +24,20 @@ dist-ssr
 *.sw?
 .vercel
 .env*.local
+
+# Backup and temporary files
+*.backup
+*.bak
+*.tmp
+*.old
+*copy*
+.temp/
+.cache/
+
+# Test files
+test_*.rtf
+test_*.txt
+*.test.log
+
+# Supabase temp files
+supabase/.temp/
