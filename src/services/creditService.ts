@@ -87,7 +87,7 @@ export class CreditService {
   async getUserCredits(userId: string): Promise<UserCredit | null> {
     const isConnected = await this.checkSupabaseConnection();
 
-    if (isConnected) {
+    if (isConnected && this.isValidUUID(userId)) {
       try {
         const { data, error } = await supabase
           .from('user_credits')
@@ -120,7 +120,7 @@ export class CreditService {
   async initializeUserCredits(userId: string, welcomeCredits: number = 100): Promise<boolean> {
     const isConnected = await this.checkSupabaseConnection();
 
-    if (isConnected) {
+    if (isConnected && this.isValidUUID(userId)) {
       try {
         const { error } = await supabase.rpc('initialize_user_credits', {
           user_uuid: userId,
@@ -286,6 +286,12 @@ export class CreditService {
     return true;
   }
 
+  // 检查是否为有效的UUID格式
+  private isValidUUID(id: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  }
+
   // 管理员添加积分
   async adminAddCredits(
     targetUserId: string,
@@ -297,6 +303,12 @@ export class CreditService {
 
     if (isConnected) {
       try {
+        // 检查用户ID格式
+        if (!this.isValidUUID(targetUserId) || !this.isValidUUID(adminUserId)) {
+          console.warn('用户ID不是有效的UUID格式，使用本地存储处理');
+          throw new Error('Invalid UUID format');
+        }
+
         const { data, error } = await supabase.rpc('admin_add_credits', {
           target_user_uuid: targetUserId,
           admin_user_uuid: adminUserId,
@@ -311,7 +323,7 @@ export class CreditService {
         return data === true;
       } catch (error) {
         console.error('管理员添加积分失败 (Supabase):', error);
-        return false;
+        // 降级到本地存储
       }
     }
 
@@ -357,7 +369,7 @@ export class CreditService {
   async getUserTransactions(userId: string, limit: number = 50): Promise<CreditTransaction[]> {
     const isConnected = await this.checkSupabaseConnection();
 
-    if (isConnected) {
+    if (isConnected && this.isValidUUID(userId)) {
       try {
         const { data, error } = await supabase
           .from('credit_transactions')
