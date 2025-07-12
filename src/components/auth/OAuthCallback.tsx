@@ -9,9 +9,14 @@ export const OAuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let hasProcessed = false;
+
     const processOAuthCallback = async () => {
+      if (hasProcessed) return;
+      hasProcessed = true;
+
       try {
-        console.log('🔄 处理OAuth回调...');
+        console.log('🔄 OAuthCallback组件处理OAuth回调...');
         console.log('🔗 当前URL:', window.location.href);
         
         // 检查URL中是否包含OAuth回调参数
@@ -25,6 +30,7 @@ export const OAuthCallback: React.FC = () => {
           return;
         }
         
+        console.log('⏳ 正在验证身份...');
         // 处理OAuth回调并获取用户信息
         const authUser = await handleOAuthCallback();
         
@@ -36,7 +42,7 @@ export const OAuthCallback: React.FC = () => {
           // 清理URL中的token参数
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          // 添加短暂延迟确保用户状态完全更新
+          // 短暂延迟后跳转，让用户看到成功状态
           setTimeout(() => {
             // 根据用户角色跳转到相应页面
             if (authUser.role === 'admin') {
@@ -46,7 +52,7 @@ export const OAuthCallback: React.FC = () => {
               console.log('🔄 跳转到应用主页面...');
               navigate('/app', { replace: true });
             }
-          }, 500); // 增加延迟时间到500ms
+          }, 1500); // 显示1.5秒的成功状态
         } else {
           console.log('❌ OAuth回调处理失败');
           setError('OAuth登录失败，请重试');
@@ -65,38 +71,43 @@ export const OAuthCallback: React.FC = () => {
           navigate('/login');
         }, 3000);
       } finally {
-        setIsProcessing(false);
+        // 延迟设置processing为false，确保用户能看到处理过程
+        setTimeout(() => {
+          setIsProcessing(false);
+        }, 1000);
       }
     };
 
-    // 只处理一次OAuth回调，避免重复处理
-    let hasProcessed = false;
-    
-    // 只有在非处理中状态且用户已登录时才直接跳转
-    if (user && !isProcessing && !hasProcessed) {
-      console.log('👤 用户已存在，直接跳转到应用页面...');
-      if (user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/app');
-      }
+    // 检查是否已有用户登录（可能是通过AuthContext处理的）
+    if (user) {
+      console.log('👤 用户已登录，直接跳转...');
+      setTimeout(() => {
+        if (user.role === 'admin') {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/app', { replace: true });
+        }
+      }, 500);
+      setIsProcessing(false);
       return;
     }
 
-    // 只有在用户不存在且未处理过时才处理OAuth回调
-    if (!user && !hasProcessed) {
-      hasProcessed = true;
-      processOAuthCallback();
-    }
-  }, [navigate, handleOAuthCallback]); // 移除user依赖，避免重复触发
+    // 开始处理OAuth回调
+    processOAuthCallback();
+  }, [navigate, handleOAuthCallback, user]);
 
   if (isProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">正在处理登录...</h2>
-          <p className="text-gray-600">请稍候，我们正在验证您的身份</p>
+        <div className="bg-white p-8 rounded-xl shadow-xl text-center max-w-md">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">正在验证身份</h2>
+          <p className="text-gray-600 mb-4">第三方登录成功，正在处理您的账户信息...</p>
+          <div className="flex items-center justify-center space-x-1">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          </div>
         </div>
       </div>
     );

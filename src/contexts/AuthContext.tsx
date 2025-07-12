@@ -64,6 +64,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('🔄 认证状态变化:', event);
           
           if (event === 'SIGNED_IN' && session) {
+            // 检查当前是否在OAuth回调页面
+            const isOnCallbackPage = window.location.pathname === '/auth/callback';
+            
+            if (isOnCallbackPage) {
+              console.log('📍 当前在OAuth回调页面，由OAuthCallback组件处理');
+              return; // 让OAuthCallback组件处理
+            }
+            
             console.log('✅ 用户已登录，处理OAuth会话');
             handleOAuthSession(session);
           } else if (event === 'SIGNED_OUT') {
