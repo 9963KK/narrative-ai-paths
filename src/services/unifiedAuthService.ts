@@ -471,9 +471,7 @@ export class UnifiedAuthService {
       // 使用Supabase OAuth
       console.log('🔗 使用Supabase OAuth...');
       
-      // 在开始新的OAuth登录前，清理现有session
-      console.log('🧹 清理现有session以避免OAuth provider混乱...');
-      await this.forceSignOut();
+      // OAuth登录正常启动，不需要提前清理session
       
       try {
         const result = await supabaseService.signInWithOAuth(provider);
@@ -533,8 +531,7 @@ export class UnifiedAuthService {
     }
 
     try {
-      // 强制清理现有session，防止OAuth provider切换时的session混乱
-      console.log('🧹 清理现有session以确保OAuth provider切换正确...');
+      // 获取OAuth session进行处理
       
       const session = await supabaseService.getCurrentSession();
       
