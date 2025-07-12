@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
+import { getNormalizedOrigin } from '@/utils/urlUtils';
 
 // Supabase配置
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rvdjkdkkavjcnqaaglkn.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2ZGprZGtrYXZqY25xYWFnbGtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzNjcxMjgsImV4cCI6MjA2Njk0MzEyOH0.cb9wj7jUuma0692eQZfLWylaacRFPflWywsHa_OOM8Q';
+
+// 获取标准化的回调URL
+function getCallbackUrl(): string {
+  if (typeof window === 'undefined') return 'http://localhost:8080/auth/callback';
+  
+  const origin = getNormalizedOrigin();
+  return origin + '/auth/callback';
+}
 
 // 创建Supabase客户端
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -10,8 +19,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    // OAuth配置
-    redirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined,
+    // OAuth配置 - 使用标准化的回调URL
+    redirectTo: getCallbackUrl(),
     storageKey: 'supabase.auth.token'
   }
 });
@@ -323,9 +332,9 @@ export class SupabaseService {
   // OAuth 登录
   async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
     try {
-      const redirectTo = typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined;
+      const redirectTo = getCallbackUrl();
       console.log(`🔄 启动 ${provider} OAuth登录`);
-      console.log(`🌐 当前域名: ${window.location.origin}`);
+      console.log(`🌐 当前域名: ${typeof window !== 'undefined' ? window.location.origin : 'SSR环境'}`);
       console.log(`🎯 设置的回调URL: ${redirectTo}`);
       console.log(`⚠️  请确保在Supabase Dashboard中配置了此URL: ${redirectTo}`);
       

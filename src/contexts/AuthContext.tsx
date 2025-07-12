@@ -62,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // 监听OAuth状态变化
         const { data: authListener } = unifiedAuthService.onAuthStateChange((event, session) => {
           console.log('🔄 认证状态变化:', event);
+          console.log('📍 当前路径:', window.location.pathname);
           
           if (event === 'SIGNED_IN' && session) {
             // 检查当前是否在OAuth回调页面
@@ -69,7 +70,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             if (isOnCallbackPage) {
               console.log('📍 当前在OAuth回调页面，由OAuthCallback组件处理');
-              return; // 让OAuthCallback组件处理
+              
+              // 等待OAuthCallback组件处理完成
+              // 如果5秒后还在回调页面且没有用户信息，则由AuthContext兜底处理
+              setTimeout(() => {
+                const stillOnCallbackPage = window.location.pathname === '/auth/callback';
+                const hasNoUser = !getCurrentUser();
+                
+                if (stillOnCallbackPage && hasNoUser) {
+                  console.log('⚠️ OAuthCallback组件处理超时，AuthContext兜底处理');
+                  handleOAuthSession(session);
+                }
+              }, 5000);
+              
+              return; // 让OAuthCallback组件优先处理
             }
             
             console.log('✅ 用户已登录，处理OAuth会话');

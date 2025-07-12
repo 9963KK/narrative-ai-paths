@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { cleanOAuthCallbackUrl, extractOAuthParams, hasOAuthHashParams } from '@/utils/urlUtils';
 
 export const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -8,10 +9,19 @@ export const OAuthCallback: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 在组件挂载时立即记录
+  // 在组件挂载时立即记录和清理
   React.useEffect(() => {
     console.log('🚀 OAuthCallback组件已挂载！');
     console.log('📅 时间戳:', new Date().toISOString());
+    
+    // 检查和记录OAuth hash参数
+    const hasOAuthHash = hasOAuthHashParams();
+    const oauthParams = extractOAuthParams();
+    
+    console.log('🔍 是否包含OAuth hash:', hasOAuthHash);
+    if (hasOAuthHash) {
+      console.log('🔑 OAuth参数:', Object.keys(oauthParams));
+    }
     
     // 在localStorage中记录访问
     const visits = JSON.parse(localStorage.getItem('oauth_callback_visits') || '[]');
@@ -19,9 +29,17 @@ export const OAuthCallback: React.FC = () => {
       timestamp: new Date().toISOString(),
       url: window.location.href,
       hash: window.location.hash,
-      search: window.location.search
+      search: window.location.search,
+      hasOAuthHash,
+      oauthParamCount: Object.keys(oauthParams).length
     });
     localStorage.setItem('oauth_callback_visits', JSON.stringify(visits.slice(-10))); // 只保留最近10次
+    
+    // 立即清理OAuth hash参数
+    if (hasOAuthHash) {
+      console.log('🧹 立即清理OAuth hash参数...');
+      cleanOAuthCallbackUrl();
+    }
   }, []);
 
   useEffect(() => {
@@ -42,9 +60,34 @@ export const OAuthCallback: React.FC = () => {
         const urlFragment = window.location.hash;
         const urlParams = new URLSearchParams(window.location.search);
         
-        if (!urlFragment.includes('access_token') && !urlParams.has('code')) {
-          console.log('❌ 未找到OAuth回调参数');
-          setError('无效的OAuth回调');
+        console.log('🔍 检查OAuth回调参数:');
+        console.log('  - URL Fragment:', urlFragment);
+        console.log('  - URL Search:', window.location.search);
+        console.log('  - 包含access_token:', urlFragment.includes('access_token'));
+        console.log('  - 包含code参数:', urlParams.has('code'));
+        
+        // 检查是否为有效的OAuth回调
+        const hasAccessToken = urlFragment.includes('access_token');
+        const hasCode = urlParams.has('code');
+        const hasErrorParam = urlParams.has('error');
+        
+        if (hasErrorParam) {
+          const error = urlParams.get('error');
+          const errorDescription = urlParams.get('error_description');
+          console.log('❌ OAuth回调包含错误:', { error, errorDescription });
+          setError(`OAuth错误: ${errorDescription || error}`);
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+        
+        if (!hasAccessToken && !hasCode) {
+          console.log('❌ 未找到OAuth回调参数，可能的原因:');
+          console.log('  1. 用户取消了OAuth授权');
+          console.log('  2. OAuth提供商配置错误');
+          console.log('  3. Supabase重定向URL配置错误');
+          console.log('  4. 用户直接访问了回调页面');
+          
+          setError('无效的OAuth回调 - 未找到授权参数');
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
@@ -58,8 +101,9 @@ export const OAuthCallback: React.FC = () => {
           console.log('🔧 用户角色:', authUser.role);
           console.log('🚀 准备跳转到应用页面...');
           
-          // 清理URL中的token参数
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // 彻底清理URL中的OAuth参数
+          console.log('🧹 正在彻底清理OAuth参数...');
+          cleanOAuthCallbackUrl();
           
           // 短暂延迟后跳转，让用户看到成功状态
           setTimeout(() => {
