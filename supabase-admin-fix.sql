@@ -21,7 +21,7 @@ ON CONFLICT (email) DO UPDATE SET
     updated_at = NOW();
 
 -- 3. 验证管理员账户是否正确创建
-SELECT 
+SELECT
     id,
     username,
     email,
