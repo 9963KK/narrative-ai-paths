@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { tokenMonitor, UserTokenSummary } from '@/services/tokenMonitorService';
-import { authService, User } from '@/services/authService';
+import { adminDataService, type AdminDashboardStats, type UserUsageSummary } from '@/services/adminDataService';
 import { cloudAuthService } from '@/services/cloudAuthService';
 import { creditService } from '@/services/creditService';
 import { CreditManagementTab } from '@/components/admin/CreditManagementTab';
+import type { User } from '@/lib/supabase';
 
 // 智能检测是否使用云端存储（与AuthContext保持一致）
 const USE_CLOUD_STORAGE = (() => {
@@ -49,14 +49,17 @@ import { useNavigate } from 'react-router-dom';
 const AdminDashboard: React.FC = () => {
   const { user, isGuest, logout } = useAuth();
   const navigate = useNavigate();
-  const [userSummaries, setUserSummaries] = useState<UserTokenSummary[]>([]);
+  const [userSummaries, setUserSummaries] = useState<UserUsageSummary[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalStats, setTotalStats] = useState({
+  const [dashboardStats, setDashboardStats] = useState<AdminDashboardStats>({
     totalUsers: 0,
     totalRequests: 0,
     totalTokens: 0,
-    totalCost: 0
+    totalCost: 0,
+    totalCreditsIssued: 0,
+    totalCreditsSpent: 0,
+    profitMargin: 0
   });
 
   // 检查管理员权限
@@ -76,32 +79,17 @@ const AdminDashboard: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const summaries = tokenMonitor.getUserTokenSummaries();
+      // 并行获取数据
+      const [stats, summaries, users] = await Promise.all([
+        adminDataService.getDashboardStats(),
+        adminDataService.getUserSummaries(),
+        cloudAuthService.getAllUsers()
+      ]);
+      
+      setDashboardStats(stats);
       setUserSummaries(summaries);
+      setAllUsers(users || []);
       
-      // 根据配置选择认证服务
-      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
-      
-      // 加载所有用户
-      const users = await currentAuthService.getAllUsers();
-      if (users) {
-        setAllUsers(users);
-      }
-      
-      // 计算总体统计
-      const stats = summaries.reduce((acc, summary) => ({
-        totalUsers: acc.totalUsers + 1,
-        totalRequests: acc.totalRequests + summary.totalRequests,
-        totalTokens: acc.totalTokens + summary.totalTokens,
-        totalCost: acc.totalCost + summary.totalCost
-      }), {
-        totalUsers: 0,
-        totalRequests: 0,
-        totalTokens: 0,
-        totalCost: 0
-      });
-      
-      setTotalStats(stats);
     } catch (error) {
       console.error('加载数据失败:', error);
     } finally {
@@ -113,14 +101,14 @@ const AdminDashboard: React.FC = () => {
     loadData();
   }, []);
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     try {
-      const csvData = tokenMonitor.exportUsageData();
+      const csvData = await adminDataService.exportDataAsCSV();
       const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `token_usage_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `admin_data_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -130,9 +118,9 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleCleanupLogs = () => {
-    tokenMonitor.cleanupOldLogs();
-    loadData(); // 重新加载数据
+  const handleRefreshData = async () => {
+    adminDataService.clearCache();
+    await loadData();
   };
 
   const handleLogout = () => {
@@ -142,47 +130,18 @@ const AdminDashboard: React.FC = () => {
 
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('确定要删除这个用户吗？此操作无法撤销。')) {
-      const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
-      
-      if (USE_CLOUD_STORAGE) {
-        // 使用云端存储的删除方法
-        const success = await cloudAuthService.deleteUser(userId);
-        if (success) {
-          loadData(); // 重新加载数据
-        }
-      } else {
-        // 使用本地存储的删除方法
-        const users = await currentAuthService.getAllUsers();
-        if (users) {
-          const filteredUsers = users.filter(u => u.id !== userId);
-          localStorage.setItem('narrative_ai_users', JSON.stringify(filteredUsers));
-          loadData(); // 重新加载数据
-        }
+      const success = await cloudAuthService.deleteUser(userId);
+      if (success) {
+        loadData(); // 重新加载数据
       }
     }
   };
 
   const handleToggleUserRole = async (userId: string, currentRole: string) => {
-    const currentAuthService = USE_CLOUD_STORAGE ? cloudAuthService : authService;
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    
-    if (USE_CLOUD_STORAGE) {
-      // 使用云端存储的角色切换方法
-      const success = await cloudAuthService.toggleUserRole(userId, newRole);
-      if (success) {
-        loadData(); // 重新加载数据
-      }
-    } else {
-      // 使用本地存储的角色切换方法
-      const users = await currentAuthService.getAllUsers();
-      if (users) {
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex !== -1) {
-          users[userIndex].role = newRole;
-          localStorage.setItem('narrative_ai_users', JSON.stringify(users));
-          loadData(); // 重新加载数据
-        }
-      }
+    const success = await cloudAuthService.toggleUserRole(userId, newRole);
+    if (success) {
+      loadData(); // 重新加载数据
     }
   };
 
@@ -238,17 +197,13 @@ const AdminDashboard: React.FC = () => {
                 <LogOut className="h-4 w-4 mr-2" />
                 退出登录
               </Button>
-              <Button variant="outline" onClick={loadData} disabled={isLoading}>
+              <Button variant="outline" onClick={handleRefreshData} disabled={isLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 刷新数据
               </Button>
               <Button variant="outline" onClick={handleExportData}>
                 <Download className="h-4 w-4 mr-2" />
                 导出CSV
-              </Button>
-              <Button variant="outline" onClick={handleCleanupLogs}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                清理日志
               </Button>
             </div>
           </div>
@@ -264,7 +219,7 @@ const AdminDashboard: React.FC = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(allUsers.length)}</div>
+              <div className="text-2xl font-bold">{formatNumber(dashboardStats.totalUsers)}</div>
               <p className="text-xs text-muted-foreground">注册用户</p>
             </CardContent>
           </Card>
@@ -275,7 +230,7 @@ const AdminDashboard: React.FC = () => {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(totalStats.totalRequests)}</div>
+              <div className="text-2xl font-bold">{formatNumber(dashboardStats.totalRequests)}</div>
               <p className="text-xs text-muted-foreground">API调用次数</p>
             </CardContent>
           </Card>
@@ -286,7 +241,7 @@ const AdminDashboard: React.FC = () => {
               <Cpu className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(totalStats.totalTokens)}</div>
+              <div className="text-2xl font-bold">{formatNumber(dashboardStats.totalTokens)}</div>
               <p className="text-xs text-muted-foreground">消耗Token</p>
             </CardContent>
           </Card>
@@ -297,18 +252,18 @@ const AdminDashboard: React.FC = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalStats.totalCost)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(dashboardStats.totalCost)}</div>
               <p className="text-xs text-muted-foreground">估算成本</p>
             </CardContent>
           </Card>
         </div>
 
         {/* 标签页 */}
-        <Tabs defaultValue="token-usage" className="space-y-6">
+        <Tabs defaultValue="user-usage" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="token-usage" className="flex items-center gap-2">
+            <TabsTrigger value="user-usage" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Token使用统计
+              用户使用统计
             </TabsTrigger>
             <TabsTrigger value="user-management" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -320,16 +275,16 @@ const AdminDashboard: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Token使用统计标签页 */}
-          <TabsContent value="token-usage">
+          {/* 用户使用统计标签页 */}
+          <TabsContent value="user-usage">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  用户Token使用详情
+                  用户使用情况统计
                 </CardTitle>
                 <CardDescription>
-                  用户的详细Token消耗统计和成本分析
+                  用户的详细积分消费统计和活动分析
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -349,54 +304,46 @@ const AdminDashboard: React.FC = () => {
                         <TableRow>
                           <TableHead>用户</TableHead>
                           <TableHead>角色</TableHead>
-                          <TableHead className="text-right">请求数</TableHead>
-                          <TableHead className="text-right">Token数</TableHead>
-                          <TableHead className="text-right">消费</TableHead>
-                          <TableHead>首次使用</TableHead>
-                          <TableHead>最后使用</TableHead>
-                          <TableHead>主要模型</TableHead>
+                          <TableHead className="text-right">获得积分</TableHead>
+                          <TableHead className="text-right">消费积分</TableHead>
+                          <TableHead className="text-right">当前余额</TableHead>
+                          <TableHead className="text-right">交易次数</TableHead>
+                          <TableHead>注册时间</TableHead>
+                          <TableHead>最后活动</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {userSummaries.map((summary) => {
-                          // 找出最常用的模型
-                          let mostUsedModel = '';
-                          let maxTokens = 0;
-                          Object.entries(summary.modelBreakdown).forEach(([provider, models]) => {
-                            Object.entries(models).forEach(([model, stats]) => {
-                              if (stats.tokens > maxTokens) {
-                                maxTokens = stats.tokens;
-                                mostUsedModel = `${provider}/${model}`;
-                              }
-                            });
-                          });
-
-                          return (
-                            <TableRow key={summary.userId}>
-                              <TableCell className="font-medium">
-                                <div>
-                                  <div>{summary.username}</div>
-                                  <div className="text-xs text-gray-500">{summary.userId.slice(0, 8)}...</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{getRoleBadge(summary.role)}</TableCell>
-                              <TableCell className="text-right">{formatNumber(summary.totalRequests)}</TableCell>
-                              <TableCell className="text-right">{formatNumber(summary.totalTokens)}</TableCell>
-                              <TableCell className="text-right font-medium">
-                                {formatCurrency(summary.totalCost)}
-                              </TableCell>
-                              <TableCell className="text-sm text-gray-600">
-                                {formatDate(summary.firstUsage)}
-                              </TableCell>
-                              <TableCell className="text-sm text-gray-600">
-                                {formatDate(summary.lastUsage)}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <Badge variant="outline">{mostUsedModel}</Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {userSummaries.map((summary) => (
+                          <TableRow key={summary.userId}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <div>{summary.username}</div>
+                                <div className="text-xs text-gray-500">{summary.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getRoleBadge(summary.role)}</TableCell>
+                            <TableCell className="text-right text-green-600 font-medium">
+                              {summary.totalCreditsEarned.toFixed(1)}
+                            </TableCell>
+                            <TableCell className="text-right text-red-600 font-medium">
+                              {summary.totalCreditsSpent.toFixed(1)}
+                            </TableCell>
+                            <TableCell className="text-right font-bold">
+                              <span className={summary.currentBalance < 10 ? 'text-red-600' : 'text-green-600'}>
+                                {summary.currentBalance.toFixed(1)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {summary.transactionCount}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {formatDate(summary.createdAt)}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {summary.lastActivity ? formatDate(summary.lastActivity) : '无活动'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
