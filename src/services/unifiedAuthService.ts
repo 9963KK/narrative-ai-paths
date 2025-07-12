@@ -137,25 +137,15 @@ export class UnifiedAuthService {
 
   // 用户登录
   async login(email: string, password: string): Promise<AuthUser | null> {
-    console.log('🔐 开始登录流程...');
-    console.log('🌍 环境检测:', isProduction ? '生产环境' : '开发环境');
-    console.log('👤 登录邮箱:', email);
-    
     const isConnected = await this.checkSupabaseConnection();
-    console.log('📡 Supabase连接状态:', isConnected);
     
     if (isConnected) {
       // 使用Supabase
-      console.log('🔗 使用Supabase存储');
       try {
-        console.log('🔍 查找用户:', email);
         const user = await supabaseService.findUserByEmail(email);
-        console.log('👤 找到用户:', user ? user.username : '用户不存在');
         
         if (user) {
-          console.log('🔒 验证密码...');
           const passwordValid = this.verifyPassword(password, user.password_hash);
-          console.log('✅ 密码验证结果:', passwordValid);
           
           if (passwordValid) {
             const authUser: AuthUser = {
@@ -167,11 +157,9 @@ export class UnifiedAuthService {
             };
 
             localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
-            console.log('✅ Supabase登录成功');
             return authUser;
           }
         }
-        console.log('❌ 登录失败：用户不存在或密码错误');
         return null;
       } catch (error) {
         console.error('❌ Supabase登录失败，尝试本地存储作为备选方案:', error);
@@ -180,7 +168,6 @@ export class UnifiedAuthService {
       }
     } else {
       // 使用本地存储（作为备选方案）
-      console.log('💾 使用本地存储（备选方案）');
       return this.loginWithLocalStorage(email, password);
     }
   }
@@ -188,7 +175,6 @@ export class UnifiedAuthService {
   // 本地存储登录逻辑
   private loginWithLocalStorage(email: string, password: string): AuthUser | null {
     const users = this.getLocalUsers();
-    console.log('👥 本地用户数量:', users.length);
     
     const user = users.find((u: any) => 
       u.email === email &&
@@ -205,10 +191,8 @@ export class UnifiedAuthService {
       };
 
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
-      console.log('✅ 本地存储登录成功');
       return authUser;
     }
-    console.log('❌ 本地登录失败：用户不存在或密码错误');
     return null;
   }
 
@@ -461,17 +445,10 @@ export class UnifiedAuthService {
 
   // OAuth 登录
   async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
-    console.log(`🔐 开始${provider} OAuth登录流程...`);
-    console.log('🌍 环境检测:', isProduction ? '生产环境' : '开发环境');
-    
     const isConnected = await this.checkSupabaseConnection();
-    console.log('📡 Supabase连接状态:', isConnected);
     
     if (isConnected) {
       // 使用Supabase OAuth
-      console.log('🔗 使用Supabase OAuth...');
-      
-      // OAuth登录正常启动，不需要提前清理session
       
       try {
         const result = await supabaseService.signInWithOAuth(provider);
@@ -481,7 +458,6 @@ export class UnifiedAuthService {
           return result;
         }
         
-        console.log(`✅ ${provider} OAuth登录已启动`);
         return result;
       } catch (error) {
         console.error(`❌ ${provider} OAuth登录出错:`, error);
@@ -489,7 +465,6 @@ export class UnifiedAuthService {
       }
     } else {
       // 无Supabase连接时的提示
-      console.log('⚠️ OAuth登录需要Supabase连接');
       return { 
         data: null, 
         error: new Error('OAuth登录需要连接到Supabase。请检查网络连接或使用邮箱密码登录、游客模式。') 
@@ -499,20 +474,16 @@ export class UnifiedAuthService {
 
   // 强制清理所有session（用于OAuth切换）
   async forceSignOut(): Promise<void> {
-    console.log('🧹 强制清理所有session...');
-    
     try {
       // 清理Supabase session
       const isConnected = await this.checkSupabaseConnection();
       if (isConnected) {
         await supabaseService.signOut();
-        console.log('✅ Supabase session已清理');
       }
       
       // 清理本地存储
       if (typeof window !== 'undefined') {
         localStorage.removeItem(CURRENT_USER_KEY);
-        console.log('✅ 本地用户信息已清理');
       }
     } catch (error) {
       console.error('❌ 强制登出失败:', error);
@@ -521,29 +492,20 @@ export class UnifiedAuthService {
 
   // 处理OAuth回调
   async handleOAuthCallback(): Promise<AuthUser | null> {
-    console.log('🔄 处理OAuth回调...');
-    
     const isConnected = await this.checkSupabaseConnection();
     
     if (!isConnected) {
-      console.log('⚠️ 无Supabase连接，无法处理OAuth回调');
       return null;
     }
 
     try {
       // 获取OAuth session进行处理
-      
       const session = await supabaseService.getCurrentSession();
       
       if (!session) {
-        console.log('❌ 未找到有效的OAuth会话');
         return null;
       }
 
-      console.log('✅ 找到OAuth会话，处理用户信息...');
-      console.log('🔍 OAuth用户邮箱:', session.user?.email);
-      console.log('🔍 OAuth提供商:', session.user?.app_metadata?.provider);
-      
       // 从会话中获取或创建用户
       const user = await supabaseService.getOrCreateUserFromSession(session);
       
@@ -557,8 +519,6 @@ export class UnifiedAuthService {
         };
 
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
-        console.log('✅ OAuth登录成功，用户信息已保存');
-        console.log('👤 最终用户:', { email: authUser.email, username: authUser.username });
         return authUser;
       }
 

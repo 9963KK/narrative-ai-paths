@@ -28,9 +28,6 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { loginAsGuest } = useAuth();
 
-  // OAuth回调调试信息
-  const [showDebug, setShowDebug] = useState(false);
-  const oauthVisits = JSON.parse(localStorage.getItem('oauth_callback_visits') || '[]');
 
   // 快速开始游客体验
   const handleQuickStart = async () => {
@@ -125,18 +122,6 @@ const Home: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              {/* 调试按钮 */}
-              {oauthVisits.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setShowDebug(!showDebug)}
-                  className="text-orange-600 hover:text-orange-700"
-                >
-                  调试 ({oauthVisits.length})
-                </Button>
-              )}
-              
               <Link to="/login">
                 <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
                   登录
@@ -153,31 +138,6 @@ const Home: React.FC = () => {
         </div>
       </header>
 
-      {/* OAuth调试信息 */}
-      {showDebug && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">OAuth回调调试信息</h3>
-          <div className="text-sm text-yellow-700">
-            <p className="mb-2">OAuth回调访问记录 ({oauthVisits.length} 次):</p>
-            {oauthVisits.map((visit: any, index: number) => (
-              <div key={index} className="mb-2 p-2 bg-white rounded border">
-                <p><strong>时间:</strong> {new Date(visit.timestamp).toLocaleString()}</p>
-                <p><strong>URL:</strong> {visit.url}</p>
-                <p><strong>Hash:</strong> {visit.hash || '无'}</p>
-                <p><strong>Search:</strong> {visit.search || '无'}</p>
-              </div>
-            ))}
-            <div className="mt-4 space-x-2">
-              <Button size="sm" onClick={() => localStorage.removeItem('oauth_callback_visits')}>
-                清除记录
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => navigate('/auth/test')}>
-                测试回调路由
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
