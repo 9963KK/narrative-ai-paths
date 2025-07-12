@@ -56,6 +56,26 @@ export const OAuthCallback: React.FC = () => {
         console.log('🔍 URL Search:', window.location.search);
         console.log('📍 当前路径:', window.location.pathname);
         
+        // 首先检查是否已有用户登录（可能由AuthContext处理了）
+        if (user) {
+          console.log('👤 检测到已登录用户:', user.username);
+          console.log('🚀 直接跳转到应用...');
+          
+          // 清理URL
+          cleanOAuthCallbackUrl();
+          
+          // 立即跳转
+          setTimeout(() => {
+            if (user.role === 'admin') {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/app', { replace: true });
+            }
+          }, 500);
+          setIsProcessing(false);
+          return;
+        }
+        
         // 检查URL中是否包含OAuth回调参数
         const urlFragment = window.location.hash;
         const urlParams = new URLSearchParams(window.location.search);
@@ -81,15 +101,15 @@ export const OAuthCallback: React.FC = () => {
         }
         
         if (!hasAccessToken && !hasCode) {
-          console.log('❌ 未找到OAuth回调参数，可能的原因:');
-          console.log('  1. 用户取消了OAuth授权');
-          console.log('  2. OAuth提供商配置错误');
-          console.log('  3. Supabase重定向URL配置错误');
-          console.log('  4. 用户直接访问了回调页面');
+          console.log('⚠️ 未找到OAuth回调参数，但尝试检查现有session...');
+          console.log('可能的原因:');
+          console.log('  1. OAuth参数已被Supabase自动处理');
+          console.log('  2. 用户session已建立但URL已清理');
+          console.log('  3. 用户取消了OAuth授权');
+          console.log('  4. 直接访问了回调页面');
           
-          setError('无效的OAuth回调 - 未找到授权参数');
-          setTimeout(() => navigate('/login'), 3000);
-          return;
+          // 不立即显示错误，先尝试获取现有的用户session
+          console.log('🔍 尝试获取现有用户session...');
         }
         
         console.log('⏳ 正在验证身份...');
@@ -115,10 +135,20 @@ export const OAuthCallback: React.FC = () => {
               console.log('🔄 跳转到应用主页面...');
               navigate('/app', { replace: true });
             }
-          }, 1500); // 显示1.5秒的成功状态
+          }, 1000); // 缩短到1秒，减少等待时间
         } else {
-          console.log('❌ OAuth回调处理失败');
-          setError('OAuth登录失败，请重试');
+          // 检查是否因为没有OAuth参数而失败
+          if (!hasAccessToken && !hasCode) {
+            console.log('🔍 OAuth参数缺失且无法获取session，可能原因:');
+            console.log('  1. 用户取消了OAuth授权');
+            console.log('  2. OAuth配置错误');
+            console.log('  3. 直接访问了回调页面');
+            
+            setError('OAuth登录取消或配置错误');
+          } else {
+            console.log('❌ OAuth回调处理失败，尽管有参数');
+            setError('OAuth登录处理失败，请重试');
+          }
           
           // 3秒后跳转到登录页面
           setTimeout(() => {
@@ -134,10 +164,14 @@ export const OAuthCallback: React.FC = () => {
           navigate('/login');
         }, 3000);
       } finally {
-        // 延迟设置processing为false，确保用户能看到处理过程
-        setTimeout(() => {
-          setIsProcessing(false);
-        }, 1000);
+        // 只有在真正需要时才取消loading状态
+        // 如果处理成功，会在跳转前取消loading
+        // 如果处理失败，延迟显示错误信息
+        if (!user) {
+          setTimeout(() => {
+            setIsProcessing(false);
+          }, 800);
+        }
       }
     };
 
