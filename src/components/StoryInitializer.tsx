@@ -11,7 +11,7 @@ import SaveManager from './SaveManager';
 import DocumentAnalyzer from './DocumentAnalyzer';
 import DocumentAnalysisResultView from './DocumentAnalysisResultView';
 import { ModelConfig as ModelConfigType } from './model-config/constants';
-import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { getSavedContexts, SavedStoryContext } from '@/services/contextManager';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 import { storyAI } from '@/services/storyAI';
@@ -131,16 +131,30 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   const [isGeneratingOutlines, setIsGeneratingOutlines] = useState(false);
   const [originalSimpleConfig, setOriginalSimpleConfig] = useState<BaseStoryConfig | null>(null);
 
-  // 组件加载时检查本地配置和存档
+  // 组件加载时检查用户模型配置和存档
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig && savedConfig.apiKey) {
-      setModelConfig(savedConfig);
-      setHasValidConfig(true);
-      console.log('📂 已从本地存储加载配置');
-    } else {
-      setHasValidConfig(hasSavedConfig());
-    }
+    const loadUserConfig = async () => {
+      try {
+        // 确保用户有可用模型
+        await modelConfigAdapter.ensureUserHasModels();
+        
+        // 加载用户的模型配置
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setModelConfig(userConfig);
+          setHasValidConfig(true);
+          console.log('📂 已加载用户模型配置');
+        } else {
+          setHasValidConfig(false);
+          console.warn('用户没有可用的模型配置');
+        }
+      } catch (error) {
+        console.error('加载用户配置失败:', error);
+        setHasValidConfig(false);
+      }
+    };
+    
+    loadUserConfig();
     
     // 检查存档数量
     updateSavedContextsCount();
@@ -166,6 +180,25 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // 确保有有效的模型配置
+  const ensureValidConfig = async (): Promise<ModelConfigType> => {
+    // 如果当前配置无效，尝试加载用户配置
+    if (!modelConfig.apiKey && hasValidConfig) {
+      try {
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setModelConfig(userConfig);
+          return userConfig;
+        }
+      } catch (error) {
+        console.error('加载用户配置失败:', error);
+      }
+    }
+    
+    // 如果还是没有有效配置，使用当前配置
+    return modelConfig;
   };
 
   // 更新存档数量和获取最近故事的函数
@@ -276,15 +309,8 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
       setIsGeneratingOutlines(true);
       
       try {
-        // 如果当前没有配置但有保存的配置，先加载它
-        let configToUse = modelConfig;
-        if (!modelConfig.apiKey && hasValidConfig) {
-          const savedConfig = loadModelConfig();
-          if (savedConfig) {
-            configToUse = savedConfig;
-            setModelConfig(savedConfig);
-          }
-        }
+        // 确保有有效的模型配置
+        const configToUse = await ensureValidConfig();
         
         // 设置AI配置
         storyAI.setModelConfig(configToUse);
@@ -310,7 +336,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   };
   
   // 处理梗概选择
-  const handleOutlineSelection = (selectedOutline: {
+  const handleOutlineSelection = async (selectedOutline: {
     id: number;
     title: string;
     premise: string;
@@ -354,14 +380,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
     };
     
     // 使用增强配置创建故事
-    let configToUse = modelConfig;
-    if (!modelConfig.apiKey && hasValidConfig) {
-      const savedConfig = loadModelConfig();
-      if (savedConfig) {
-        configToUse = savedConfig;
-        setModelConfig(savedConfig);
-      }
-    }
+    const configToUse = await ensureValidConfig();
     
     console.log('🚀 基于选择的梗概创建故事:', selectedOutline.title);
     onInitializeStory(enhancedConfig, configToUse, true);
@@ -389,21 +408,14 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   };
 
   // 处理高级配置提交
-  const handleAdvancedSubmit = (e: React.FormEvent) => {
+  const handleAdvancedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasValidGoal = advancedConfig.story_goals.some(goal => goal.description.trim() !== '');
     // 检查当前配置或本地保存的配置
     const hasApiKey = modelConfig.apiKey || hasValidConfig;
     if (advancedConfig.genre && advancedConfig.story_idea && hasValidGoal && hasApiKey) {
-      // 如果当前没有配置但有保存的配置，先加载它
-      let configToUse = modelConfig;
-      if (!modelConfig.apiKey && hasValidConfig) {
-        const savedConfig = loadModelConfig();
-        if (savedConfig) {
-          configToUse = savedConfig;
-          setModelConfig(savedConfig);
-        }
-      }
+      // 确保有有效的模型配置
+      const configToUse = await ensureValidConfig();
       onInitializeStory(advancedConfig, configToUse, true);
     }
   };
@@ -420,7 +432,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   };
 
   // 基于文档分析创建故事
-  const handleCreateFromAnalysis = (selectedSeed?: any) => {
+  const handleCreateFromAnalysis = async (selectedSeed?: any) => {
     if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
     
     const hasApiKey = modelConfig.apiKey || hasValidConfig;
@@ -522,14 +534,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
       useDocumentAnalysis: true
     };
 
-    let configToUse = modelConfig;
-    if (!modelConfig.apiKey && hasValidConfig) {
-      const savedConfig = loadModelConfig();
-      if (savedConfig) {
-        configToUse = savedConfig;
-        setModelConfig(savedConfig);
-      }
-    }
+    const configToUse = await ensureValidConfig();
 
     onInitializeStory(documentBasedConfig, configToUse, true);
   };
@@ -597,7 +602,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           )}
 
           <DocumentAnalyzer
-            modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
+            modelConfig={modelConfig}
             onAnalysisComplete={handleDocumentAnalysisComplete}
             onClose={() => setConfigMode('select')}
           />

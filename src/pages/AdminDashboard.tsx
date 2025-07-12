@@ -5,6 +5,7 @@ import { cloudAuthService } from '@/services/cloudAuthService';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
 import { creditService } from '@/services/creditService';
 import { CreditManagementTab } from '@/components/admin/CreditManagementTab';
+import { ModelManagementTab } from '@/components/admin/ModelManagementTab';
 import type { User } from '@/lib/supabase';
 
 // 智能检测是否使用云端存储（与AuthContext保持一致）
@@ -306,7 +307,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* 标签页 */}
         <Tabs defaultValue="user-usage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="user-usage" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               用户使用统计
@@ -318,6 +319,10 @@ const AdminDashboard: React.FC = () => {
             <TabsTrigger value="credit-management" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
               积分管理
+            </TabsTrigger>
+            <TabsTrigger value="model-management" className="flex items-center gap-2">
+              <Cpu className="h-4 w-4" />
+              模型管理
             </TabsTrigger>
           </TabsList>
 
@@ -484,6 +489,11 @@ const AdminDashboard: React.FC = () => {
           {/* 积分管理标签页 */}
           <TabsContent value="credit-management">
             <CreditManagementTab useCloudStorage={USE_CLOUD_STORAGE} />
+          </TabsContent>
+
+          {/* 模型管理标签页 */}
+          <TabsContent value="model-management">
+            <ModelManagementTab />
           </TabsContent>
         </Tabs>
       </div>
