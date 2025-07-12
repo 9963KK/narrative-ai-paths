@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "supabase-postgrest": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server-postgrest"],
+      "env": {
+        "POSTGREST_URL": "https://rvdjkdkkavjcnqaaglkn.supabase.co/rest/v1",
+        "POSTGREST_API_KEY": "sbp_f66b9d62c7b688893b543fc75a27d7ebe18f44c3"
+      }
+    }
+  }
+}
