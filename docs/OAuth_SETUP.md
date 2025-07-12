@@ -56,21 +56,23 @@
    - 在 [Google Cloud Console](https://console.cloud.google.com/) 创建项目
    - 启用 Google+ API 和 Google Sign-In API
    - 创建 OAuth 2.0 客户端 ID
-   - 设置授权重定向 URI: `https://yourdomain.com/auth/v1/callback`
+   - 设置授权重定向 URI: `https://rvdjkdkkavjcnqaaglkn.supabase.co/auth/v1/callback`
    - 将客户端 ID 和密钥添加到 Supabase
 
 4. **GitHub OAuth 配置**
    - 在 GitHub 进入 `Settings` → `Developer settings` → `OAuth Apps`
    - 创建新的 OAuth App
-   - 设置 Authorization callback URL: `https://yourdomain.com/auth/v1/callback`
+   - 设置 Authorization callback URL: `https://rvdjkdkkavjcnqaaglkn.supabase.co/auth/v1/callback`
    - 将客户端 ID 和密钥添加到 Supabase
 
 ### 2. 域名配置
 
 1. **更新重定向 URL**
    - 在 Supabase 的 `Authentication` → `URL Configuration`
-   - 设置 Site URL: `https://yourdomain.com`
-   - 添加 Redirect URLs: `https://yourdomain.com/auth/callback`
+   - 设置 Site URL: `https://ai-novel.top`
+   - 添加 Redirect URLs: 
+     - `https://ai-novel.top/auth/callback`（生产环境）
+     - `http://localhost:8080/auth/callback`（开发环境）
 
 2. **生产环境变量**
    ```bash
@@ -137,6 +139,27 @@
 3. **回调处理失败**
    - 检查 `/auth/callback` 路由是否正确配置
    - 确认 Supabase 会话状态
+
+4. **🔥 关键问题：生产环境OAuth回调页面刷新**
+   **症状**: OAuth登录后页面完全刷新，回到首页而不是应用页面
+   
+   **根本原因**: OAuth回调URL配置不匹配
+   
+   **正确的OAuth流程**:
+   ```
+   用户点击登录 → Google/GitHub → Supabase(/auth/v1/callback) → React应用(/auth/callback)
+   ```
+   
+   **必须正确配置**:
+   - **Google/GitHub OAuth配置**: `https://rvdjkdkkavjcnqaaglkn.supabase.co/auth/v1/callback`
+   - **Supabase重定向URL**: `https://ai-novel.top/auth/callback`
+   - **SPA路由配置**: `vercel.json` 和 `_redirects` 文件确保 `/auth/callback` 路由到React应用
+   
+   **检查清单**:
+   - [ ] Google Cloud Console中的"授权重定向URI"设置为Supabase端点
+   - [ ] GitHub OAuth App中的"Authorization callback URL"设置为Supabase端点  
+   - [ ] Supabase Dashboard中添加了应用的回调URL
+   - [ ] Vercel/Netlify的SPA路由配置已部署
 
 ### 调试方法
 
