@@ -1,5 +1,6 @@
--- 用户模型配置系统数据库设置脚本
+-- 用户模型配置系统数据库设置脚本（安全版本）
 -- 在 Supabase Dashboard 的 SQL Editor 中运行此脚本
+-- 这个版本会检查已存在的约束和表，避免冲突
 
 -- ==========================================
 -- 1. 系统模型池表
@@ -18,11 +19,32 @@ CREATE TABLE IF NOT EXISTS system_model_pool (
     cost_per_1k_tokens DECIMAL(10,6), -- 成本信息（管理员可见）
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_system_model_provider_model UNIQUE (provider, model),
-    CONSTRAINT check_performance_level CHECK (performance_level IN ('basic', 'standard', 'advanced', 'premium'))
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 安全添加约束
+DO $$
+BEGIN
+    -- 检查并添加 provider, model 唯一约束
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'unique_system_model_provider_model' 
+        AND table_name = 'system_model_pool'
+    ) THEN
+        ALTER TABLE system_model_pool 
+        ADD CONSTRAINT unique_system_model_provider_model UNIQUE (provider, model);
+    END IF;
+    
+    -- 检查并添加性能等级检查约束
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'check_performance_level' 
+        AND table_name = 'system_model_pool'
+    ) THEN
+        ALTER TABLE system_model_pool 
+        ADD CONSTRAINT check_performance_level CHECK (performance_level IN ('basic', 'standard', 'advanced', 'premium'));
+    END IF;
+END $$;
 
 -- ==========================================
 -- 2. 用户模型配置表
@@ -40,10 +62,21 @@ CREATE TABLE IF NOT EXISTS user_model_configs (
     assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     notes TEXT, -- 管理员内部备注
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_user_model_config UNIQUE (user_id, model_pool_id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 安全添加约束
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'unique_user_model_config' 
+        AND table_name = 'user_model_configs'
+    ) THEN
+        ALTER TABLE user_model_configs 
+        ADD CONSTRAINT unique_user_model_config UNIQUE (user_id, model_pool_id);
+    END IF;
+END $$;
 
 -- ==========================================
 -- 3. 用户模型使用日志表
@@ -58,10 +91,21 @@ CREATE TABLE IF NOT EXISTS user_model_usage_logs (
     credits_consumed DECIMAL(10,2) DEFAULT 0.00, -- 消耗的积分
     success BOOLEAN DEFAULT true, -- 调用是否成功
     error_message TEXT, -- 错误信息（如果有）
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT check_usage_type CHECK (usage_type IN ('story_generation', 'choice_generation', 'analysis', 'other'))
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 安全添加约束
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'check_usage_type' 
+        AND table_name = 'user_model_usage_logs'
+    ) THEN
+        ALTER TABLE user_model_usage_logs 
+        ADD CONSTRAINT check_usage_type CHECK (usage_type IN ('story_generation', 'choice_generation', 'analysis', 'other'));
+    END IF;
+END $$;
 
 -- ==========================================
 -- 4. 模型组合预设表（管理员可创建模型套餐）
@@ -89,10 +133,21 @@ CREATE TABLE IF NOT EXISTS model_preset_details (
     description TEXT, -- 在此套餐中的描述
     priority INTEGER DEFAULT 1,
     is_default BOOLEAN DEFAULT false, -- 是否为此套餐的默认模型
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_preset_model_detail UNIQUE (preset_group_id, model_pool_id)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 安全添加约束
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'unique_preset_model_detail' 
+        AND table_name = 'model_preset_details'
+    ) THEN
+        ALTER TABLE model_preset_details 
+        ADD CONSTRAINT unique_preset_model_detail UNIQUE (preset_group_id, model_pool_id);
+    END IF;
+END $$;
 
 -- ==========================================
 -- 6. 创建索引以提高查询性能
@@ -114,7 +169,18 @@ CREATE INDEX IF NOT EXISTS idx_model_preset_groups_active ON model_preset_groups
 CREATE INDEX IF NOT EXISTS idx_model_preset_groups_target ON model_preset_groups(target_user_type);
 
 -- ==========================================
--- 7. 创建更新时间戳的触发器
+-- 7. 创建更新时间戳的函数（如果不存在）
+-- ==========================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 8. 创建更新时间戳的触发器
 -- ==========================================
 DROP TRIGGER IF EXISTS update_system_model_pool_updated_at ON system_model_pool;
 CREATE TRIGGER update_system_model_pool_updated_at
@@ -135,7 +201,7 @@ CREATE TRIGGER update_model_preset_groups_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- ==========================================
--- 8. 设置行级安全策略 (RLS)
+-- 9. 设置行级安全策略 (RLS)
 -- ==========================================
 ALTER TABLE system_model_pool ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_model_configs ENABLE ROW LEVEL SECURITY;
@@ -143,32 +209,38 @@ ALTER TABLE user_model_usage_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE model_preset_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE model_preset_details ENABLE ROW LEVEL SECURITY;
 
--- 系统模型池策略
+-- 删除可能存在的旧策略
+DROP POLICY IF EXISTS "管理员可以管理系统模型池" ON system_model_pool;
+DROP POLICY IF EXISTS "用户可以查看自己的模型配置" ON user_model_configs;
+DROP POLICY IF EXISTS "管理员可以管理用户模型配置" ON user_model_configs;
+DROP POLICY IF EXISTS "用户可以查看自己的使用日志" ON user_model_usage_logs;
+DROP POLICY IF EXISTS "系统可以插入使用日志" ON user_model_usage_logs;
+DROP POLICY IF EXISTS "管理员可以管理模型预设" ON model_preset_groups;
+DROP POLICY IF EXISTS "管理员可以管理预设详情" ON model_preset_details;
+
+-- 创建新的安全策略
 CREATE POLICY "管理员可以管理系统模型池" ON system_model_pool
     FOR ALL
     USING (true)
     WITH CHECK (true);
 
--- 用户模型配置策略
 CREATE POLICY "用户可以查看自己的模型配置" ON user_model_configs
     FOR SELECT
-    USING (true); -- 暂时允许所有查看，后续可改为 auth.uid() = user_id
+    USING (true);
 
 CREATE POLICY "管理员可以管理用户模型配置" ON user_model_configs
     FOR ALL
     USING (true)
     WITH CHECK (true);
 
--- 使用日志策略
 CREATE POLICY "用户可以查看自己的使用日志" ON user_model_usage_logs
     FOR SELECT
-    USING (true); -- 暂时允许所有查看
+    USING (true);
 
 CREATE POLICY "系统可以插入使用日志" ON user_model_usage_logs
     FOR INSERT
     WITH CHECK (true);
 
--- 模型预设策略
 CREATE POLICY "管理员可以管理模型预设" ON model_preset_groups
     FOR ALL
     USING (true)
@@ -180,7 +252,7 @@ CREATE POLICY "管理员可以管理预设详情" ON model_preset_details
     WITH CHECK (true);
 
 -- ==========================================
--- 9. 插入默认的系统模型数据
+-- 10. 插入默认的系统模型数据
 -- ==========================================
 INSERT INTO system_model_pool (
     provider, model, internal_name, display_name, description, 
@@ -217,7 +289,7 @@ INSERT INTO system_model_pool (
 ON CONFLICT (provider, model) DO NOTHING;
 
 -- ==========================================
--- 10. 创建默认模型预设组
+-- 11. 创建默认模型预设组
 -- ==========================================
 INSERT INTO model_preset_groups (name, description, target_user_type, auto_assign) VALUES
 ('新手入门套件', '适合刚开始创作的用户，提供简单易用的创作工具', 'new_user', true),
@@ -226,7 +298,7 @@ INSERT INTO model_preset_groups (name, description, target_user_type, auto_assig
 ON CONFLICT DO NOTHING;
 
 -- ==========================================
--- 11. 创建存储过程
+-- 12. 创建存储过程
 -- ==========================================
 
 -- 为用户分配默认模型配置
@@ -374,7 +446,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ==========================================
--- 12. 为现有用户分配默认模型
+-- 13. 为现有用户分配默认模型
 -- ==========================================
 INSERT INTO user_model_configs (user_id, model_pool_id, display_name, description, is_enabled, priority, is_default)
 SELECT 
@@ -398,7 +470,8 @@ WHERE u.id NOT IN (
     SELECT DISTINCT user_id 
     FROM user_model_configs 
     WHERE is_enabled = true
-);
+)
+ON CONFLICT (user_id, model_pool_id) DO NOTHING;
 
 -- ==========================================
 -- 完成提示
