@@ -260,25 +260,25 @@ INSERT INTO system_model_pool (
 ) VALUES
 -- DeepSeek模型（默认模型）
 ('deepseek', 'deepseek-chat', 'deepseek-chat', 'deepseek-chat', '高性价比的AI模型，逻辑推理能力强', 
-    '["reasoning", "logical", "cost-effective"]', 'standard', 0.001, true, 
+    '[]', 'standard', 0.001, true, 
     '{"api_key": "sk-07fdcb3b72d9408f8571be98dd785615", "base_url": "https://api.deepseek.com/v1"}'),
 
 -- OpenAI兼容格式的预留模型（管理员后续配置）
 ('openai', 'gpt-3.5-turbo', 'openai-gpt35-turbo', 'gpt-3.5-turbo', '通用的AI创作模型，平衡性能与成本', 
-    '["versatile", "balanced", "efficient"]', 'standard', 0.002, false, 
+    '[]', 'standard', 0.002, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
 ('openai', 'gpt-4', 'openai-gpt4', 'gpt-4', '专业级AI模型，适合复杂创作任务', 
-    '["advanced", "detailed", "professional"]', 'standard', 0.03, false, 
+    '[]', 'standard', 0.03, false, 
     '{"api_key": "", "base_url": "https://api.openai.com/v1"}'),
 
 -- Claude兼容格式的预留模型（管理员后续配置）
 ('anthropic', 'claude-3-haiku', 'anthropic-haiku', 'claude-3-haiku', '轻量快速的AI模型，响应迅速', 
-    '["fast", "concise", "efficient"]', 'standard', 0.00025, false, 
+    '[]', 'standard', 0.00025, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}'),
 
 ('anthropic', 'claude-3-sonnet', 'anthropic-sonnet', 'claude-3-sonnet', '均衡的AI模型，擅长细腻表达', 
-    '["balanced", "nuanced", "thoughtful"]', 'standard', 0.003, false, 
+    '[]', 'standard', 0.003, false, 
     '{"api_key": "", "base_url": "https://api.anthropic.com/v1"}')
 
 ON CONFLICT (provider, model) DO UPDATE SET
