@@ -1,6 +1,7 @@
 import { userModelConfigService, type DefaultModel } from './userModelConfigService';
 import { userLevelService, type ModelByLevel } from './userLevelService';
 import { ModelConfig } from '@/components/model-config/constants';
+import { supabase } from '@/lib/supabase';
 
 /**
  * 模型配置适配器
@@ -268,49 +269,84 @@ class ModelConfigAdapter {
     try {
       console.log(`🔑 开始获取模型 ${modelId} 的API密钥...`);
       
-      // 从用户等级服务获取模型详情
-      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
-      console.log(`📋 用户可用模型数量: ${availableModels.length}`);
+      // 首先尝试从用户模型配置服务获取完整的系统模型信息
+      const userConfigs = await userModelConfigService.getUserModelConfigs();
+      console.log(`📋 用户模型配置数量: ${userConfigs.length}`);
       
-      const model = availableModels.find(m => m.model_id === modelId);
+      // 找到对应的用户模型配置
+      const userConfig = userConfigs.find(config => 
+        config.system_model && config.system_model.id === modelId
+      );
       
-      if (!model) {
-        console.warn(`❌ 未找到模型 ${modelId}，可用模型: ${availableModels.map(m => m.model_id).join(', ')}`);
-        return null;
-      }
-      
-      if (!model.api_config) {
-        console.warn(`❌ 模型 ${modelId} 没有API配置`);
-        return null;
-      }
+      if (userConfig && userConfig.system_model && userConfig.system_model.api_config) {
+        console.log(`✅ 从用户模型配置中找到系统模型: ${userConfig.system_model.provider}/${userConfig.system_model.model}`);
+        
+        const apiConfig = userConfig.system_model.api_config;
+        console.log(`🔍 API配置类型: ${typeof apiConfig}`);
+        
+        // 从api_config中提取API密钥
+        if (typeof apiConfig === 'object' && apiConfig.api_key) {
+          console.log(`✅ 从对象配置中获取到API密钥`);
+          return apiConfig.api_key;
+        }
 
-      console.log(`🔍 模型 ${modelId} 的API配置类型: ${typeof model.api_config}`);
-
-      // 从api_config中提取API密钥
-      if (typeof model.api_config === 'object' && model.api_config.api_key) {
-        console.log(`✅ 从对象配置中获取到API密钥`);
-        return model.api_config.api_key;
-      }
-
-      // 如果api_config是字符串，尝试解析JSON
-      if (typeof model.api_config === 'string') {
-        try {
-          const config = JSON.parse(model.api_config);
-          if (config.api_key) {
-            console.log(`✅ 从JSON字符串配置中获取到API密钥`);
-            return config.api_key;
-          } else {
-            console.warn(`❌ JSON配置中没有api_key字段`);
-            return null;
+        // 如果api_config是字符串，尝试解析JSON
+        if (typeof apiConfig === 'string') {
+          try {
+            const config = JSON.parse(apiConfig);
+            if (config.api_key) {
+              console.log(`✅ 从JSON字符串配置中获取到API密钥`);
+              return config.api_key;
+            } else {
+              console.warn(`❌ JSON配置中没有api_key字段`);
+            }
+          } catch (parseError) {
+            console.warn('❌ 解析API配置JSON失败:', parseError);
+            console.warn('原始配置内容:', apiConfig);
           }
-        } catch (parseError) {
-          console.warn('❌ 解析API配置JSON失败:', parseError);
-          console.warn('原始配置内容:', model.api_config);
-          return null;
+        }
+      }
+      
+      // 备用方案：直接从系统模型池查询
+      console.log(`🔄 尝试直接从系统模型池获取 ${modelId} 的API配置...`);
+      
+      const { data: systemModel, error } = await supabase
+        .from('system_model_pool')
+        .select('api_config')
+        .eq('id', modelId)
+        .single();
+        
+      if (error) {
+        console.error('❌ 查询系统模型池失败:', error);
+        return null;
+      }
+      
+      if (systemModel && systemModel.api_config) {
+        console.log(`✅ 从系统模型池获取到API配置`);
+        
+        const apiConfig = systemModel.api_config;
+        
+        // 从api_config中提取API密钥
+        if (typeof apiConfig === 'object' && apiConfig.api_key) {
+          console.log(`✅ 从系统模型池对象配置中获取到API密钥`);
+          return apiConfig.api_key;
+        }
+
+        // 如果api_config是字符串，尝试解析JSON
+        if (typeof apiConfig === 'string') {
+          try {
+            const config = JSON.parse(apiConfig);
+            if (config.api_key) {
+              console.log(`✅ 从系统模型池JSON配置中获取到API密钥`);
+              return config.api_key;
+            }
+          } catch (parseError) {
+            console.warn('❌ 解析系统模型池API配置JSON失败:', parseError);
+          }
         }
       }
 
-      console.warn(`❌ 模型 ${modelId} 的API配置格式不正确，类型: ${typeof model.api_config}`);
+      console.warn(`❌ 无法获取模型 ${modelId} 的API密钥`);
       return null;
     } catch (error) {
       console.error('❌ 获取真实API密钥失败:', error);
