@@ -283,29 +283,102 @@ class ConfigurationManager {
         };
       }
 
-      // 提取API密钥
+      // 提取API密钥 - 改进版本，支持多种格式和更好的调试
       let apiKey = '';
+      
+      console.log('🔍 开始提取API密钥，原始api_config:', {
+        type: typeof selectedModel.api_config,
+        content: selectedModel.api_config,
+        hasApiKey: selectedModel.has_api_key,
+        provider: selectedModel.provider,
+        model: selectedModel.model
+      });
+
       if (selectedModel.api_config) {
-        if (typeof selectedModel.api_config === 'object' && selectedModel.api_config.api_key) {
-          apiKey = selectedModel.api_config.api_key;
-        } else if (typeof selectedModel.api_config === 'string') {
+        // 情况1: api_config已经是对象
+        if (typeof selectedModel.api_config === 'object' && selectedModel.api_config !== null) {
+          const config = selectedModel.api_config as any;
+          
+          // 尝试多种可能的密钥字段名
+          const possibleKeys = ['api_key', 'apiKey', 'key', 'token', 'secret', 'access_token'];
+          for (const keyName of possibleKeys) {
+            if (config[keyName]) {
+              apiKey = config[keyName];
+              console.log(`✅ 从对象中提取到API密钥，字段名: ${keyName}`);
+              break;
+            }
+          }
+          
+          if (!apiKey) {
+            console.warn('⚠️ 对象格式的api_config中未找到可识别的密钥字段:', Object.keys(config));
+          }
+        } 
+        // 情况2: api_config是字符串，需要解析
+        else if (typeof selectedModel.api_config === 'string') {
           try {
             const config = JSON.parse(selectedModel.api_config);
-            apiKey = config.api_key || '';
-          } catch (e) {
-            console.warn('⚠️ API配置解析失败');
+            console.log('📝 成功解析JSON字符串:', config);
+            
+            // 尝试多种可能的密钥字段名
+            const possibleKeys = ['api_key', 'apiKey', 'key', 'token', 'secret', 'access_token'];
+            for (const keyName of possibleKeys) {
+              if (config[keyName]) {
+                apiKey = config[keyName];
+                console.log(`✅ 从解析的JSON中提取到API密钥，字段名: ${keyName}`);
+                break;
+              }
+            }
+            
+            if (!apiKey) {
+              console.warn('⚠️ 解析的JSON中未找到可识别的密钥字段:', Object.keys(config));
+            }
+          } catch (parseError) {
+            console.error('❌ JSON解析失败:', {
+              error: parseError,
+              rawString: selectedModel.api_config,
+              stringLength: selectedModel.api_config.length
+            });
+            
+            // 尝试作为纯文本密钥处理
+            const trimmedConfig = selectedModel.api_config.trim();
+            if (trimmedConfig && (trimmedConfig.startsWith('sk-') || trimmedConfig.startsWith('sk_') || trimmedConfig.length > 10)) {
+              apiKey = trimmedConfig;
+              console.log('✅ 将api_config字符串作为纯文本密钥处理');
+            }
           }
         }
+        // 情况3: 其他类型的数据
+        else {
+          console.warn('⚠️ api_config是未预期的数据类型:', typeof selectedModel.api_config);
+        }
+      } else {
+        console.warn('⚠️ api_config为空或未定义');
       }
 
-      if (!apiKey) {
-        console.warn('⚠️ 虽然标记有API密钥，但实际提取失败');
+      // 最终验证
+      if (!apiKey || apiKey.trim() === '') {
+        console.error('❌ API密钥提取失败 - 调试信息:', {
+          hasApiKeyFlag: selectedModel.has_api_key,
+          apiConfigType: typeof selectedModel.api_config,
+          apiConfigContent: selectedModel.api_config,
+          selectedModelKeys: Object.keys(selectedModel),
+          provider: selectedModel.provider,
+          model: selectedModel.model
+        });
+        
         return {
           success: false,
-          error: '无法提取模型API密钥',
+          error: `无法提取模型API密钥 - 提供商: ${selectedModel.provider}, 模型: ${selectedModel.model}`,
           source: 'database'
         };
       }
+
+      console.log('✅ API密钥提取成功:', {
+        provider: selectedModel.provider,
+        model: selectedModel.model,
+        keyLength: apiKey.length,
+        keyPrefix: apiKey.substring(0, 8) + '...'
+      });
 
       // 构建ModelConfig
       const modelConfig: ModelConfig = {
