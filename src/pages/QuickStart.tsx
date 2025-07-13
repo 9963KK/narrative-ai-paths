@@ -163,7 +163,7 @@ const QuickStart: React.FC = () => {
           }
         }
         
-        storyAI.setModelConfig(configToUse);
+        // 模型配置现在由统一AI服务自动管理
         
         console.log('🎨 开始生成故事梗概...');
         const outlines = await storyAI.generateStoryOutlines(

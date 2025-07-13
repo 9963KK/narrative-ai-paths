@@ -109,8 +109,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       setCurrentContextId(preloadedContext.id);
       setHasSavedProgress(true);
 
-      // 恢复AI配置和对话历史
-      storyAI.setModelConfig(preloadedContext.modelConfig);
+      // 恢复对话历史（模型配置现在由统一AI服务自动管理）
       storyAI.setConversationHistory(preloadedContext.conversationHistory, preloadedContext.summaryState);
 
       console.log('✅ 预加载故事已恢复到StoryManager');
@@ -148,8 +147,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     setCurrentModelConfig(modelConfig);
     
     try {
-      // 配置AI服务并清除对话历史
-      storyAI.setModelConfig(modelConfig);
+      // 清除对话历史（模型配置现在由统一AI服务自动管理）
       storyAI.clearConversationHistory(); // 开始新故事时清除历史
       
       // 调用AI生成初始故事
@@ -320,8 +318,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
             throw new Error('AI模型配置缺失，无法生成定制结局');
           }
           
-          // 配置AI服务
-          storyAI.setModelConfig(currentModelConfig);
+          // 模型配置现在由统一AI服务自动管理
           
           // 使用AI生成定制结局
           const customEnding = await storyAI.generateCustomEnding(currentStory, endingType);
@@ -435,7 +432,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 正常的选择处理逻辑
       if (currentModelConfig && currentModelConfig.apiKey) {
         // 配置AI服务
-        storyAI.setModelConfig(currentModelConfig);
+        // 模型配置现在由统一AI服务自动管理
         
         // 构造选择对象
         const selectedChoice = {
@@ -1054,7 +1051,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
           setCurrentModelConfig(fallbackContext.modelConfig);
           setCurrentContextId(fallbackContext.id);
           setHasSavedProgress(true);
-          storyAI.setModelConfig(fallbackContext.modelConfig);
+          // 模型配置现在由统一AI服务自动管理
           storyAI.setConversationHistory(fallbackContext.conversationHistory);
           console.log('✅ 故事进度已通过修复成功加载');
           return;
@@ -1075,8 +1072,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       setCurrentContextId(contextId);
       setHasSavedProgress(true); // 设置为已有存档状态
 
-      // 恢复AI配置和对话历史，包含摘要状态
-      storyAI.setModelConfig(savedContext.modelConfig);
+      // 恢复对话历史和摘要状态（模型配置现在由统一AI服务自动管理）
       storyAI.setConversationHistory(savedContext.conversationHistory, savedContext.summaryState);
 
       console.log('✅ 故事进度已成功加载');

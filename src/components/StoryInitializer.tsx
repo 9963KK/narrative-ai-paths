@@ -312,8 +312,7 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
         // 确保有有效的模型配置
         const configToUse = await ensureValidConfig();
         
-        // 设置AI配置
-        storyAI.setModelConfig(configToUse);
+        // 模型配置现在由统一AI服务自动管理
         
         // 生成故事梗概
         console.log('🎨 开始生成故事梗概...');

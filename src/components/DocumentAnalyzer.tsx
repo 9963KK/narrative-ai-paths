@@ -50,10 +50,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 设置模型配置
-  React.useEffect(() => {
-    documentAnalyzer.setModelConfig(modelConfig);
-  }, [modelConfig]);
+  // 模型配置现在由统一AI服务自动管理，不需要手动设置
 
   // 字数统计函数
   const countWords = (text: string) => {

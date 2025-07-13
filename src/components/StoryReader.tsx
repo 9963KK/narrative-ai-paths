@@ -588,7 +588,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         try {
           // 导入storyAI服务
           const { storyAI } = await import('../services/storyAI');
-          storyAI.setModelConfig(modelConfig);
+          // 模型配置现在由统一AI服务自动管理
           
           const aiChoices = await storyAI.generateChoices(scene, characters, story.setting || '未知世界');
           if (aiChoices && aiChoices.length > 0) {
