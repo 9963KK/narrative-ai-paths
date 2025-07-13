@@ -182,6 +182,5 @@ export const SimpleModelSettings: React.FC<SimpleModelSettingsProps> = ({
   );
 };
 
-// 导出默认设置供其他组件使用
-export { DEFAULT_SETTINGS };
+// 类型导出
 export type { ModelSettings };
