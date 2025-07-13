@@ -89,29 +89,12 @@ class StoryAI {
   }
 
   /**
-   * 智能选择并设置用户模型配置
-   * @param usageType 使用类型
+   * @deprecated 已弃用：配置管理现在由ConfigurationManager和unifiedAIService自动处理
+   * 保留此方法用于向后兼容，但不再执行实际配置设置
    */
   async setupUserModelConfig(usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation'): Promise<boolean> {
-    try {
-      // 确保用户有可用模型
-      await modelConfigAdapter.ensureUserHasModels();
-      
-      // 获取推荐的模型配置
-      const recommendedConfig = await modelConfigAdapter.getRecommendedModel(usageType);
-      
-      if (recommendedConfig) {
-        this.setModelConfig(recommendedConfig);
-        console.log('🎯 已自动设置推荐的用户模型配置');
-        return true;
-      } else {
-        console.warn('⚠️ 无法获取推荐的模型配置');
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ 设置用户模型配置失败:', error);
-      return false;
-    }
+    console.log('⚠️ setupUserModelConfig已弃用，配置由统一AI服务自动管理');
+    return true; // 总是返回true，因为配置由底层自动处理
   }
 
   /**
@@ -159,19 +142,9 @@ class StoryAI {
    */
   async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
-      console.log('🎬 开始生成初始故事...');
+      console.log('🎬 开始生成初始故事，配置由统一AI服务自动管理...');
 
-      // 智能设置用户模型配置
-      const modelSetup = await this.setupUserModelConfig('story_generation');
-      if (!modelSetup) {
-        return {
-          success: false,
-          content: null,
-          error: '用户模型配置失败，请联系管理员'
-        };
-      }
-
-      // 使用 StoryInitializer 模块
+      // 使用 StoryInitializer 模块（配置由unifiedAIService自动处理）
       const response = await storyInitializer.generateInitialStory(config, isAdvanced);
       
       if (response.success && response.content) {
@@ -318,8 +291,7 @@ class StoryAI {
     try {
       console.log('🎯 开始生成选择项...');
 
-      // 智能设置用户模型配置
-      await this.setupUserModelConfig('choice_generation');
+      // 配置由统一AI服务自动管理
 
       const currentState = storyStateManager.getState();
       if (!currentState) {
@@ -430,8 +402,7 @@ class StoryAI {
    */
   async generateStoryOutlines(userIdea: string, genre: string, mainGoal?: string): Promise<string[]> {
     try {
-      // 智能设置用户模型配置
-      await this.setupUserModelConfig('story_generation');
+      console.log('📋 开始生成故事大纲，配置由统一AI服务自动管理...');
 
       const config: StoryConfig = {
         genre,
