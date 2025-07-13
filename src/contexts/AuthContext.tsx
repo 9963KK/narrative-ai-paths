@@ -9,8 +9,6 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  registerFromGuest: (username: string, email: string, password: string) => Promise<boolean>;
-  loginAsGuest: () => Promise<boolean>;
   signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
   handleOAuthCallback: () => Promise<AuthUser | null>;
   logout: () => void;
@@ -18,7 +16,6 @@ interface AuthContextType {
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
-  isGuest: boolean;
   connectionStatus: () => Promise<{ isProduction: boolean; supabaseConnected: boolean; storageMode: 'supabase' | 'local'; oauthSupported: boolean }>;
 }
 
@@ -152,25 +149,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    const currentUser = unifiedAuthService.getCurrentUser();
-    
-    // 如果是游客用户，清理临时数据
-    if (currentUser?.isGuest) {
-      userStorage.clearUserData();
-    }
-    
     unifiedAuthService.logout();
     setUser(null);
   };
 
   const forceSignOut = async () => {
-    const currentUser = unifiedAuthService.getCurrentUser();
-    
-    // 如果是游客用户，清理临时数据
-    if (currentUser?.isGuest) {
-      userStorage.clearUserData();
-    }
-    
     await unifiedAuthService.forceSignOut();
     setUser(null);
   };
@@ -213,52 +196,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginAsGuest = async (): Promise<boolean> => {
-    try {
-      const guestUser = await unifiedAuthService.loginAsGuest();
-      setUser(guestUser);
-      return true;
-    } catch (error) {
-      console.error('Guest login error:', error);
-      return false;
-    }
-  };
-
-  const registerFromGuest = async (username: string, email: string, password: string): Promise<boolean> => {
-    try {
-      const currentUser = unifiedAuthService.getCurrentUser();
-      if (!currentUser?.isGuest) {
-        return false;
-      }
-
-      // 注册新用户
-      const result = await unifiedAuthService.register(username, email, password);
-      if (!result.success) {
-        return false;
-      }
-
-      // 登录新用户
-      const newUser = await unifiedAuthService.login(email, password);
-      if (!newUser) {
-        return false;
-      }
-
-      // 迁移游客数据到新用户
-      userStorage.migrateDataToUser(currentUser.id, newUser.id);
-      
-      setUser(newUser);
-      
-      // 游客转正式用户也是一种"首次注册"，触发撒花效果
-      setTimeout(() => {
-        celebrateRegistration();
-      }, 300);
-      
-      return true;
-    } catch (error) {
-      console.error('Register from guest error:', error);
-      return false;
-    }
-  };
 
   const signInWithOAuth = async (provider: OAuthProvider): Promise<boolean> => {
     try {
@@ -312,8 +249,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
-    registerFromGuest,
-    loginAsGuest,
     signInWithOAuth,
     handleOAuthCallback,
     logout,
@@ -321,7 +256,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
     changePassword,
     deleteAccount,
-    isGuest: user?.isGuest === true,
     connectionStatus
   };
 

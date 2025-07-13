@@ -13,7 +13,6 @@ const isProduction = import.meta.env.PROD ||
                      !window.location.hostname.includes('dev'));
 
 export interface AuthUser extends UserProfile {
-  isGuest?: boolean;
 }
 
 export class UnifiedAuthService {
@@ -251,26 +250,7 @@ export class UnifiedAuthService {
     return this.getCurrentUser() !== null;
   }
 
-  // 游客模式登录
-  async loginAsGuest(): Promise<AuthUser> {
-    const guestUser: AuthUser = {
-      id: 'guest_' + Date.now(),
-      username: '游客用户',
-      email: 'guest@example.com',
-      created_at: new Date().toISOString(),
-      role: 'user',
-      isGuest: true
-    };
 
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(guestUser));
-    return guestUser;
-  }
-
-  // 检查是否为游客用户
-  isGuestUser(): boolean {
-    const currentUser = this.getCurrentUser();
-    return currentUser?.isGuest === true;
-  }
 
   // 检查是否为管理员（仅检查Supabase用户）
   async isAdmin(): Promise<boolean> {

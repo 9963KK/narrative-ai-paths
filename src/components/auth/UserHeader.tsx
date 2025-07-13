@@ -2,19 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { GuestToRegisterDialog } from './GuestToRegisterDialog';
 import { CreditBadge } from '@/components/ui/CreditBadge';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
 import { userLevelService, type UserLevel } from '@/services/userLevelService';
 import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
-// 移除同步状态徽章，新系统不需要复杂的同步逻辑
-import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
+import { LogOut, User, Settings, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const UserHeader: React.FC = () => {
-  const { user, logout, isGuest } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
@@ -22,7 +19,7 @@ export const UserHeader: React.FC = () => {
   // 检查管理员权限和用户等级
   useEffect(() => {
     const checkUserStatus = async () => {
-      if (user && !isGuest) {
+      if (user) {
         try {
           const [adminStatus, level] = await Promise.all([
             unifiedAuthService.isAdmin(),
@@ -42,7 +39,7 @@ export const UserHeader: React.FC = () => {
     };
 
     checkUserStatus();
-  }, [user, isGuest]);
+  }, [user]);
 
   if (!user) return null;
 
@@ -85,25 +82,17 @@ export const UserHeader: React.FC = () => {
           </svg>
         </div>
         <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">织梦师</h1>
-        {isGuest ? (
-          <div className="flex items-center text-orange-600 text-sm bg-orange-50 px-2 py-1 rounded-full">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            游客模式
-          </div>
-        ) : (
-          <UserLevelBadge level={userLevel} size="sm" />
-        )}
+        <UserLevelBadge level={userLevel} size="sm" />
       </div>
       
       <div className="flex items-center space-x-4">
-        {/* 只有非游客用户才显示积分 */}
-        {!isGuest && <CreditBadge variant="compact" showRefresh={false} />}
+        <CreditBadge variant="compact" showRefresh={false} />
         
         <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
             <Avatar className="h-9 w-9 shadow-md">
-              <AvatarFallback className={isGuest ? "bg-orange-100 text-orange-600" : getAvatarStyle(userLevel)}>
+              <AvatarFallback className={getAvatarStyle(userLevel)}>
                 {getInitials(user.username)}
               </AvatarFallback>
             </Avatar>
@@ -114,57 +103,39 @@ export const UserHeader: React.FC = () => {
             <div className="flex flex-col space-y-1 leading-none">
               <div className="flex items-center gap-2">
                 <p className="font-medium">{user.username}</p>
-                {!isGuest && userLevel && (
+                {userLevel && (
                   <UserLevelBadge level={userLevel} size="sm" />
                 )}
               </div>
               <p className="w-[200px] truncate text-sm text-muted-foreground">
-                {isGuest ? '游客体验模式' : user.email}
+                {user.email}
               </p>
             </div>
           </div>
           <DropdownMenuSeparator />
           
-          {isGuest ? (
+          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
+            <User className="mr-2 h-4 w-4" />
+            <span>个人资料</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>设置</span>
+          </DropdownMenuItem>
+          {isAdmin && (
             <>
-              <GuestToRegisterDialog>
-                <DropdownMenuItem className="cursor-pointer text-blue-600" onSelect={(e) => e.preventDefault()}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  <span>注册账户以保存数据</span>
-                </DropdownMenuItem>
-              </GuestToRegisterDialog>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>退出游客模式</span>
-              </DropdownMenuItem>
-            </>
-          ) : (
-            <>
-              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                <span>个人资料</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>设置</span>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>管理后台</span>
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>登出</span>
+              <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>管理后台</span>
               </DropdownMenuItem>
             </>
           )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>登出</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
         </DropdownMenu>
       </div>

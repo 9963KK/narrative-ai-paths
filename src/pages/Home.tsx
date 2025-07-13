@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,19 +25,10 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAsGuest } = useAuth();
 
-
-  // 快速开始游客体验
-  const handleQuickStart = async () => {
-    try {
-      const success = await loginAsGuest();
-      if (success) {
-        navigate('/app/quick');
-      }
-    } catch (error) {
-      console.error('游客登录失败:', error);
-    }
+  // 快速开始 - 跳转到登录页面
+  const handleQuickStart = () => {
+    navigate('/login');
   };
 
   const features = [
@@ -275,7 +265,7 @@ const Home: React.FC = () => {
                 onClick={handleQuickStart}
                 className="w-full sm:w-auto border-white/80 text-white bg-white/10 hover:bg-white hover:text-blue-600 backdrop-blur-sm px-8 py-4 text-lg font-medium transition-all duration-300 hover:border-white shadow-xl hover:shadow-2xl"
               >
-                游客体验
+                立即登录
                 <Zap className="ml-2 w-5 h-5" />
               </Button>
             </div>
