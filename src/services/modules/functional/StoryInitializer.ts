@@ -99,11 +99,40 @@ export class StoryInitializer implements IStoryInitializer {
         
         const parsed = JSON.parse(cleanJsonContent);
         if (Array.isArray(parsed)) {
-          console.log('✅ 故事大纲生成成功，共', parsed.length, '个选项');
-          return parsed;
+          // 确保返回的是字符串数组
+          const processedOutlines = parsed.map(item => {
+            if (typeof item === 'string') {
+              return item;
+            } else if (typeof item === 'object' && item && item.outline) {
+              return String(item.outline);
+            } else if (typeof item === 'object' && item) {
+              // 如果是对象，尝试获取第一个字符串值
+              const values = Object.values(item);
+              const firstStringValue = values.find(v => typeof v === 'string');
+              return firstStringValue || JSON.stringify(item);
+            } else {
+              return String(item);
+            }
+          });
+          console.log('✅ 故事大纲生成成功，共', processedOutlines.length, '个选项');
+          return processedOutlines;
         } else if (parsed.outlines && Array.isArray(parsed.outlines)) {
-          console.log('✅ 故事大纲生成成功，共', parsed.outlines.length, '个选项');
-          return parsed.outlines;
+          // 同样的处理逻辑应用到 parsed.outlines
+          const processedOutlines = parsed.outlines.map(item => {
+            if (typeof item === 'string') {
+              return item;
+            } else if (typeof item === 'object' && item && item.outline) {
+              return String(item.outline);
+            } else if (typeof item === 'object' && item) {
+              const values = Object.values(item);
+              const firstStringValue = values.find(v => typeof v === 'string');
+              return firstStringValue || JSON.stringify(item);
+            } else {
+              return String(item);
+            }
+          });
+          console.log('✅ 故事大纲生成成功，共', processedOutlines.length, '个选项');
+          return processedOutlines;
         } else {
           throw new Error('大纲格式不正确');
         }
