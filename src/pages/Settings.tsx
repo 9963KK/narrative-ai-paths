@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserHeader } from '@/components/auth/UserHeader';
-import ModelConfig from '@/components/ModelConfig';
+import { UserLevelModelConfig } from '@/components/UserLevelModelConfig';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,22 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Settings as SettingsIcon, Bot, User, Bell, Shield, Save, AlertCircle } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
-import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
-import { loadModelConfig, saveModelConfig, hasSavedConfig } from '@/services/configStorage';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isGuest } = useAuth();
   const [activeTab, setActiveTab] = useState<'model' | 'account' | 'notifications' | 'privacy'>('account');
-  const [modelConfig, setModelConfig] = useState<ModelConfigType>({
-    provider: 'openai',
-    model: 'gpt-4',
-    apiKey: '',
-    temperature: 0.8,
-    maxTokens: 2000
-  });
-  const [hasValidConfig, setHasValidConfig] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,14 +24,6 @@ const Settings: React.FC = () => {
 
   // 加载配置
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig) {
-      setModelConfig(savedConfig);
-      setHasValidConfig(true);
-    } else {
-      setHasValidConfig(hasSavedConfig());
-    }
-
     // 加载其他设置
     const autoSave = localStorage.getItem('autoSaveEnabled');
     if (autoSave !== null) {
@@ -60,20 +42,10 @@ const Settings: React.FC = () => {
     }
   }, [searchParams]);
 
-  // 保存模型配置
-  const handleModelConfigSave = async (config: ModelConfigType) => {
-    setIsSaving(true);
-    try {
-      setModelConfig(config);
-      saveModelConfig(config);
-      setHasValidConfig(!!config.apiKey);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('保存模型配置失败:', error);
-    } finally {
-      setIsSaving(false);
-    }
+  // 处理模型配置变更
+  const handleModelConfigChange = (config: any) => {
+    console.log('模型配置已更新:', config);
+    // 这里可以添加额外的配置处理逻辑
   };
 
   // 保存其他设置
@@ -194,13 +166,12 @@ const Settings: React.FC = () => {
                           AI模型配置
                         </CardTitle>
                         <p className="text-slate-600 text-sm mt-2">
-                          配置您的AI模型提供商、API密钥和生成参数
+                          根据您的用户等级，选择可用的AI模型并调整生成参数
                         </p>
                       </CardHeader>
                       <CardContent>
-                        <ModelConfig
-                          config={modelConfig}
-                          onConfigChange={handleModelConfigSave}
+                        <UserLevelModelConfig
+                          onConfigChange={handleModelConfigChange}
                           onClose={() => {}} // 设置页面不需要关闭功能
                           showCloseButton={false}
                           embedded={true}
