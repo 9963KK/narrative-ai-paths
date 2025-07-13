@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, AlertCircle, ArrowLeft } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import { contextManager, SavedStoryContext } from '@/services/contextManager';
-import { loadModelConfig } from '@/services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 
 const StoryDetail: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -69,7 +69,7 @@ const StoryDetail: React.FC = () => {
         }
         
         // 加载用户的模型配置
-        const userModelConfig = loadModelConfig();
+        const userModelConfig = await modelConfigAdapter.getUserModelConfig();
         
         // 确保故事上下文有完整的配置
         if (!storyContext.modelConfig && userModelConfig) {

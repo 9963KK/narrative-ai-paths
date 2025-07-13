@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Settings, Wand2, Users, Target, MapPin, Sparkles } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
-import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { storyAI } from '@/services/storyAI';
 
 // 基础故事配置
@@ -52,16 +52,30 @@ const QuickStart: React.FC = () => {
   const [showOutlineSelection, setShowOutlineSelection] = useState(false);
   const [originalSimpleConfig, setOriginalSimpleConfig] = useState<BaseStoryConfig | null>(null);
 
-  // 组件加载时检查本地配置
+  // 组件加载时检查用户模型配置
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig && savedConfig.apiKey) {
-      setModelConfig(savedConfig);
-      setHasValidConfig(true);
-      console.log('📂 已从本地存储加载配置');
-    } else {
-      setHasValidConfig(hasSavedConfig());
-    }
+    const loadUserConfig = async () => {
+      try {
+        // 确保用户有可用模型
+        await modelConfigAdapter.ensureUserHasModels();
+        
+        // 获取用户模型配置
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setModelConfig(userConfig);
+          setHasValidConfig(true);
+          console.log('📂 已加载用户模型配置');
+        } else {
+          setHasValidConfig(false);
+          console.warn('用户没有可用的模型配置');
+        }
+      } catch (error) {
+        console.error('加载用户配置失败:', error);
+        setHasValidConfig(false);
+      }
+    };
+    
+    loadUserConfig();
   }, []);
 
   const genres = [
@@ -139,10 +153,10 @@ const QuickStart: React.FC = () => {
       try {
         let configToUse = modelConfig;
         if (!modelConfig.apiKey && hasValidConfig) {
-          const savedConfig = loadModelConfig();
-          if (savedConfig) {
-            configToUse = savedConfig;
-            setModelConfig(savedConfig);
+          const userConfig = await modelConfigAdapter.getUserModelConfig();
+          if (userConfig) {
+            configToUse = userConfig;
+            setModelConfig(userConfig);
           }
         }
         
@@ -213,10 +227,10 @@ const QuickStart: React.FC = () => {
     
     let configToUse = modelConfig;
     if (!modelConfig.apiKey && hasValidConfig) {
-      const savedConfig = loadModelConfig();
-      if (savedConfig) {
-        configToUse = savedConfig;
-        setModelConfig(savedConfig);
+      const userConfig = await modelConfigAdapter.getUserModelConfig();
+      if (userConfig) {
+        configToUse = userConfig;
+        setModelConfig(userConfig);
       }
     }
     
@@ -249,14 +263,6 @@ const QuickStart: React.FC = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回修改
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/settings?tab=model')}
-                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
               </Button>
             </div>
           </div>
@@ -449,14 +455,6 @@ const QuickStart: React.FC = () => {
                   未配置AI模型
                 </div>
               )}
-              <Button
-                variant="outline"
-                onClick={() => navigate('/settings?tab=model')}
-                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
             </div>
           </div>
         </div>

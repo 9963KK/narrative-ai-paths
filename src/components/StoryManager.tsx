@@ -5,7 +5,7 @@ import SaveManager from './SaveManager';
 import DebugSaveManager from './DebugSaveManager';
 import { ModelConfig } from './model-config/constants';
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
-import { loadModelConfig } from '../services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { 
   contextManager, 
   SavedStoryContext, 
@@ -81,13 +81,21 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     }));
   };
 
-  // 组件加载时尝试加载保存的模型配置
+  // 组件加载时尝试加载用户模型配置
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig) {
-      setCurrentModelConfig(savedConfig);
-      console.log('📂 已加载保存的模型配置');
-    }
+    const loadUserConfig = async () => {
+      try {
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setCurrentModelConfig(userConfig);
+          console.log('📂 已加载用户模型配置');
+        }
+      } catch (error) {
+        console.error('加载用户模型配置失败:', error);
+      }
+    };
+    
+    loadUserConfig();
   }, []);
 
   // 处理预加载的故事上下文

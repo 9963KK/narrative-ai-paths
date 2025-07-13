@@ -577,15 +577,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <ArrowLeft className="h-4 w-4" />
               返回主页
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onNavigate?.('/settings?tab=model')}
-              className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              <Settings className="h-4 w-4" />
-              模型配置
-            </Button>
           </div>
 
           <DocumentAnalyzer
@@ -628,17 +619,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <h1 className="text-4xl font-black text-gray-800">AI 故事创作平台</h1>
               <p className="mt-3 text-lg text-gray-500">选择您的创作方式，开启一段独一无二的故事之旅</p>
             </header>
-            <div className="absolute top-0 right-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onNavigate?.('/settings?tab=model')}
-                className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors duration-200"
-              >
-                <Settings className="w-5 h-5" />
-                <span className="font-medium text-sm">模型配置</span>
-              </Button>
-            </div>
           </div>
 
           {/* API Key Warning */}
@@ -923,15 +903,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               <h1 className="text-3xl font-bold text-gray-800">开启您的故事之旅</h1>
               <p className="text-gray-500 mt-2">跟随向导，一步步构建您的世界</p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onNavigate?.('/settings?tab=model')}
-              className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              <Settings className="h-4 w-4" />
-              模型配置
-            </Button>
           </div>
 
           {/* Progress Bar */}
@@ -1109,15 +1080,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
                 <ArrowLeft className="h-4 w-4" />
                 返回修改
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onNavigate?.('/settings?tab=model')}
-                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
             </div>
             <div className="text-center pt-4">
               <CardTitle className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-2">
@@ -1248,15 +1210,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onNavigate?.('/settings?tab=model')}
-                className="flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
               </Button>
             </div>
             <div className="text-center">

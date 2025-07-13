@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Settings, ArrowLeft, Wrench, Users, Target, MapPin, Sparkles, FileText } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
-import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 
 // 高级故事配置
@@ -80,15 +80,30 @@ const Advanced: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [characterCount, setCharacterCount] = useState(1);
 
-  // 检查模型配置
+  // 检查用户模型配置
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig) {
-      setModelConfig(savedConfig);
-      setHasValidConfig(true);
-    } else {
-      setHasValidConfig(hasSavedConfig());
-    }
+    const loadUserConfig = async () => {
+      try {
+        // 确保用户有可用模型
+        await modelConfigAdapter.ensureUserHasModels();
+        
+        // 获取用户模型配置
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setModelConfig(userConfig);
+          setHasValidConfig(true);
+          console.log('📂 已加载用户模型配置');
+        } else {
+          setHasValidConfig(false);
+          console.warn('用户没有可用的模型配置');
+        }
+      } catch (error) {
+        console.error('加载用户配置失败:', error);
+        setHasValidConfig(false);
+      }
+    };
+    
+    loadUserConfig();
 
     // 如果有文档分析结果，自动填充一些字段
     if (state?.documentAnalysisResult) {
@@ -193,21 +208,6 @@ const Advanced: React.FC = () => {
               返回首页
             </Button>
             
-            <div className="flex items-center gap-3">
-              {!hasValidConfig && (
-                <Badge variant="destructive" className="text-xs">
-                  未配置AI模型
-                </Badge>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => navigate('/settings?tab=model')}
-                className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <Settings className="h-4 w-4" />
-                模型配置
-              </Button>
-            </div>
           </div>
         </div>
       </div>

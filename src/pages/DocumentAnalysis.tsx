@@ -6,7 +6,7 @@ import DocumentAnalyzer from '@/components/DocumentAnalyzer';
 import DocumentAnalysisResultView from '@/components/DocumentAnalysisResultView';
 import DocumentRecordManager from '@/components/DocumentRecordManager';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
-import { loadModelConfig, hasSavedConfig } from '@/services/configStorage';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 import { DocumentRecord } from '@/services/documentRecordManager';
 
@@ -25,15 +25,30 @@ const DocumentAnalysis: React.FC = () => {
     maxTokens: 2000
   });
 
-  // 组件加载时检查本地配置
+  // 组件加载时检查用户模型配置
   useEffect(() => {
-    const savedConfig = loadModelConfig();
-    if (savedConfig && savedConfig.apiKey) {
-      setModelConfig(savedConfig);
-      setHasValidConfig(true);
-    } else {
-      setHasValidConfig(hasSavedConfig());
-    }
+    const loadUserConfig = async () => {
+      try {
+        // 确保用户有可用模型
+        await modelConfigAdapter.ensureUserHasModels();
+        
+        // 获取用户模型配置
+        const userConfig = await modelConfigAdapter.getUserModelConfig();
+        if (userConfig) {
+          setModelConfig(userConfig);
+          setHasValidConfig(true);
+          console.log('📂 已加载用户模型配置');
+        } else {
+          setHasValidConfig(false);
+          console.warn('用户没有可用的模型配置');
+        }
+      } catch (error) {
+        console.error('加载用户配置失败:', error);
+        setHasValidConfig(false);
+      }
+    };
+    
+    loadUserConfig();
   }, []);
 
   // 处理文档分析完成
@@ -150,10 +165,10 @@ const DocumentAnalysis: React.FC = () => {
 
     let configToUse = modelConfig;
     if (!modelConfig.apiKey && hasValidConfig) {
-      const savedConfig = loadModelConfig();
-      if (savedConfig) {
-        configToUse = savedConfig;
-        setModelConfig(savedConfig);
+      const userConfig = await modelConfigAdapter.getUserModelConfig();
+      if (userConfig) {
+        configToUse = userConfig;
+        setModelConfig(userConfig);
       }
     }
 
@@ -297,7 +312,7 @@ const DocumentAnalysis: React.FC = () => {
 
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
             <DocumentAnalyzer
-              modelConfig={modelConfig.apiKey ? modelConfig : (hasValidConfig ? loadModelConfig()! : modelConfig)}
+              modelConfig={modelConfig}
               onAnalysisComplete={handleDocumentAnalysisComplete}
               onClose={() => navigate('/app')}
             />
