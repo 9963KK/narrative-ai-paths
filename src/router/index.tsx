@@ -18,6 +18,7 @@ import Profile from "../pages/Profile";
 import StoryCreating from "../pages/StoryCreating";
 import AuthCallbackTest from "../pages/AuthCallbackTest";
 import DatabaseTest from "../pages/DatabaseTest";
+import DebugApiKey from "../pages/DebugApiKey";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -40,6 +41,14 @@ export const router = createBrowserRouter([
   {
     path: "/db/test",
     element: <DatabaseTest />,
+  },
+  {
+    path: "/debug/api-key",
+    element: (
+      <ProtectedRoute>
+        <DebugApiKey />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/app",
