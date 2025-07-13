@@ -1,4 +1,5 @@
 import { userModelConfigService, type DefaultModel } from './userModelConfigService';
+import { userLevelService, type ModelByLevel } from './userLevelService';
 import { ModelConfig } from '@/components/model-config/constants';
 
 /**
@@ -9,44 +10,35 @@ import { ModelConfig } from '@/components/model-config/constants';
 class ModelConfigAdapter {
   /**
    * 获取用户的实际模型配置（用于AI调用）
-   * 这个方法会隐藏真实的模型名称，只返回必要的API配置
+   * 基于用户等级系统，获取第一个可用的模型
    */
   async getUserModelConfig(): Promise<ModelConfig | null> {
     try {
-      // 首先确保用户有可用的模型
-      await userModelConfigService.ensureUserHasModels();
+      // 获取用户基于等级的可用模型
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       
-      // 获取用户的默认模型
-      const defaultModel = await userModelConfigService.getUserDefaultModel();
-      
-      if (!defaultModel) {
-        console.warn('用户没有可用的默认模型');
+      if (availableModels.length === 0) {
+        console.warn('用户没有可用的模型');
         return null;
       }
 
-      // 获取系统模型的详细配置
-      const userConfigs = await userModelConfigService.getUserModelConfigs();
-      const matchingConfig = userConfigs.find(config => config.id === defaultModel.config_id);
+      // 选择第一个有API密钥的模型
+      const defaultModel = availableModels.find(model => model.has_api_key) || availableModels[0];
       
-      if (!matchingConfig || !matchingConfig.system_model) {
-        console.warn('无法找到用户模型的系统配置');
+      if (!defaultModel.has_api_key) {
+        console.warn('用户的模型未配置API密钥');
         return null;
       }
 
-      const systemModel = matchingConfig.system_model;
-      
-      // 获取API配置（包含密钥）
-      const apiConfig = systemModel.api_config || {};
-      
-      // 将用户模型配置转换为ModelConfig格式
+      // 构建ModelConfig格式（不暴露API密钥）
       const modelConfig: ModelConfig = {
         provider: defaultModel.provider,
         model: defaultModel.model,
-        apiKey: apiConfig.api_key || '', // 从系统模型配置中获取API密钥
-        baseUrl: apiConfig.base_url || this.getBaseUrlForProvider(defaultModel.provider),
-        temperature: 0.8, // 使用默认设置
-        maxTokens: 2000, // 使用默认设置
-        customPrompt: '' // 保持空白，使用系统默认
+        apiKey: '***hidden***', // 隐藏真实API密钥
+        baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
+        temperature: 0.8,
+        maxTokens: 2000,
+        customPrompt: ''
       };
 
       return modelConfig;
@@ -58,24 +50,29 @@ class ModelConfigAdapter {
 
   /**
    * 获取用户可见的模型信息（隐私保护版本）
-   * 返回友好名称而非技术细节
+   * 基于用户等级系统
    */
   async getUserDisplayModel(): Promise<{
     displayName: string;
     description: string;
-    configId: string;
+    modelId: string;
+    performanceLevel: string;
   } | null> {
     try {
-      const defaultModel = await userModelConfigService.getUserDefaultModel();
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       
-      if (!defaultModel) {
+      if (availableModels.length === 0) {
         return null;
       }
 
+      // 选择第一个可用模型作为显示模型
+      const defaultModel = availableModels[0];
+
       return {
-        displayName: defaultModel.display_name,
-        description: '您的专属AI创作助手',
-        configId: defaultModel.config_id
+        displayName: defaultModel.model,
+        description: defaultModel.description || '您的AI创作助手',
+        modelId: defaultModel.model_id,
+        performanceLevel: defaultModel.performance_level
       };
     } catch (error) {
       console.error('获取用户显示模型失败:', error);
@@ -84,30 +81,65 @@ class ModelConfigAdapter {
   }
 
   /**
-   * 获取用户所有可用模型的显示信息
+   * 获取用户所有可用模型的显示信息（基于等级）
    */
   async getUserAvailableDisplayModels(): Promise<Array<{
-    configId: string;
-    displayName: string;
+    modelId: string;
+    provider: string;
+    model: string;
+    internalName: string;
     description: string;
-    isDefault: boolean;
-    capabilityTags: string[];
     performanceLevel: string;
+    costPer1kTokens: number;
+    hasApiKey: boolean;
   }>> {
     try {
-      const availableModels = await userModelConfigService.getUserAvailableModels();
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       
       return availableModels.map(model => ({
-        configId: model.config_id,
-        displayName: model.display_name,
+        modelId: model.model_id,
+        provider: model.provider,
+        model: model.model,
+        internalName: model.internal_name,
         description: model.description,
-        isDefault: model.is_default,
-        capabilityTags: model.capability_tags,
-        performanceLevel: model.performance_level
+        performanceLevel: model.performance_level,
+        costPer1kTokens: model.cost_per_1k_tokens,
+        hasApiKey: model.has_api_key
       }));
     } catch (error) {
       console.error('获取用户可用显示模型失败:', error);
       return [];
+    }
+  }
+
+  /**
+   * 根据模型ID获取ModelConfig
+   */
+  async getModelConfigById(modelId: string): Promise<ModelConfig | null> {
+    try {
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+      const targetModel = availableModels.find(model => model.model_id === modelId);
+      
+      if (!targetModel) {
+        console.warn('未找到指定的模型:', modelId);
+        return null;
+      }
+
+      // 构建ModelConfig格式
+      const modelConfig: ModelConfig = {
+        provider: targetModel.provider,
+        model: targetModel.model,
+        apiKey: '', // 由于安全原因，在客户端不暴露API密钥
+        baseUrl: this.getBaseUrlForProvider(targetModel.provider),
+        temperature: 0.8,
+        maxTokens: 2000,
+        customPrompt: ''
+      };
+
+      return modelConfig;
+    } catch (error) {
+      console.error('根据ID获取模型配置失败:', error);
+      return null;
     }
   }
 
