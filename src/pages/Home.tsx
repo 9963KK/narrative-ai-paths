@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
+import { userLevelService, type UserLevel } from '@/services/userLevelService';
 import { 
   BookOpen, 
   Sparkles, 
@@ -31,6 +33,26 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [userLevel, setUserLevel] = React.useState<UserLevel | null>(null);
+
+  // 获取用户等级
+  React.useEffect(() => {
+    const fetchUserLevel = async () => {
+      if (user) {
+        try {
+          const level = await userLevelService.getUserLevel();
+          setUserLevel(level);
+        } catch (error) {
+          console.error('获取用户等级失败:', error);
+          setUserLevel(null);
+        }
+      } else {
+        setUserLevel(null);
+      }
+    };
+
+    fetchUserLevel();
+  }, [user]);
 
   // 快速开始 - 根据登录状态跳转
   const handleQuickStart = () => {
@@ -50,6 +72,20 @@ const Home: React.FC = () => {
   // 获取用户名首字母
   const getInitials = (username: string) => {
     return username.slice(0, 2).toUpperCase();
+  };
+
+  // 获取头像样式（根据等级）
+  const getAvatarStyle = (level: UserLevel | null) => {
+    switch (level) {
+      case 'svip':
+        return 'bg-gradient-to-r from-purple-400 to-pink-400 text-white ring-2 ring-purple-200';
+      case 'vip':
+        return 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white ring-2 ring-blue-200';
+      case 'basic':
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white';
+      default:
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white';
+    }
   };
 
   const features = [
@@ -134,21 +170,29 @@ const Home: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               {user ? (
-                // 已登录状态 - 显示用户头像和下拉菜单
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
-                      <Avatar className="h-9 w-9 shadow-md">
-                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                          {getInitials(user.username)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
+                // 已登录状态 - 显示用户信息和头像
+                <div className="flex items-center space-x-3">
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-sm font-medium text-gray-700">{user.username}</span>
+                    <UserLevelBadge level={userLevel} size="sm" />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
+                        <Avatar className="h-9 w-9 shadow-md">
+                          <AvatarFallback className={getAvatarStyle(userLevel)}>
+                            {getInitials(user.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <div className="flex items-center justify-start gap-2 p-3">
                       <div className="flex flex-col space-y-1 leading-none">
-                        <p className="font-medium">{user.username}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{user.username}</p>
+                          <UserLevelBadge level={userLevel} size="sm" />
+                        </div>
                         <p className="w-[200px] truncate text-sm text-muted-foreground">
                           {user.email}
                         </p>
@@ -169,7 +213,8 @@ const Home: React.FC = () => {
                       <span>登出</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                  </DropdownMenu>
+                </div>
               ) : (
                 // 未登录状态 - 显示登录按钮
                 <>
