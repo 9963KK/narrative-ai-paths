@@ -97,7 +97,8 @@ export const ModelManagementTab: React.FC = () => {
     costPer1kTokens: 0,
     isActive: true,
     apiKey: '',
-    baseUrl: ''
+    baseUrl: '',
+    performanceLevel: 'advanced' as 'basic' | 'advanced' | 'premium'
   });
 
   // 加载数据
@@ -320,7 +321,8 @@ export const ModelManagementTab: React.FC = () => {
       costPer1kTokens: model.cost_per_1k_tokens || 0,
       isActive: model.is_active ?? true,
       apiKey: (model.api_config?.api_key) || '',
-      baseUrl: (model.api_config?.base_url) || ''
+      baseUrl: (model.api_config?.base_url) || '',
+      performanceLevel: (model.performance_level as 'basic' | 'advanced' | 'premium') || 'advanced'
     });
     setShowEditForm(true);
   };
@@ -336,13 +338,14 @@ export const ModelManagementTab: React.FC = () => {
     }
 
     try {
-      // 更新模型信息，包括API配置
+      // 更新模型信息，包括API配置和性能等级
       const { error } = await supabase
         .from('system_model_pool')
         .update({
           description: editFormData.description,
           cost_per_1k_tokens: editFormData.costPer1kTokens,
           is_active: editFormData.isActive,
+          performance_level: editFormData.performanceLevel,
           api_config: {
             api_key: editFormData.apiKey.trim(),
             base_url: editFormData.baseUrl.trim()
@@ -369,7 +372,8 @@ export const ModelManagementTab: React.FC = () => {
         costPer1kTokens: 0,
         isActive: true,
         apiKey: '',
-        baseUrl: ''
+        baseUrl: '',
+        performanceLevel: 'advanced'
       });
     } catch (error) {
       console.error('更新模型失败:', error);
@@ -910,6 +914,43 @@ export const ModelManagementTab: React.FC = () => {
                     onChange={(e) => setEditFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
                     placeholder="API基础URL"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-performance-level">性能等级 <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={editFormData.performanceLevel} 
+                    onValueChange={(value: 'basic' | 'advanced' | 'premium') => 
+                      setEditFormData(prev => ({ ...prev, performanceLevel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择性能等级" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-3 w-3 text-gray-600" />
+                          <span>Basic - 基础模型</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="advanced">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3 w-3 text-blue-600" />
+                          <span>Advanced - 高级模型</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="premium">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-3 w-3 text-purple-600" />
+                          <span>Premium - 顶级模型</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    决定哪些用户等级可以访问此模型
+                  </p>
                 </div>
 
                 <div className="flex items-center space-x-2">
