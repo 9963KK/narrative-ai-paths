@@ -15,7 +15,7 @@
 
 import { ModelConfig } from '@/components/model-config/constants';
 import { unifiedAuthService } from './unifiedAuthService';
-import { supabase } from '@/lib/supabase';
+import { userLevelService } from './userLevelService';
 
 // 配置缓存接口
 interface CachedConfig {
@@ -250,33 +250,11 @@ class ConfigurationManager {
     try {
       console.log('📊 开始数据库查询用户可用模型...');
       
-      // 查询用户等级和可用模型
-      const { data: userLevel, error: levelError } = await supabase
-        .from('user_profiles')
-        .select('user_level')
-        .eq('id', userId)
-        .single();
+      // 使用现有的userLevelService获取用户可用模型
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
 
-      if (levelError || !userLevel) {
-        console.error('❌ 获取用户等级失败:', levelError);
-        return {
-          success: false,
-          error: '无法获取用户等级信息',
-          source: 'database'
-        };
-      }
-
-      // 根据用户等级查询可用模型
-      const { data: availableModels, error: modelsError } = await supabase
-        .from('system_model_pool')
-        .select('*')
-        .lte('required_user_level', userLevel.user_level)
-        .eq('is_active', true)
-        .order('required_user_level', { ascending: false })
-        .order('cost_per_1k_tokens', { ascending: true });
-
-      if (modelsError || !availableModels || availableModels.length === 0) {
-        console.error('❌ 获取可用模型失败:', modelsError);
+      if (!availableModels || availableModels.length === 0) {
+        console.error('❌ 用户没有可用的AI模型');
         return {
           success: false,
           error: '没有可用的AI模型',
@@ -285,19 +263,22 @@ class ConfigurationManager {
       }
 
       // 选择最合适的模型（优先选择有API密钥的）
-      const modelsWithApiKey = availableModels.filter(model => 
-        model.api_config && (
-          (typeof model.api_config === 'object' && model.api_config.api_key) ||
-          (typeof model.api_config === 'string' && model.api_config.includes('api_key'))
-        )
-      );
-
+      const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
       const selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
       
       if (!selectedModel) {
         return {
           success: false,
           error: '无法选择合适的AI模型',
+          source: 'database'
+        };
+      }
+
+      // 检查是否有API密钥
+      if (!selectedModel.has_api_key) {
+        return {
+          success: false,
+          error: '所选模型缺少API密钥配置',
           source: 'database'
         };
       }
@@ -318,9 +299,10 @@ class ConfigurationManager {
       }
 
       if (!apiKey) {
+        console.warn('⚠️ 虽然标记有API密钥，但实际提取失败');
         return {
           success: false,
-          error: '所选模型缺少API密钥配置',
+          error: '无法提取模型API密钥',
           source: 'database'
         };
       }
