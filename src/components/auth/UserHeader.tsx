@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GuestToRegisterDialog } from './GuestToRegisterDialog';
 import { CreditBadge } from '@/components/ui/CreditBadge';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
+import { userLevelService, type UserLevel } from '@/services/userLevelService';
+import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
 // 移除同步状态徽章，新系统不需要复杂的同步逻辑
 import { LogOut, User, Settings, UserPlus, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,24 +17,31 @@ export const UserHeader: React.FC = () => {
   const { user, logout, isGuest } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
 
-  // 检查管理员权限
+  // 检查管理员权限和用户等级
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkUserStatus = async () => {
       if (user && !isGuest) {
         try {
-          const adminStatus = await unifiedAuthService.isAdmin();
+          const [adminStatus, level] = await Promise.all([
+            unifiedAuthService.isAdmin(),
+            userLevelService.getUserLevel()
+          ]);
           setIsAdmin(adminStatus);
+          setUserLevel(level);
         } catch (error) {
-          console.error('检查管理员权限失败:', error);
+          console.error('检查用户状态失败:', error);
           setIsAdmin(false);
+          setUserLevel(null);
         }
       } else {
         setIsAdmin(false);
+        setUserLevel(null);
       }
     };
 
-    checkAdminStatus();
+    checkUserStatus();
   }, [user, isGuest]);
 
   if (!user) return null;
@@ -49,12 +59,22 @@ export const UserHeader: React.FC = () => {
     return username.slice(0, 2).toUpperCase();
   };
 
-  const getAvatarStyle = () => {
-    if (isGuest) {
-      return "bg-orange-100 text-orange-600";
+
+
+  // 获取头像样式（根据等级）
+  const getAvatarStyle = (level: UserLevel | null) => {
+    switch (level) {
+      case 'svip':
+        return 'bg-gradient-to-r from-purple-400 to-pink-400 text-white ring-2 ring-purple-200';
+      case 'vip':
+        return 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white ring-2 ring-blue-200';
+      case 'basic':
+        return 'bg-gray-100 text-gray-600';
+      default:
+        return 'bg-gray-100 text-gray-600';
     }
-    return "bg-blue-100 text-blue-600";
   };
+
 
   return (
     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-white/90 via-indigo-50/80 to-purple-50/90 backdrop-blur-md shadow-lg border-b border-white/20">
@@ -65,11 +85,13 @@ export const UserHeader: React.FC = () => {
           </svg>
         </div>
         <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">织梦师</h1>
-        {isGuest && (
+        {isGuest ? (
           <div className="flex items-center text-orange-600 text-sm bg-orange-50 px-2 py-1 rounded-full">
             <AlertTriangle className="w-3 h-3 mr-1" />
             游客模式
           </div>
+        ) : (
+          <UserLevelBadge level={userLevel} size="sm" />
         )}
       </div>
       
@@ -81,19 +103,25 @@ export const UserHeader: React.FC = () => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
             <Avatar className="h-9 w-9 shadow-md">
-              <AvatarFallback className={getAvatarStyle()}>
+              <AvatarFallback className={isGuest ? "bg-orange-100 text-orange-600" : getAvatarStyle(userLevel)}>
                 {getInitials(user.username)}
               </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <div className="flex items-center justify-start gap-2 p-2">
+        <DropdownMenuContent className="w-64" align="end" forceMount>
+          <div className="flex items-center justify-start gap-2 p-3">
             <div className="flex flex-col space-y-1 leading-none">
-              <p className="font-medium">{user.username}</p>
+              <div className="flex items-center">
+                <p className="font-medium">{user.username}</p>
+                {!isGuest && <UserLevelBadge level={userLevel} size="sm" className="ml-2" />}
+              </div>
               <p className="w-[200px] truncate text-sm text-muted-foreground">
                 {isGuest ? '游客体验模式' : user.email}
               </p>
+              {!isGuest && userLevel && (
+                <UserLevelBadge level={userLevel} showDescription />
+              )}
             </div>
           </div>
           <DropdownMenuSeparator />

@@ -13,6 +13,8 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 import { CreditBadge } from '@/components/ui/CreditBadge';
 import { CreditHistory } from '@/components/ui/CreditHistory';
 import { getSavedContexts } from '@/services/contextManager';
+import { userLevelService, type UserLevel } from '@/services/userLevelService';
+import { UserLevelBadge, UserLevelPrivileges } from '@/components/ui/UserLevelBadge';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -21,8 +23,23 @@ const Profile: React.FC = () => {
   const [completedStories, setCompletedStories] = useState(0);
   const [totalPlayTime, setTotalPlayTime] = useState(0);
   const [favoriteGenre, setFavoriteGenre] = useState('未知');
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
 
   useEffect(() => {
+    const loadUserData = async () => {
+      // 加载用户等级
+      if (!isGuest) {
+        try {
+          const level = await userLevelService.getUserLevel();
+          setUserLevel(level);
+        } catch (error) {
+          console.error('获取用户等级失败:', error);
+        }
+      }
+    };
+
+    loadUserData();
+
     // 统计用户数据
     const savedContexts = getSavedContexts();
     const contextArray = Object.values(savedContexts);
@@ -161,12 +178,15 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                   <CardTitle className="text-2xl font-bold text-gray-800">{user.username}</CardTitle>
-                  <div className="flex justify-center mt-3">
+                  <div className="flex flex-col items-center gap-2 mt-3">
                     <Badge className={`${getRoleColor(user.role)} px-4 py-2 text-sm font-medium shadow-sm`}>
                       {user.role === 'admin' && <Crown className="w-4 h-4 mr-2" />}
                       {isGuest && <AlertTriangle className="w-4 h-4 mr-2" />}
                       {getRoleLabel(user.role)}
                     </Badge>
+                    {!isGuest && userLevel && (
+                      <UserLevelBadge level={userLevel} size="md" />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -318,9 +338,16 @@ const Profile: React.FC = () => {
                 </Card>
               </AnimatedCard>
 
+              {/* 用户等级特权 */}
+              {!isGuest && userLevel && (
+                <AnimatedCard index={4}>
+                  <UserLevelPrivileges level={userLevel} />
+                </AnimatedCard>
+              )}
+
               {/* 积分管理 */}
               {!isGuest && (
-                <AnimatedCard index={4}>
+                <AnimatedCard index={5}>
                   <Card className="bg-white/80 backdrop-blur-sm border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3 text-xl">
