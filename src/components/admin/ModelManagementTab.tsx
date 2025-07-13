@@ -95,7 +95,9 @@ export const ModelManagementTab: React.FC = () => {
     displayName: '',
     description: '',
     costPer1kTokens: 0,
-    isActive: true
+    isActive: true,
+    apiKey: '',
+    baseUrl: ''
   });
 
   // 加载数据
@@ -243,6 +245,12 @@ export const ModelManagementTab: React.FC = () => {
       return;
     }
 
+    // 验证API密钥是否存在
+    if (!discoveryData.apiKey || discoveryData.apiKey.trim() === '') {
+      alert('API密钥不能为空，只有配置了API密钥的模型才能添加到模型池');
+      return;
+    }
+
     try {
       const modelsToAdd = discoveredModels.filter(model => 
         selectedDiscoveredModels.includes(model.id)
@@ -310,7 +318,9 @@ export const ModelManagementTab: React.FC = () => {
       displayName: model.model || '',
       description: model.description || '',
       costPer1kTokens: model.cost_per_1k_tokens || 0,
-      isActive: model.is_active ?? true
+      isActive: model.is_active ?? true,
+      apiKey: (model.api_config?.api_key) || '',
+      baseUrl: (model.api_config?.base_url) || ''
     });
     setShowEditForm(true);
   };
@@ -319,14 +329,24 @@ export const ModelManagementTab: React.FC = () => {
   const handleSaveEditModel = async () => {
     if (!editingModel) return;
 
+    // 验证API密钥不能为空
+    if (!editFormData.apiKey || editFormData.apiKey.trim() === '') {
+      alert('API密钥不能为空，只有配置了API密钥的模型才能保留在模型池中');
+      return;
+    }
+
     try {
-      // 这里调用编辑模型的API
+      // 更新模型信息，包括API配置
       const { error } = await supabase
         .from('system_model_pool')
         .update({
           description: editFormData.description,
           cost_per_1k_tokens: editFormData.costPer1kTokens,
           is_active: editFormData.isActive,
+          api_config: {
+            api_key: editFormData.apiKey.trim(),
+            base_url: editFormData.baseUrl.trim()
+          },
           updated_at: new Date().toISOString()
         })
         .eq('id', editingModel.id);
@@ -347,7 +367,9 @@ export const ModelManagementTab: React.FC = () => {
         displayName: '',
         description: '',
         costPer1kTokens: 0,
-        isActive: true
+        isActive: true,
+        apiKey: '',
+        baseUrl: ''
       });
     } catch (error) {
       console.error('更新模型失败:', error);
@@ -867,6 +889,29 @@ export const ModelManagementTab: React.FC = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="edit-api-key">API密钥 <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="edit-api-key"
+                    type="password"
+                    value={editFormData.apiKey}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, apiKey: e.target.value }))}
+                    placeholder="API密钥（必填）"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-base-url">Base URL</Label>
+                  <Input
+                    id="edit-base-url"
+                    type="url"
+                    value={editFormData.baseUrl}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                    placeholder="API基础URL"
+                  />
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="edit-is-active"
@@ -880,7 +925,10 @@ export const ModelManagementTab: React.FC = () => {
                   <Button variant="outline" onClick={() => setShowEditForm(false)}>
                     取消
                   </Button>
-                  <Button onClick={handleSaveEditModel} disabled={!editFormData.displayName.trim()}>
+                  <Button 
+                    onClick={handleSaveEditModel} 
+                    disabled={!editFormData.displayName.trim() || !editFormData.apiKey.trim()}
+                  >
                     保存修改
                   </Button>
                 </div>
