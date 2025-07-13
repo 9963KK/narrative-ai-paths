@@ -307,9 +307,10 @@ export const ModelManagementTab: React.FC = () => {
   const handleEditModel = (model: SystemModelPool) => {
     setEditingModel(model);
     setEditFormData({
-      description: model.description,
-      costPer1kTokens: model.cost_per_1k_tokens,
-      isActive: model.is_active
+      displayName: model.model || '',
+      description: model.description || '',
+      costPer1kTokens: model.cost_per_1k_tokens || 0,
+      isActive: model.is_active ?? true
     });
     setShowEditForm(true);
   };
@@ -343,6 +344,7 @@ export const ModelManagementTab: React.FC = () => {
       setShowEditForm(false);
       setEditingModel(null);
       setEditFormData({
+        displayName: '',
         description: '',
         costPer1kTokens: 0,
         isActive: true
