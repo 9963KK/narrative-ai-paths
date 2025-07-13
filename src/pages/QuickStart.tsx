@@ -39,16 +39,7 @@ const QuickStart: React.FC = () => {
   });
 
   // 故事梗概选择相关状态
-  const [storyOutlines, setStoryOutlines] = useState<Array<{
-    id: number;
-    title: string;
-    premise: string;
-    genre: string;
-    tone: string;
-    characters: string[];
-    setting: string;
-    hook: string;
-  }>>([]);
+  const [storyOutlines, setStoryOutlines] = useState<string[]>([]);
   const [isGeneratingOutlines, setIsGeneratingOutlines] = useState(false);
   const [showOutlineSelection, setShowOutlineSelection] = useState(false);
   const [originalSimpleConfig, setOriginalSimpleConfig] = useState<BaseStoryConfig | null>(null);
@@ -185,39 +176,20 @@ const QuickStart: React.FC = () => {
   };
   
   // 处理梗概选择
-  const handleOutlineSelection = async (selectedOutline: {
-    id: number;
-    title: string;
-    premise: string;
-    genre: string;
-    tone: string;
-    characters: string[];
-    setting: string;
-    hook: string;
-  }) => {
+  const handleOutlineSelection = async (selectedOutline: string, index: number) => {
     if (!originalSimpleConfig) return;
     
     // 根据选择的梗概创建增强的配置
     const enhancedConfig = {
       ...originalSimpleConfig,
-      protagonist: selectedOutline.characters[0] || '主角',
-      setting: selectedOutline.setting,
-      special_requirements: `故事风格：${selectedOutline.tone}。开场设定：${selectedOutline.hook}`,
-      character_count: Math.min(selectedOutline.characters.length, 6),
-      character_details: selectedOutline.characters.map((char, index) => ({
-        name: char,
-        role: index === 0 ? '主角' : '重要角色',
-        traits: '待发展的角色特征',
-        appearance: '',
-        backstory: ''
-      })),
-      environment_details: selectedOutline.setting,
+      story_idea: selectedOutline, // 使用选择的梗概作为故事想法
+      protagonist: '主角',
+      setting: `适合${originalSimpleConfig.genre}类型的世界`,
+      special_requirements: `基于梗概：${selectedOutline}`,
+      character_count: 3,
       preferred_ending: 'open',
       story_length: 'medium',
-      tone: selectedOutline.tone.includes('轻松') ? 'light' : 
-            selectedOutline.tone.includes('幽默') ? 'humorous' :
-            selectedOutline.tone.includes('浪漫') ? 'romantic' :
-            selectedOutline.tone.includes('黑暗') || selectedOutline.tone.includes('神秘') ? 'dark' : 'serious',
+      tone: 'serious',
       story_goals: [
         {
           id: '1',
@@ -237,7 +209,7 @@ const QuickStart: React.FC = () => {
       }
     }
     
-    console.log('🚀 基于选择的梗概创建故事:', selectedOutline.title);
+    console.log('🚀 基于选择的梗概创建故事:', selectedOutline);
     
     // 保存配置到 localStorage
     localStorage.setItem('pendingStoryConfig', JSON.stringify({
@@ -308,12 +280,12 @@ const QuickStart: React.FC = () => {
               </div>
             </AnimatedHeader>
             {/* Story Outlines Grid */}
-            <AnimatedGrid startIndex={1} className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            <AnimatedGrid startIndex={1} className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
               {storyOutlines.map((outline, index) => (
                 <Card
-                  key={outline.id}
+                  key={index}
                   className="group cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-2xl bg-white/80 backdrop-blur-sm hover:bg-white"
-                  onClick={() => handleOutlineSelection(outline)}
+                  onClick={() => handleOutlineSelection(outline, index)}
                 >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -334,12 +306,12 @@ const QuickStart: React.FC = () => {
                               index === 2 ? 'bg-orange-100 text-orange-700' :
                               'bg-blue-100 text-blue-700'
                             }`}>
-                              {outline.genre}
+                              {simpleConfig.genre}
                             </span>
                           </div>
                         </div>
                         <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors mb-2">
-                          {outline.title}
+                          故事方向 {index + 1}
                         </CardTitle>
                       </div>
                     </div>
@@ -348,44 +320,10 @@ const QuickStart: React.FC = () => {
                   <CardContent className="pt-0 space-y-4">
                     <div className="bg-gray-50/80 p-4 rounded-xl">
                       <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        📖 <span>故事概念</span>
+                        📖 <span>故事大纲</span>
                       </h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
-                        {outline.premise}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        🎭 <span>主要角色</span>
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {outline.characters.map((character, charIndex) => (
-                          <span 
-                            key={charIndex}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium"
-                          >
-                            {character}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        🏛️ <span>背景设定</span>
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {outline.setting}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
-                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        🎣 <span>故事钩子</span>
-                      </h4>
-                      <p className="text-gray-700 text-sm italic leading-relaxed">
-                        "{outline.hook}"
+                        {outline}
                       </p>
                     </div>
                     
@@ -399,7 +337,7 @@ const QuickStart: React.FC = () => {
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOutlineSelection(outline);
+                          handleOutlineSelection(outline, index);
                         }}
                       >
                         选择这个故事方向
