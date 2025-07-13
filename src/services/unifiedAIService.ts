@@ -153,7 +153,25 @@ class UnifiedAIService {
       const config = await modelConfigAdapter.getUserModelConfig(true);
       
       if (!config) {
-        console.warn('⚠️ 无法获取用户模型配置');
+        console.warn('⚠️ 无法获取用户模型配置，尝试重新获取...');
+        
+        // 如果获取失败，尝试重新从数据库获取并存储
+        const currentUser = unifiedAuthService.getCurrentUser();
+        if (currentUser) {
+          console.log('🔄 尝试重新获取用户API密钥...');
+          const { tempApiKeyStore } = await import('./tempApiKeyStore');
+          const success = await tempApiKeyStore.fetchAndStoreUserApiKeys(currentUser.id);
+          
+          if (success) {
+            // 重新尝试获取配置
+            const retryConfig = await modelConfigAdapter.getUserModelConfig(true);
+            if (retryConfig) {
+              console.log('✅ 重新获取用户模型配置成功');
+              return retryConfig;
+            }
+          }
+        }
+        
         return null;
       }
       

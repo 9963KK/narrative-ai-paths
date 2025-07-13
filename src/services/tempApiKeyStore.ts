@@ -108,22 +108,68 @@ export class TempApiKeyStore {
     try {
       console.log('🔑 正在获取用户API密钥...');
       
-      // 这里应该调用后台API获取用户的API密钥
-      // 现在先从现有的modelConfigAdapter获取
-      const { modelConfigAdapter } = await import('./modelConfigAdapter');
-      const modelConfig = await modelConfigAdapter.getUserModelConfig(true);
+      // 直接从数据库查询，避免循环依赖
+      const { userLevelService } = await import('./userLevelService');
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       
-      if (modelConfig && modelConfig.apiKey) {
-        await this.storeUserModelConfig(modelConfig);
-        return true;
-      } else {
-        console.warn('⚠️ 未获取到有效的用户模型配置');
+      if (availableModels.length === 0) {
+        console.warn('⚠️ 用户没有可用的模型');
         return false;
       }
+
+      // 选择第一个有API密钥的模型
+      const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
+      const defaultModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
+      
+      if (!defaultModel.has_api_key) {
+        console.warn('⚠️ 选择的模型未配置API密钥');
+        return false;
+      }
+
+      // 获取真实的API密钥
+      const { modelConfigAdapter } = await import('./modelConfigAdapter');
+      const realApiKey = await modelConfigAdapter.getRealApiKey(defaultModel.model_id);
+      
+      if (!realApiKey) {
+        console.warn('⚠️ 无法获取模型的真实API密钥');
+        return false;
+      }
+
+      // 构建ModelConfig并存储
+      const modelConfig = {
+        provider: defaultModel.provider,
+        model: defaultModel.model,
+        apiKey: realApiKey,
+        baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
+        temperature: 0.8,
+        maxTokens: 2000,
+        customPrompt: ''
+      };
+
+      await this.storeUserModelConfig(modelConfig);
+      console.log('✅ 用户API密钥获取并存储成功');
+      return true;
     } catch (error) {
       console.error('❌ 获取用户API密钥失败:', error);
       return false;
     }
+  }
+
+  /**
+   * 根据提供商获取基础URL
+   */
+  private getBaseUrlForProvider(provider: string): string {
+    const defaultBaseUrls: Record<string, string> = {
+      'openai': 'https://api.openai.com/v1',
+      'anthropic': 'https://api.anthropic.com/v1',
+      'deepseek': 'https://api.deepseek.com/v1',
+      'moonshot': 'https://api.moonshot.cn/v1',
+      'zhipu': 'https://open.bigmodel.cn/api/paas/v4',
+      'openrouter': 'https://openrouter.ai/api/v1',
+      'volcengine': 'https://ark.cn-beijing.volces.com/api/v3'
+    };
+
+    return defaultBaseUrls[provider] || '';
   }
 
   /**

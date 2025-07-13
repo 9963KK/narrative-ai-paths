@@ -280,7 +280,7 @@ class ModelConfigAdapter {
    * @param modelId 模型ID
    * @returns 真实的API密钥或null
    */
-  private async getRealApiKey(modelId: string): Promise<string | null> {
+  async getRealApiKey(modelId: string): Promise<string | null> {
     try {
       console.log(`🔑 开始获取模型 ${modelId} 的API密钥...`);
       
