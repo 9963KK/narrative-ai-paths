@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   BookOpen, 
   Sparkles, 
@@ -19,16 +22,34 @@ import {
   Target,
   Cpu,
   Users2,
-  Palette
+  Palette,
+  LogOut,
+  User
 } from 'lucide-react';
 import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  // 快速开始 - 跳转到登录页面
+  // 快速开始 - 根据登录状态跳转
   const handleQuickStart = () => {
-    navigate('/login');
+    if (user) {
+      navigate('/app');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  // 处理登出
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  // 获取用户名首字母
+  const getInitials = (username: string) => {
+    return username.slice(0, 2).toUpperCase();
   };
 
   const features = [
@@ -112,17 +133,59 @@ const Home: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link to="/login">
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                  登录
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                  开始创作
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
+              {user ? (
+                // 已登录状态 - 显示用户头像和下拉菜单
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
+                      <Avatar className="h-9 w-9 shadow-md">
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                          {getInitials(user.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-3">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium">{user.username}</p>
+                        <p className="w-[200px] truncate text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/app')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>进入应用</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>个人资料</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>登出</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                // 未登录状态 - 显示登录按钮
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                      登录
+                    </Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                      开始创作
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -149,12 +212,23 @@ const Home: React.FC = () => {
           </AnimatedHeader>
           <AnimatedCard index={1}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/login">
-                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                  立即开始创作
+              {user ? (
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/app')}
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                >
+                  继续创作
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/login">
+                  <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                    立即开始创作
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              )}
               <Button size="lg" variant="outline" className="w-full sm:w-auto border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300">
                 <BookOpen className="mr-2 w-5 h-5" />
                 查看示例
@@ -253,21 +327,34 @@ const Home: React.FC = () => {
               加入我们的创作者社区，体验AI辅助创作的无限可能
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/login">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                  立即注册
-                  <Star className="ml-2 w-5 h-5" />
+              {user ? (
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/app')}
+                  className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                >
+                  进入创作工坊
+                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={handleQuickStart}
-                className="w-full sm:w-auto border-white/80 text-white bg-white/10 hover:bg-white hover:text-blue-600 backdrop-blur-sm px-8 py-4 text-lg font-medium transition-all duration-300 hover:border-white shadow-xl hover:shadow-2xl"
-              >
-                立即登录
-                <Zap className="ml-2 w-5 h-5" />
-              </Button>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                      立即注册
+                      <Star className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    onClick={handleQuickStart}
+                    className="w-full sm:w-auto border-white/80 text-white bg-white/10 hover:bg-white hover:text-blue-600 backdrop-blur-sm px-8 py-4 text-lg font-medium transition-all duration-300 hover:border-white shadow-xl hover:shadow-2xl"
+                  >
+                    立即登录
+                    <Zap className="ml-2 w-5 h-5" />
+                  </Button>
+                </>
+              )}
             </div>
           </AnimatedCard>
         </div>
