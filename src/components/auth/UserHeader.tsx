@@ -112,15 +112,15 @@ export const UserHeader: React.FC = () => {
         <DropdownMenuContent className="w-64" align="end" forceMount>
           <div className="flex items-center justify-start gap-2 p-3">
             <div className="flex flex-col space-y-1 leading-none">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <p className="font-medium">{user.username}</p>
+                {!isGuest && userLevel && (
+                  <UserLevelBadge level={userLevel} size="sm" />
+                )}
               </div>
               <p className="w-[200px] truncate text-sm text-muted-foreground">
                 {isGuest ? '游客体验模式' : user.email}
               </p>
-              {!isGuest && userLevel && (
-                <UserLevelBadge level={userLevel} showDescription />
-              )}
             </div>
           </div>
           <DropdownMenuSeparator />
