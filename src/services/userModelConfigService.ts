@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { unifiedAuthService } from './unifiedAuthService';
+import { userLevelService, type ModelByLevel } from './userLevelService';
 
 // 类型定义
 export interface SystemModelPool {
@@ -85,26 +86,11 @@ class UserModelConfigService {
   }
 
   /**
-   * 获取用户可用的模型列表
+   * 获取用户可用的模型列表（基于用户等级）
    */
-  async getUserAvailableModels(userId?: string): Promise<AvailableModel[]> {
+  async getUserAvailableModels(userId?: string): Promise<ModelByLevel[]> {
     try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法获取模型配置');
-        return [];
-      }
-
-      const { data, error } = await supabase.rpc('get_user_available_models', {
-        target_user_id: currentUserId
-      });
-
-      if (error) {
-        console.error('获取用户可用模型失败:', error);
-        return [];
-      }
-
-      return data || [];
+      return await userLevelService.getUserAvailableModelsByLevel(userId);
     } catch (error) {
       console.error('获取用户可用模型服务错误:', error);
       return [];
@@ -112,26 +98,12 @@ class UserModelConfigService {
   }
 
   /**
-   * 获取用户默认模型
+   * 获取用户默认模型（基于等级的第一个模型）
    */
-  async getUserDefaultModel(userId?: string): Promise<DefaultModel | null> {
+  async getUserDefaultModel(userId?: string): Promise<ModelByLevel | null> {
     try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法获取默认模型');
-        return null;
-      }
-
-      const { data, error } = await supabase.rpc('get_user_default_model', {
-        target_user_id: currentUserId
-      });
-
-      if (error) {
-        console.error('获取用户默认模型失败:', error);
-        return null;
-      }
-
-      return data?.[0] || null;
+      const availableModels = await this.getUserAvailableModels(userId);
+      return availableModels.length > 0 ? availableModels[0] : null;
     } catch (error) {
       console.error('获取用户默认模型服务错误:', error);
       return null;

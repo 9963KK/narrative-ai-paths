@@ -76,6 +76,7 @@ export const ModelManagementTab: React.FC = () => {
   const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [selectedDiscoveredModels, setSelectedDiscoveredModels] = useState<string[]>([]);
+  const [modelLevelAssignments, setModelLevelAssignments] = useState<Record<string, 'basic' | 'advanced' | 'premium'>>({});
 
   // 表单数据
   const [assignmentData, setAssignmentData] = useState<ModelAssignmentData>({
@@ -254,7 +255,7 @@ export const ModelManagementTab: React.FC = () => {
         internalName: `${model.provider}-${model.name}`,
         description: model.description,
         capabilityTags: ['creative', 'general'], // 默认标签
-        performanceLevel: 'standard' as const, // 默认标准级别
+        performanceLevel: modelLevelAssignments[model.id] || 'advanced', // 使用管理员选择的等级
         costPer1kTokens: 0.002, // 默认成本，管理员可后续调整
         apiConfig: {
           api_key: discoveryData.apiKey,
@@ -298,6 +299,7 @@ export const ModelManagementTab: React.FC = () => {
     });
     setDiscoveredModels([]);
     setSelectedDiscoveredModels([]);
+    setModelLevelAssignments({});
     setShowModelDiscovery(false);
   };
 
@@ -410,7 +412,6 @@ export const ModelManagementTab: React.FC = () => {
     switch (level) {
       case 'premium': return 'bg-purple-100 text-purple-800';
       case 'advanced': return 'bg-blue-100 text-blue-800';
-      case 'standard': return 'bg-green-100 text-green-800';
       case 'basic': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -421,7 +422,6 @@ export const ModelManagementTab: React.FC = () => {
     switch (level) {
       case 'premium': return <Star className="h-3 w-3" />;
       case 'advanced': return <Zap className="h-3 w-3" />;
-      case 'standard': return <Target className="h-3 w-3" />;
       case 'basic': return <Activity className="h-3 w-3" />;
       default: return <Activity className="h-3 w-3" />;
     }
@@ -471,23 +471,23 @@ export const ModelManagementTab: React.FC = () => {
               <div className="text-2xl font-bold text-blue-600">{systemModels.length}</div>
               <div className="text-sm text-blue-800">可用模型</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {systemModels.filter(m => m.performance_level === 'premium').length}
-              </div>
-              <div className="text-sm text-green-800">高端模型</div>
-            </div>
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
+                {systemModels.filter(m => m.performance_level === 'premium').length}
+              </div>
+              <div className="text-sm text-purple-800">Premium模型</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
                 {systemModels.filter(m => m.performance_level === 'advanced').length}
               </div>
-              <div className="text-sm text-purple-800">高级模型</div>
+              <div className="text-sm text-blue-800">Advanced模型</div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-gray-600">
                 {systemModels.filter(m => m.performance_level === 'basic').length}
               </div>
-              <div className="text-sm text-gray-800">基础模型</div>
+              <div className="text-sm text-gray-800">Basic模型</div>
             </div>
           </div>
 
@@ -973,6 +973,30 @@ export const ModelManagementTab: React.FC = () => {
                 </div>
               </div>
 
+              {/* 等级说明 */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">模型等级说明</h4>
+                    <div className="text-sm text-blue-700 mt-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-3 w-3" />
+                        <strong>Basic:</strong> 基础模型，适合日常使用，成本低廉
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-3 w-3" />
+                        <strong>Advanced:</strong> 高级模型，性能更强，成本适中
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-3 w-3" />
+                        <strong>Premium:</strong> 顶级模型，最强性能，成本较高
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* 发现结果 */}
               {discoveredModels.length > 0 && (
                 <div className="space-y-4">
@@ -1013,6 +1037,7 @@ export const ModelManagementTab: React.FC = () => {
                           <TableHead>显示名称</TableHead>
                           <TableHead>提供商</TableHead>
                           <TableHead>描述</TableHead>
+                          <TableHead>性能等级</TableHead>
                           <TableHead>推荐</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1037,6 +1062,41 @@ export const ModelManagementTab: React.FC = () => {
                               <Badge variant="outline">{model.provider}</Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-600">{model.description}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={modelLevelAssignments[model.id] || 'advanced'}
+                                onValueChange={(value: 'basic' | 'advanced' | 'premium') => {
+                                  setModelLevelAssignments(prev => ({
+                                    ...prev,
+                                    [model.id]: value
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="w-24">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="basic">
+                                    <div className="flex items-center gap-1">
+                                      <Activity className="h-3 w-3" />
+                                      <span>Basic</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="advanced">
+                                    <div className="flex items-center gap-1">
+                                      <Zap className="h-3 w-3" />
+                                      <span>Advanced</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="premium">
+                                    <div className="flex items-center gap-1">
+                                      <Star className="h-3 w-3" />
+                                      <span>Premium</span>
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
                             <TableCell>
                               {model.isRecommended && (
                                 <Badge variant="secondary" className="bg-green-100 text-green-800">
