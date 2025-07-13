@@ -1,5 +1,6 @@
 import { supabaseService, type User, type UserProfile, type OAuthProvider, supabase } from '@/lib/supabase';
 import { creditService } from './creditService';
+import { tempApiKeyStore } from './tempApiKeyStore';
 
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -185,6 +186,15 @@ export class UnifiedAuthService {
             };
 
             localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
+            
+            // 登录成功后立即获取并存储API密钥
+            try {
+              console.log('🔑 登录成功，正在获取用户API密钥...');
+              await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
+            } catch (error) {
+              console.warn('⚠️ 获取API密钥失败，但不影响登录:', error);
+            }
+            
             return authUser;
           }
         }
@@ -192,16 +202,16 @@ export class UnifiedAuthService {
       } catch (error) {
         console.error('❌ Supabase登录失败，尝试本地存储作为备选方案:', error);
         // 如果Supabase失败，尝试本地存储
-        return this.loginWithLocalStorage(email, password);
+        return await this.loginWithLocalStorage(email, password);
       }
     } else {
       // 使用本地存储（作为备选方案）
-      return this.loginWithLocalStorage(email, password);
+      return await this.loginWithLocalStorage(email, password);
     }
   }
 
   // 本地存储登录逻辑
-  private loginWithLocalStorage(email: string, password: string): AuthUser | null {
+  private async loginWithLocalStorage(email: string, password: string): Promise<AuthUser | null> {
     const users = this.getLocalUsers();
     
     const user = users.find((u: any) => 
@@ -219,6 +229,15 @@ export class UnifiedAuthService {
       };
 
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
+      
+      // 登录成功后立即获取并存储API密钥
+      try {
+        console.log('🔑 本地存储登录成功，正在获取用户API密钥...');
+        await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
+      } catch (error) {
+        console.warn('⚠️ 获取API密钥失败，但不影响登录:', error);
+      }
+      
       return authUser;
     }
     return null;
@@ -242,6 +261,8 @@ export class UnifiedAuthService {
   logout(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(CURRENT_USER_KEY);
+      // 清除临时存储的API密钥
+      tempApiKeyStore.onUserLogout();
     }
   }
 

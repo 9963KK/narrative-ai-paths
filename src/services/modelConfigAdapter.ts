@@ -2,6 +2,7 @@ import { userModelConfigService, type DefaultModel } from './userModelConfigServ
 import { userLevelService, type ModelByLevel } from './userLevelService';
 import { ModelConfig } from '@/components/model-config/constants';
 import { supabase } from '@/lib/supabase';
+import { tempApiKeyStore } from './tempApiKeyStore';
 
 /**
  * 模型配置适配器
@@ -18,7 +19,21 @@ class ModelConfigAdapter {
     try {
       console.log(`🔧 获取用户模型配置，includeApiKey: ${includeApiKey}`);
       
-      // 获取用户基于等级的可用模型
+      // 优先使用临时存储的配置（登录时已获取）
+      if (includeApiKey) {
+        const tempConfig = tempApiKeyStore.getTempModelConfig();
+        if (tempConfig) {
+          console.log('✅ 使用临时存储的模型配置:', {
+            provider: tempConfig.provider,
+            model: tempConfig.model,
+            hasApiKey: !!tempConfig.apiKey
+          });
+          return tempConfig;
+        }
+        console.log('⚠️ 临时存储中没有配置，回退到数据库查询');
+      }
+      
+      // 回退到原有的数据库查询逻辑
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       console.log(`📋 获取到 ${availableModels.length} 个可用模型`);
       
