@@ -263,7 +263,20 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         }
       ];
       setting = '神秘的世界';
-      scene = `基于您的想法"${config.story_idea}"，故事在一个充满可能性的世界中展开。主角的冒险即将开始，每一个决定都可能改变故事的走向。`;
+      // 根据故事类型生成更丰富的开场
+      const genreScenes = {
+        'sci-fi': `在遥远的未来，科技与人性交织的时代，"${config.story_idea}"的故事即将揭开序幕。霓虹灯闪烁的都市中，主角面临着一个将改变一切的关键时刻。`,
+        'fantasy': `在魔法与传说交织的古老世界中，"${config.story_idea}"的冒险即将开始。神秘的力量在空气中流淌，而主角正站在命运的十字路口。`,
+        'mystery': `雾气弥漫的街道上，"${config.story_idea}"的谜团正在悄然展开。每一个细节都可能是关键的线索，而真相就隐藏在层层迷雾之后。`,
+        'romance': `在这个充满浪漫可能的世界里，"${config.story_idea}"的故事温柔地拉开帷幕。命运的红线将把两颗心紧紧相连。`,
+        'thriller': `紧张的气氛笼罩着整个城市，"${config.story_idea}"的惊险故事即将展开。危险就潜伏在每一个阴影中，而时间正在飞快流逝。`,
+        'historical': `在那个风云变幻的历史时代，"${config.story_idea}"的传奇故事即将书写。古老的智慧与现实的挑战交汇在这一刻。`,
+        'slice-of-life': `在平凡而温暖的日常生活中，"${config.story_idea}"的温馨故事悄然开始。简单的幸福往往藏在最普通的瞬间里。`,
+        'adventure': `在这片充满未知和奇迹的广阔大陆上，"${config.story_idea}"的冒险征程即将启程。远方的地平线召唤着勇敢的探索者。`
+      };
+      
+      scene = genreScenes[config.genre as keyof typeof genreScenes] || 
+              `基于您的想法"${config.story_idea}"，一个${config.genre}类型的精彩故事即将展开。在这个充满可能性的世界中，每一个选择都将塑造不同的命运。`;
     }
     
     const storyGoals = processStoryGoals(config);

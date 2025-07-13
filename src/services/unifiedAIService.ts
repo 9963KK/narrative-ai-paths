@@ -88,12 +88,15 @@ class UnifiedAIService {
       // 2. 获取用户模型配置
       const modelConfig = await this.getUserModelConfig();
       if (!modelConfig) {
+        console.error('❌ 统一AI服务: 无法获取模型配置');
+        console.error('🔍 调试信息: 用户已登录但模型配置获取失败');
         return this.createErrorResponse(
-          '无法获取有效的AI模型配置。请检查：\n' +
-          '1. 您是否已登录\n' +
-          '2. 设置页面是否配置了AI模型\n' +
-          '3. 模型是否有有效的API密钥\n' +
-          '请前往设置页面配置AI模型后重试。'
+          '🔧 AI模型配置失败！请检查以下设置：\n\n' +
+          '1. ✅ 确认已登录账户\n' +
+          '2. ⚙️ 前往"设置"页面配置AI模型\n' +
+          '3. 🔑 确保API密钥有效且未过期\n' +
+          '4. 💰 检查账户积分余额\n\n' +
+          '💡 提示：首次使用需要在设置页面选择并配置AI模型'
         );
       }
 
