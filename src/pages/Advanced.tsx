@@ -160,10 +160,6 @@ const Advanced: React.FC = () => {
 
   // 完成配置
   const handleComplete = () => {
-    if (!hasValidConfig) {
-      alert('请先配置AI模型！');
-      return;
-    }
 
     // 验证必填字段
     if (!advancedConfig.genre || !advancedConfig.story_idea || !advancedConfig.main_character.name) {

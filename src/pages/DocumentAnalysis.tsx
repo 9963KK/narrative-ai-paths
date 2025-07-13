@@ -294,31 +294,6 @@ const DocumentAnalysis: React.FC = () => {
             </Button>
           </div>
 
-          
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="max-w-2xl mx-auto mb-8">
-              <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/50 rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center justify-center mb-3">
-                  <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-white font-bold text-sm">!</span>
-                  </div>
-                  <h3 className="text-amber-800 font-semibold">配置提醒</h3>
-                </div>
-                <p className="text-amber-700 text-center mb-4">
-                  请先配置AI模型才能进行文档分析和创作
-                </p>
-                <div className="text-center">
-                  <Button
-                    onClick={() => navigate('/settings?tab=model')}
-                    className="bg-amber-500 hover:bg-amber-600 text-white"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    配置模型
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
             <DocumentAnalyzer

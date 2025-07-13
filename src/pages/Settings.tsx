@@ -85,7 +85,7 @@ const Settings: React.FC = () => {
             <div className="flex items-center justify-between mb-8">
               <Button
                 onClick={() => navigate('/app')}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl px-6 py-3"
+                className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 rounded-xl px-6 py-3 hover:bg-gray-50"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回主页

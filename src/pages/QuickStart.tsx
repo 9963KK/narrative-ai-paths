@@ -688,19 +688,6 @@ const QuickStart: React.FC = () => {
                       </div>
                     </div>
 
-                    {!modelConfig.apiKey && !hasValidConfig && (
-                      <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">!</span>
-                          </div>
-                          <div>
-                            <p className="text-red-800 font-medium">需要配置AI模型</p>
-                            <p className="text-red-700 text-sm">请先配置AI模型才能开始创作故事</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="flex justify-between pt-4">
                       <Button

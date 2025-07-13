@@ -435,11 +435,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
   const handleCreateFromAnalysis = async (selectedSeed?: any) => {
     if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
     
-    const hasApiKey = modelConfig.apiKey || hasValidConfig;
-    if (!hasApiKey) {
-      alert('请先配置AI模型');
-      return;
-    }
 
     // 使用文档分析结果创建配置
     const analysisData = documentAnalysisResult.data;
@@ -592,14 +587,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               模型配置
             </Button>
           </div>
-          
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-amber-800 text-sm text-center">
-                ⚠️ 请先配置AI模型才能进行文档分析
-              </p>
-            </div>
-          )}
 
           <DocumentAnalyzer
             modelConfig={modelConfig}
@@ -655,13 +642,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           </div>
 
           {/* API Key Warning */}
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8 text-center">
-              <p className="text-amber-800 text-sm">
-                ⚠️ 请先配置AI模型才能开始创作故事
-              </p>
-            </div>
-          )}
 
           {/* Continue Section */}
           {savedContextsCount > 0 && (
@@ -969,13 +949,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
           </div>
 
           {/* API Key Warning */}
-          {!modelConfig.apiKey && !hasValidConfig && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-amber-800 text-sm text-center">
-                ⚠️ 请先配置AI模型才能开始创作故事
-              </p>
-            </div>
-          )}
 
           {/* Step 1: Genre Selection */}
           {currentStep === 1 && (
@@ -1332,13 +1305,6 @@ const StoryInitializer: React.FC<StoryInitializerProps> = ({ onInitializeStory, 
               </div>
             )}
 
-            {!modelConfig.apiKey && !hasValidConfig && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-amber-800 text-sm">
-                  ⚠️ 请先配置AI模型才能开始创作故事
-                </p>
-              </div>
-            )}
 
             {/* 手风琴布局 */}
             <div className="accordion">
