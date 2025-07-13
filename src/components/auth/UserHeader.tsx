@@ -114,7 +114,6 @@ export const UserHeader: React.FC = () => {
             <div className="flex flex-col space-y-1 leading-none">
               <div className="flex items-center">
                 <p className="font-medium">{user.username}</p>
-                {!isGuest && <UserLevelBadge level={userLevel} size="sm" className="ml-2" />}
               </div>
               <p className="w-[200px] truncate text-sm text-muted-foreground">
                 {isGuest ? '游客体验模式' : user.email}
