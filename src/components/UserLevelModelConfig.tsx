@@ -12,7 +12,7 @@ import {
   Save,
   Loader2
 } from 'lucide-react';
-import { UserModelSelector } from '@/components/UserModelSelector';
+import { SimpleModelSelector } from '@/components/SimpleModelSelector';
 import { SimpleModelSettings, ModelSettings, DEFAULT_SETTINGS } from '@/components/SimpleModelSettings';
 import { userLevelService, type ModelByLevel, type UserLevel } from '@/services/userLevelService';
 import { ModelAccessValidator } from '@/services/modelAccessValidator';
@@ -252,29 +252,12 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
           </Alert>
         )}
 
-        {/* 用户等级说明 */}
-        {levelInfo && !isGuest && (
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <levelInfo.icon className={`h-5 w-5 ${levelInfo.color}`} />
-              <span className="font-medium text-gray-800">
-                {levelInfo.description}权限
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">
-              {userLevel === 'basic' && '可使用基础AI模型，享受基础功能体验'}
-              {userLevel === 'vip' && '可使用基础和高级AI模型，享受增强功能体验'}
-              {userLevel === 'svip' && '可使用所有AI模型，享受顶级功能体验'}
-            </p>
-          </div>
-        )}
 
         {/* 模型选择器 */}
-        <UserModelSelector
+        <SimpleModelSelector
           onModelSelect={handleModelSelect}
-          showUserLevel={false} // 已在header显示
-          showModelDetails={true}
-          className="shadow-none border-0"
+          selectedModelId={selectedModel?.model_id}
+          className=""
         />
         
         {/* 模型参数设置 */}
