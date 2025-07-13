@@ -5,7 +5,7 @@
  */
 
 import { ModelConfig } from '@/components/model-config/constants';
-import { modelConfigAdapter } from './modelConfigAdapter';
+import { configurationManager } from './configurationManager';
 import { creditService } from './creditService';
 import { tokenMonitor } from './tokenMonitorService';
 import { unifiedAuthService } from './unifiedAuthService';
@@ -144,45 +144,29 @@ class UnifiedAIService {
 
   /**
    * 获取用户模型配置
+   * 使用新的ConfigurationManager，消除循环依赖并提供更好的缓存机制
    */
   private async getUserModelConfig(): Promise<ModelConfig | null> {
     try {
-      console.log('🔍 获取用户模型配置...');
+      console.log('🔍 通过ConfigurationManager获取用户模型配置...');
       
-      // 直接获取用户配置的模型（包含临时存储的API密钥）
-      const config = await modelConfigAdapter.getUserModelConfig(true);
+      // 使用新的统一配置管理器
+      const configResult = await configurationManager.getUserModelConfig();
       
-      if (!config) {
-        console.warn('⚠️ 无法获取用户模型配置，尝试重新获取...');
-        
-        // 如果获取失败，尝试重新从数据库获取并存储
-        const currentUser = unifiedAuthService.getCurrentUser();
-        if (currentUser) {
-          console.log('🔄 尝试重新获取用户API密钥...');
-          const { tempApiKeyStore } = await import('./tempApiKeyStore');
-          const success = await tempApiKeyStore.fetchAndStoreUserApiKeys(currentUser.id);
-          
-          if (success) {
-            // 重新尝试获取配置
-            const retryConfig = await modelConfigAdapter.getUserModelConfig(true);
-            if (retryConfig) {
-              console.log('✅ 重新获取用户模型配置成功');
-              return retryConfig;
-            }
-          }
-        }
-        
+      if (configResult.success && configResult.config) {
+        console.log('✅ 用户模型配置获取成功:', {
+          provider: configResult.config.provider,
+          model: configResult.config.model,
+          hasApiKey: !!configResult.config.apiKey,
+          source: configResult.source
+        });
+        return configResult.config;
+      } else {
+        console.warn('⚠️ 无法获取用户模型配置:', configResult.error);
         return null;
       }
-      
-      console.log('✅ 用户模型配置获取成功:', {
-        provider: config.provider,
-        model: config.model,
-        hasApiKey: !!config.apiKey
-      });
-      return config;
     } catch (error) {
-      console.error('❌ 获取用户模型配置失败:', error);
+      console.error('❌ 配置获取过程发生错误:', error);
       return null;
     }
   }
