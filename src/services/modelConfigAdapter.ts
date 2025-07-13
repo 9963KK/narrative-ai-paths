@@ -11,8 +11,9 @@ class ModelConfigAdapter {
   /**
    * 获取用户的实际模型配置（用于AI调用）
    * 基于用户等级系统，获取第一个可用的模型
+   * @param includeApiKey 是否包含真实的API密钥（默认false，用于显示；true用于AI调用）
    */
-  async getUserModelConfig(): Promise<ModelConfig | null> {
+  async getUserModelConfig(includeApiKey: boolean = false): Promise<ModelConfig | null> {
     try {
       // 获取用户基于等级的可用模型
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
@@ -30,11 +31,28 @@ class ModelConfigAdapter {
         return null;
       }
 
-      // 构建ModelConfig格式（不暴露API密钥）
+      // 获取真实的API密钥（如果需要）
+      let apiKey = '***hidden***';
+      if (includeApiKey) {
+        try {
+          const realApiKey = await this.getRealApiKey(defaultModel.model_id);
+          if (realApiKey) {
+            apiKey = realApiKey;
+          } else {
+            console.warn('无法获取模型的真实API密钥');
+            return null;
+          }
+        } catch (error) {
+          console.error('获取真实API密钥失败:', error);
+          return null;
+        }
+      }
+
+      // 构建ModelConfig格式
       const modelConfig: ModelConfig = {
         provider: defaultModel.provider,
         model: defaultModel.model,
-        apiKey: '***hidden***', // 隐藏真实API密钥
+        apiKey: apiKey,
         baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
@@ -230,6 +248,46 @@ class ModelConfigAdapter {
    */
   async ensureUserHasModels(): Promise<boolean> {
     return await userModelConfigService.ensureUserHasModels();
+  }
+
+  /**
+   * 获取模型的真实API密钥
+   * @param modelId 模型ID
+   * @returns 真实的API密钥或null
+   */
+  private async getRealApiKey(modelId: string): Promise<string | null> {
+    try {
+      // 从用户等级服务获取模型详情
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+      const model = availableModels.find(m => m.model_id === modelId);
+      
+      if (!model || !model.api_config) {
+        console.warn(`未找到模型 ${modelId} 的API配置`);
+        return null;
+      }
+
+      // 从api_config中提取API密钥
+      if (typeof model.api_config === 'object' && model.api_config.api_key) {
+        return model.api_config.api_key;
+      }
+
+      // 如果api_config是字符串，尝试解析JSON
+      if (typeof model.api_config === 'string') {
+        try {
+          const config = JSON.parse(model.api_config);
+          return config.api_key || null;
+        } catch (parseError) {
+          console.warn('解析API配置失败:', parseError);
+          return null;
+        }
+      }
+
+      console.warn(`模型 ${modelId} 的API配置格式不正确`);
+      return null;
+    } catch (error) {
+      console.error('获取真实API密钥失败:', error);
+      return null;
+    }
   }
 
   /**

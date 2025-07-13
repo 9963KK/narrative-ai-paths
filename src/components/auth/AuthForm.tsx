@@ -37,11 +37,10 @@ type LoginForm = z.infer<typeof loginSchema>;
 interface AuthFormProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
   onRegister: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  onGuestLogin: () => Promise<boolean>;
   onOAuthLogin?: (provider: OAuthProvider) => Promise<boolean>;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onGuestLogin, onOAuthLogin }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onOAuthLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

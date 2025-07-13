@@ -1,589 +1,573 @@
 /**
- * StoryAI - 重构后的主服务类
- * 使用模块化架构，整合各个功能模块
- * 基于 @docs/StoryAI-Architecture.md 设计文档 v2.1.3
+ * StoryAI - 重构版本
+ * 使用统一AI服务进行所有AI请求
+ * 简化的故事AI服务，专注于故事生成功能
  */
 
-import { ModelConfig } from '@/components/model-config/constants';
+import { unifiedAIService } from './unifiedAIService';
 import type { StoryConfig } from '@/components/StoryInitializer';
-import { modelConfigAdapter } from './modelConfigAdapter';
 
-// 导入新的模块化架构
-import {
-  // 核心模块
-  aiModelService,
-  storyStateManager,
-  
-  // 功能模块
-  contentParser,
-  conversationManager,
-  summaryManager,
-  storyInitializer,
-  contentGenerator,
-  choiceGenerator,
-  endingGenerator,
-  characterDeveloper,
-  documentAnalyzer,
-  
-  // 类型定义
-  StoryState,
-  Character,
-  Choice,
-  StoryGenerationResponse,
-  StoryGoal,
-  ConversationHistory,
-  SummaryData,
-  
-  // 工具函数
-  initializeModules
-} from './modules';
+// 保持向后兼容的类型定义
+export interface Character {
+  name: string;
+  role: string;
+  traits: string;
+  appearance?: string;
+  backstory?: string;
+}
 
-// 导出类型定义以保持向后兼容
-export type {
-  StoryState,
-  Character,
-  Choice,
-  StoryGenerationResponse,
-  StoryGoal
-};
+export interface Choice {
+  id: string;
+  text: string;
+  description?: string;
+  consequences?: string;
+  isDefault?: boolean;
+}
+
+export interface StoryState {
+  id: string;
+  title: string;
+  content: string;
+  currentChapter: number;
+  totalChapters: number;
+  characters: Character[];
+  choices: Choice[];
+  currentGoal?: string;
+  completed: boolean;
+  timestamp: string;
+}
+
+export interface StoryGenerationResponse {
+  success: boolean;
+  story?: StoryState;
+  content?: string;
+  choices?: Choice[];
+  error?: string;
+  metadata?: {
+    tokensUsed?: number;
+    creditsConsumed?: number;
+    processingTime?: number;
+  };
+}
+
+export interface StoryGoal {
+  id: string;
+  description: string;
+  type: 'main' | 'side' | 'personal';
+  priority: 'high' | 'medium' | 'low';
+  completed?: boolean;
+}
 
 class StoryAI {
-  // 移除大部分私有属性，改为使用模块化服务
   private initialized: boolean = false;
 
   constructor() {
-    this.initializeServices();
+    this.initialized = true;
+    console.log('🎮 StoryAI v3.0 初始化完成 - 使用统一AI服务');
   }
 
-  // ==================== 初始化和配置 ====================
+  // ==================== 故事生成相关方法 ====================
 
   /**
-   * 初始化所有服务模块
+   * 生成故事开头
    */
-  private initializeServices(): void {
-    if (this.initialized) return;
+  async generateStoryOpening(config: StoryConfig): Promise<StoryGenerationResponse> {
+    const startTime = Date.now();
 
     try {
-      initializeModules();
-      this.initialized = true;
-      console.log('🎮 StoryAI v2.1.3 初始化完成 - 模块化架构');
-    } catch (error) {
-      console.error('❌ StoryAI 初始化失败:', error);
-      throw error;
-    }
-  }
+      console.log('🎭 开始生成故事开头...');
 
-  /**
-   * 设置模型配置
-   */
-  setModelConfig(config: ModelConfig): void {
-    aiModelService.setModelConfig(config);
-    console.log('🔧 AI模型配置已更新');
-  }
+      const systemPrompt = this.buildStorySystemPrompt();
+      const userPrompt = this.buildStoryOpeningPrompt(config);
 
-  /**
-   * 获取模型配置
-   */
-  getModelConfig(): ModelConfig | null {
-    return aiModelService.getModelConfig();
-  }
-
-  /**
-   * 智能选择并设置用户模型配置
-   * @param usageType 使用类型
-   */
-  async setupUserModelConfig(usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation'): Promise<boolean> {
-    try {
-      // 确保用户有可用模型
-      await modelConfigAdapter.ensureUserHasModels();
-      
-      // 获取推荐的模型配置
-      const recommendedConfig = await modelConfigAdapter.getRecommendedModel(usageType);
-      
-      if (recommendedConfig) {
-        this.setModelConfig(recommendedConfig);
-        console.log('🎯 已自动设置推荐的用户模型配置');
-        return true;
-      } else {
-        console.warn('⚠️ 无法获取推荐的模型配置');
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ 设置用户模型配置失败:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 记录模型使用情况
-   * @param sessionId 会话ID
-   * @param usageType 使用类型
-   * @param tokensUsed 使用的token数量
-   * @param creditsConsumed 消耗的积分
-   * @param success 是否成功
-   * @param errorMessage 错误信息
-   */
-  async logModelUsage(
-    sessionId: string,
-    usageType: 'story_generation' | 'choice_generation' | 'analysis' | 'other',
-    tokensUsed: number,
-    creditsConsumed: number,
-    success: boolean = true,
-    errorMessage?: string
-  ): Promise<void> {
-    try {
-      await modelConfigAdapter.logModelUsage(
-        sessionId,
-        usageType,
-        tokensUsed,
-        creditsConsumed,
-        success,
-        errorMessage
-      );
-    } catch (error) {
-      console.error('❌ 记录模型使用失败:', error);
-    }
-  }
-
-  /**
-   * 检查用户是否有可用模型
-   */
-  async hasUserModels(): Promise<boolean> {
-    return await modelConfigAdapter.hasAvailableModels();
-  }
-
-  // ==================== 故事生成核心方法 ====================
-
-  /**
-   * 生成初始故事
-   */
-  async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
-    try {
-      console.log('🎬 开始生成初始故事...');
-
-      // 智能设置用户模型配置
-      const modelSetup = await this.setupUserModelConfig('story_generation');
-      if (!modelSetup) {
-        return {
-          success: false,
-          content: null,
-          error: '用户模型配置失败，请联系管理员'
-        };
-      }
-
-      // 使用 StoryInitializer 模块
-      const response = await storyInitializer.generateInitialStory(config, isAdvanced);
-      
-      if (response.success && response.content) {
-        // 初始化故事状态
-        const initialState: StoryState = {
-          story_id: `story_${Date.now()}`,
-          current_scene: response.content.scene,
-          characters: response.content.characters || [],
-          setting: response.content.setting_details || '神秘的世界',
-          chapter: 1,
-          chapter_title: response.content.chapter_title || '序章',
-          choices_made: [],
-          mood: response.content.mood || '神秘',
-          tension_level: response.content.tension_level || 3,
-          is_completed: false,
-          story_progress: 0,
-          main_goal_status: 'pending',
-          story_goals: []
-        };
-
-        // 保存到状态管理器
-        storyStateManager.setState(initialState);
-        
-        // 清空对话历史，为新故事开始
-        conversationManager.clearHistory();
-        
-        console.log('✅ 初始故事生成成功');
-        return response;
-      } else {
-        throw new Error(response.error || '初始故事生成失败');
-      }
-    } catch (error) {
-      console.error('❌ 初始故事生成失败:', error);
-      return {
-        success: false,
-        error: `初始故事生成失败: ${(error as Error).message}`
-      };
-    }
-  }
-
-  /**
-   * 生成下一章节
-   */
-  async generateNextChapter(
-    currentStory: string, 
-    selectedChoice: string, 
-    previousChoices?: string[],
-    storyState?: StoryState
-  ): Promise<StoryGenerationResponse> {
-    try {
-      console.log('📖 开始生成下一章节...');
-
-      // 获取当前故事状态
-      let currentState = storyStateManager.getState();
-      
-      // 如果传入了 storyState 参数，优先使用它并同步到 storyStateManager
-      if (storyState) {
-        console.log('📝 使用传入的故事状态并同步到storyStateManager');
-        storyStateManager.setState(storyState);
-        currentState = storyState;
-      }
-      // 如果 storyStateManager 中没有状态，但传入了 currentStory 参数
-      else if (!currentState && currentStory) {
-        console.warn('⚠️ storyStateManager 中无状态，但有 currentStory 参数，这可能是状态同步问题');
-        console.log('🔧 尝试从传入参数重建基本状态...');
-        
-        // 创建临时状态用于生成下一章节
-        const tempState: StoryState = {
-          story_id: `temp_${Date.now()}`,
-          current_scene: currentStory,
-          characters: [],
-          setting: '未知世界',
-          chapter: 1,
-          choices_made: previousChoices || [],
-          mood: '神秘',
-          tension_level: 3,
-          is_completed: false,
-          story_progress: 0
-        };
-        
-        currentState = tempState;
-        storyStateManager.setState(tempState);
-        console.log('📝 已创建并设置临时状态');
-      }
-      
-      if (!currentState) {
-        console.error('❌ 未找到当前故事状态，且无法从参数重建状态');
-        return {
-          success: false,
-          error: '故事状态未找到，请重新开始故事'
-        };
-      }
-
-      // 记录用户选择
-      conversationManager.addToHistory('user', selectedChoice);
-      storyStateManager.addChoice(selectedChoice);
-
-      // 检查是否需要生成摘要
-      await this.checkAndGenerateSummary();
-
-      // 使用 ContentGenerator 模块生成下一章节
-      const storyResponse = await contentGenerator.generateNextChapter(currentState, selectedChoice);
-      
-      if (storyResponse && storyResponse.success && storyResponse.content) {
-        // 更新故事状态
-        const updates: Partial<StoryState> = {
-          current_scene: storyResponse.content.scene,
-          chapter: currentState.chapter + 1,
-          chapter_title: storyResponse.content.chapter_title,
-          mood: storyResponse.content.mood || currentState.mood,
-          tension_level: storyResponse.content.tension_level || currentState.tension_level,
-          story_progress: Math.min(100, (currentState.story_progress || 0) + 10)
-        };
-
-        // 如果有新角色，添加到状态中
-        if (storyResponse.content.new_characters) {
-          for (const newCharacter of storyResponse.content.new_characters) {
-            storyStateManager.addCharacter(newCharacter);
-          }
-        }
-
-        storyStateManager.updateState(updates);
-        
-        // 保存生成的内容到对话历史
-        conversationManager.addToHistory('assistant', storyResponse.content.scene);
-        
-        console.log('✅ 下一章节生成成功');
-        return storyResponse;
-      } else {
-        throw new Error('章节响应解析失败');
-      }
-    } catch (error) {
-      console.error('❌ 下一章节生成失败:', error);
-      
-      // 返回备用内容
-      return this.generateFallbackNextChapter(selectedChoice);
-    }
-  }
-
-  /**
-   * 生成选择项
-   */
-  async generateChoices(scene: string, characters: Character[], setting: string): Promise<Choice[]> {
-    try {
-      console.log('🎯 开始生成选择项...');
-
-      // 智能设置用户模型配置
-      await this.setupUserModelConfig('choice_generation');
-
-      const currentState = storyStateManager.getState();
-      if (!currentState) {
-        console.warn('⚠️ 未找到当前故事状态，使用传入参数');
-        // 创建临时状态用于生成选择项
-        const tempState: StoryState = {
-          story_id: 'temp',
-          current_scene: scene,
-          characters: characters,
-          setting: setting,
-          chapter: 1,
-          choices_made: [],
-          mood: '神秘',
-          tension_level: 3,
-          is_completed: false
-        };
-        return await choiceGenerator.generateChoices(tempState, scene);
-      }
-
-      // 使用 ChoiceGenerator 模块生成选择项
-      return await choiceGenerator.generateChoices(currentState, scene);
-    } catch (error) {
-      console.error('❌ 选择项生成失败:', error);
-      
-      // 返回默认选择项
-      return contentParser.getDefaultChoices();
-    }
-  }
-
-  /**
-   * 生成故事结局
-   */
-  async generateStoryEnding(storyState: StoryState, endingType?: string): Promise<string> {
-    try {
-      console.log('🏁 开始生成故事结局...');
-
-      // 使用 EndingGenerator 模块生成结局
-      const ending = endingType 
-        ? await endingGenerator.generateCustomEnding(storyState, endingType)
-        : await endingGenerator.generateStoryEnding(storyState);
-      
-      // 映射用户界面结局类型到系统内部类型
-      const mapEndingType = (type: string): 'success' | 'failure' | 'neutral' | 'cliffhanger' => {
-        switch (type) {
-          case 'satisfying':
-            return 'success';
-          case 'dramatic':
-            return 'failure';
-          case 'open':
-            return 'cliffhanger';
-          default:
-            return 'neutral';
-        }
-      };
-
-      // 标记故事为已完成
-      storyStateManager.updateState({
-        is_completed: true,
-        completion_type: endingType ? mapEndingType(endingType) : endingGenerator.determineEndingType(storyState),
-        story_progress: 100
+      const response = await unifiedAIService.makeRequest({
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        forceJsonOutput: true,
+        requestType: 'story_generation',
+        maxTokens: 2000,
+        temperature: 0.8
       });
 
-      console.log('✅ 故事结局生成成功');
-      return ending;
-    } catch (error) {
-      console.error('❌ 故事结局生成失败:', error);
-      return this.getFallbackEnding(storyState, endingType);
-    }
-  }
-
-  // ==================== 摘要管理 ====================
-
-  /**
-   * 检查并生成摘要
-   */
-  private async checkAndGenerateSummary(): Promise<void> {
-    const history = conversationManager.getHistory();
-    
-    if (summaryManager.shouldTriggerSummary(history.length)) {
-      console.log('📋 触发摘要生成...');
-      
-      try {
-        const historyForSummary = conversationManager.getHistoryForSummary(
-          summaryManager['lastSummaryIndex'] || 0
-        );
-        
-        const newSummary = await summaryManager.generateSummary(historyForSummary);
-        
-        if (newSummary) {
-          const currentSummary = conversationManager.getSummaryState().summary;
-          const mergedSummary = summaryManager.mergeSummaries(currentSummary, newSummary);
-          
-          conversationManager.setSummaryState(mergedSummary);
-          summaryManager.updateSummaryIndex(history.length);
-          
-          console.log('✅ 摘要生成并合并成功');
-        }
-      } catch (error) {
-        console.error('❌ 摘要生成失败:', error);
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || '故事生成失败'
+        };
       }
-    }
-  }
 
-  // ==================== 故事大纲生成 ====================
+      // 解析AI响应
+      const storyData = this.parseStoryResponse(response.content || '');
+      
+      if (!storyData) {
+        return {
+          success: false,
+          error: '无法解析AI生成的故事内容'
+        };
+      }
 
-  /**
-   * 生成故事大纲
-   */
-  async generateStoryOutlines(userIdea: string, genre: string, mainGoal?: string): Promise<string[]> {
-    try {
-      // 智能设置用户模型配置
-      await this.setupUserModelConfig('story_generation');
-
-      const config: StoryConfig = {
-        genre,
-        story_idea: userIdea,
-        main_goal: mainGoal
+      // 构建故事状态
+      const storyState: StoryState = {
+        id: `story_${Date.now()}`,
+        title: storyData.title || config.story_idea?.substring(0, 50) + '...' || '未命名故事',
+        content: storyData.content || '',
+        currentChapter: 1,
+        totalChapters: 1,
+        characters: storyData.characters || [],
+        choices: storyData.choices || [],
+        currentGoal: config.main_goal,
+        completed: false,
+        timestamp: new Date().toISOString()
       };
 
-      return await storyInitializer.generateStoryOutlines(config);
+      const processingTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        story: storyState,
+        content: storyData.content,
+        choices: storyData.choices,
+        metadata: {
+          tokensUsed: response.usage?.totalTokens,
+          creditsConsumed: response.creditsUsed,
+          processingTime
+        }
+      };
+
     } catch (error) {
-      console.error('❌ 故事大纲生成失败:', error);
-      return [
-        `在${genre}的世界中，围绕"${userIdea}"展开一段冒险旅程。`,
-        `探索${userIdea}背后隐藏的秘密和真相。`,
-        `在${genre}背景下，经历关于勇气与成长的故事。`
-      ];
+      console.error('❌ 故事开头生成失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误'
+      };
     }
   }
 
-  // ==================== 状态管理 ====================
-
   /**
-   * 获取当前故事状态
+   * 继续故事（基于用户选择）
    */
-  getCurrentStoryState(): StoryState | null {
-    return storyStateManager.getState();
-  }
+  async continueStory(
+    currentStory: StoryState,
+    selectedChoice: Choice,
+    additionalContext?: string
+  ): Promise<StoryGenerationResponse> {
+    const startTime = Date.now();
 
-  /**
-   * 更新故事状态
-   */
-  updateStoryState(updates: Partial<StoryState>): void {
-    storyStateManager.updateState(updates);
-  }
+    try {
+      console.log('📖 继续故事发展...');
 
-  /**
-   * 重置故事状态
-   */
-  resetStoryState(): void {
-    storyStateManager.resetState();
-    conversationManager.clearHistory();
-    summaryManager.resetSummaryState();
-    console.log('🔄 故事状态已重置');
-  }
+      const systemPrompt = this.buildContinuationSystemPrompt();
+      const userPrompt = this.buildContinuationPrompt(currentStory, selectedChoice, additionalContext);
 
-  /**
-   * 清空对话历史（向后兼容方法）
-   */
-  clearConversationHistory(): void {
-    conversationManager.clearHistory();
-    console.log('🔄 对话历史已清空');
-  }
+      const response = await unifiedAIService.makeRequest({
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        forceJsonOutput: true,
+        requestType: 'story_generation',
+        maxTokens: 2000,
+        temperature: 0.8
+      });
 
-  /**
-   * 获取对话历史（向后兼容方法）
-   */
-  getConversationHistory(): ConversationHistory[] {
-    return conversationManager.getHistory();
-  }
-
-  /**
-   * 设置对话历史（向后兼容方法）
-   */
-  setConversationHistory(history: ConversationHistory[], summaryData?: SummaryData): void {
-    conversationManager.clearHistory();
-    history.forEach(msg => {
-      conversationManager.addToHistory(msg.role, msg.content);
-    });
-    
-    if (summaryData) {
-      conversationManager.setSummaryState(summaryData.toString(), summaryData);
-    }
-    
-    console.log('📝 对话历史已设置');
-  }
-
-  /**
-   * 获取摘要状态（向后兼容方法）
-   */
-  getSummaryState(): { summary: string; data?: SummaryData } {
-    return conversationManager.getSummaryState();
-  }
-
-  /**
-   * 生成自定义结局（向后兼容方法）
-   */
-  async generateCustomEnding(storyState: StoryState, endingType: string): Promise<string> {
-    return await this.generateStoryEnding(storyState, endingType);
-  }
-
-  // ==================== 新功能扩展 ====================
-
-  /**
-   * 检查故事是否应该结束
-   */
-  shouldStoryEnd(): boolean {
-    const state = storyStateManager.getState();
-    if (!state) return false;
-    
-    return endingGenerator.shouldStoryEnd(state);
-  }
-
-  /**
-   * 获取故事完成度
-   */
-  getStoryCompletion(): number {
-    const state = storyStateManager.getState();
-    if (!state) return 0;
-    
-    return endingGenerator.evaluateStoryCompletion(state);
-  }
-
-  /**
-   * 分析文档内容
-   */
-  async analyzeDocument(content: string, fileName: string) {
-    return await documentAnalyzer.analyzeDocument(content, fileName);
-  }
-
-  /**
-   * 发展角色
-   */
-  async developCharacter(character: Character, context: string): Promise<Character> {
-    return await characterDeveloper.developCharacter(character, context);
-  }
-
-  // ==================== 备用方案 ====================
-
-  /**
-   * 生成备用的下一章节
-   */
-  private generateFallbackNextChapter(selectedChoice: string): StoryGenerationResponse {
-    return {
-      success: true,
-      content: {
-        scene: `基于你的选择"${selectedChoice}"，故事继续发展。你发现自己面临着新的挑战和机遇，需要做出进一步的决定来推进冒险的进程。`,
-        chapter_title: '未知的道路',
-        mood: '紧张',
-        tension_level: 5
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || '故事续写失败'
+        };
       }
+
+      // 解析AI响应
+      const continuationData = this.parseStoryResponse(response.content || '');
+      
+      if (!continuationData) {
+        return {
+          success: false,
+          error: '无法解析AI生成的故事续写内容'
+        };
+      }
+
+      // 更新故事状态
+      const updatedStory: StoryState = {
+        ...currentStory,
+        content: currentStory.content + '\n\n' + continuationData.content,
+        currentChapter: currentStory.currentChapter + 1,
+        characters: this.mergeCharacters(currentStory.characters, continuationData.characters || []),
+        choices: continuationData.choices || [],
+        completed: continuationData.isEnding || false,
+        timestamp: new Date().toISOString()
+      };
+
+      const processingTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        story: updatedStory,
+        content: continuationData.content,
+        choices: continuationData.choices,
+        metadata: {
+          tokensUsed: response.usage?.totalTokens,
+          creditsConsumed: response.creditsUsed,
+          processingTime
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ 故事续写失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误'
+      };
+    }
+  }
+
+  /**
+   * 生成故事梗概（用于快速创作模式）
+   */
+  async generateStoryOutlines(
+    storyIdea: string,
+    genre: string,
+    mainGoal?: string
+  ): Promise<Array<{
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }>> {
+    try {
+      console.log('💡 生成故事梗概...');
+
+      const systemPrompt = `你是一个专业的故事创意师。根据用户的想法，生成3个不同风格的故事梗概。
+
+要求：
+1. 每个梗概都要有独特的风格和调性
+2. 包含引人入胜的开场钩子
+3. 角色设定要有趣且有深度
+4. 背景设定要详细
+5. 输出严格的JSON格式
+
+输出格式：
+{
+  "outlines": [
+    {
+      "id": 1,
+      "title": "故事标题",
+      "premise": "故事核心概念（2-3句话）",
+      "genre": "故事类型",
+      "tone": "故事调性（如轻松幽默、黑暗神秘、浪漫温馨等）",
+      "characters": ["主角名", "重要角色1", "重要角色2"],
+      "setting": "详细的背景设定描述",
+      "hook": "吸引人的开场钩子"
+    }
+  ]
+}`;
+
+      const userPrompt = `
+故事想法：${storyIdea}
+故事类型：${genre}
+${mainGoal ? `主要目标：${mainGoal}` : ''}
+
+请基于以上信息生成3个不同风格的故事梗概。要求每个梗概都有独特的调性和发展方向。`;
+
+      const response = await unifiedAIService.makeRequest({
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        forceJsonOutput: true,
+        requestType: 'story_generation',
+        maxTokens: 2000,
+        temperature: 0.9
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || '梗概生成失败');
+      }
+
+      // 解析响应
+      const data = JSON.parse(response.content || '{}');
+      return data.outlines || [];
+
+    } catch (error) {
+      console.error('❌ 故事梗概生成失败:', error);
+      // 返回默认梗概作为兜底
+      return this.generateDefaultOutlines(storyIdea, genre);
+    }
+  }
+
+  /**
+   * 分析文档并生成故事配置
+   */
+  async analyzeDocumentForStory(content: string): Promise<Partial<StoryConfig>> {
+    try {
+      console.log('📄 分析文档内容...');
+
+      const systemPrompt = `你是一个文档分析和故事创意专家。分析用户提供的文档内容，提取可以用于故事创作的元素。
+
+输出JSON格式：
+{
+  "genre": "推荐的故事类型",
+  "story_idea": "基于文档的故事创意",
+  "main_goal": "主要目标",
+  "characters": [
+    {
+      "name": "角色名",
+      "role": "角色定位",
+      "traits": "性格特征"
+    }
+  ],
+  "setting": "背景设定",
+  "themes": ["主题1", "主题2"],
+  "tone": "建议的故事调性"
+}`;
+
+      const userPrompt = `请分析以下文档内容，提取故事创作元素：
+
+${content.substring(0, 3000)}
+
+请基于文档内容提供故事创作建议。`;
+
+      const response = await unifiedAIService.makeRequest({
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        forceJsonOutput: true,
+        requestType: 'analysis',
+        maxTokens: 1500,
+        temperature: 0.7
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || '文档分析失败');
+      }
+
+      return JSON.parse(response.content || '{}');
+
+    } catch (error) {
+      console.error('❌ 文档分析失败:', error);
+      return {};
+    }
+  }
+
+  // ==================== 私有辅助方法 ====================
+
+  /**
+   * 构建故事系统提示词
+   */
+  private buildStorySystemPrompt(): string {
+    return `你是一个专业的互动故事创作师，擅长创作引人入胜的故事。
+
+创作要求：
+1. 故事内容要生动有趣，富有想象力
+2. 人物性格鲜明，对话自然
+3. 情节发展合理，有适当的冲突和转折
+4. 为读者提供有意义的选择分支
+5. 保持故事的连贯性和逻辑性
+
+输出格式（严格JSON）：
+{
+  "title": "故事标题",
+  "content": "故事内容（500-800字）",
+  "characters": [
+    {
+      "name": "角色名",
+      "role": "角色定位",
+      "traits": "性格特征"
+    }
+  ],
+  "choices": [
+    {
+      "id": "choice_1",
+      "text": "选择文本",
+      "description": "选择描述"
+    }
+  ],
+  "isEnding": false
+}`;
+  }
+
+  /**
+   * 构建故事开头提示词
+   */
+  private buildStoryOpeningPrompt(config: StoryConfig): string {
+    return `请基于以下配置创作故事开头：
+
+故事类型：${config.genre}
+核心想法：${config.story_idea}
+主要目标：${config.main_goal || '探索和冒险'}
+${config.protagonist ? `主角：${config.protagonist}` : ''}
+${config.setting ? `背景设定：${config.setting}` : ''}
+${config.special_requirements ? `特殊要求：${config.special_requirements}` : ''}
+
+请创作一个引人入胜的故事开头，包含场景设定、角色介绍和3-4个有意义的选择分支。`;
+  }
+
+  /**
+   * 构建续写系统提示词
+   */
+  private buildContinuationSystemPrompt(): string {
+    return `你是一个专业的故事续写专家。基于现有故事内容和用户选择，继续发展故事情节。
+
+续写要求：
+1. 承接之前的故事内容，保持连贯性
+2. 根据用户选择合理发展情节
+3. 引入新的冲突或推进现有冲突
+4. 角色发展要自然合理
+5. 提供新的选择分支
+
+输出格式（严格JSON）：
+{
+  "content": "新的故事内容（400-600字）",
+  "characters": [
+    {
+      "name": "角色名",
+      "role": "角色定位",
+      "traits": "性格特征"
+    }
+  ],
+  "choices": [
+    {
+      "id": "choice_1",
+      "text": "选择文本",
+      "description": "选择描述"
+    }
+  ],
+  "isEnding": false
+}`;
+  }
+
+  /**
+   * 构建续写提示词
+   */
+  private buildContinuationPrompt(
+    story: StoryState,
+    choice: Choice,
+    additionalContext?: string
+  ): string {
+    return `当前故事背景：
+故事标题：${story.title}
+当前章节：${story.currentChapter}
+主要目标：${story.currentGoal || '未设定'}
+
+已有故事内容：
+${story.content.substring(-1500)} // 只取最后1500字符
+
+用户选择：${choice.text}
+${choice.description ? `选择说明：${choice.description}` : ''}
+
+${additionalContext ? `额外背景：${additionalContext}` : ''}
+
+请基于用户的选择继续发展故事，推进情节发展。`;
+  }
+
+  /**
+   * 解析故事响应
+   */
+  private parseStoryResponse(content: string): any {
+    try {
+      return JSON.parse(content);
+    } catch (error) {
+      console.error('❌ 解析故事响应失败:', error);
+      // 尝试提取JSON部分
+      const jsonMatch = content.match(/\{.*\}/s);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          console.error('❌ 提取JSON也失败:', e);
+        }
+      }
+      return null;
+    }
+  }
+
+  /**
+   * 合并角色列表
+   */
+  private mergeCharacters(existing: Character[], newChars: Character[]): Character[] {
+    const merged = [...existing];
+    
+    newChars.forEach(newChar => {
+      const existingIndex = merged.findIndex(char => char.name === newChar.name);
+      if (existingIndex >= 0) {
+        // 更新现有角色
+        merged[existingIndex] = { ...merged[existingIndex], ...newChar };
+      } else {
+        // 添加新角色
+        merged.push(newChar);
+      }
+    });
+
+    return merged;
+  }
+
+  /**
+   * 生成默认梗概（兜底方案）
+   */
+  private generateDefaultOutlines(storyIdea: string, genre: string): Array<{
+    id: number;
+    title: string;
+    premise: string;
+    genre: string;
+    tone: string;
+    characters: string[];
+    setting: string;
+    hook: string;
+  }> {
+    return [
+      {
+        id: 1,
+        title: `${genre}冒险`,
+        premise: `基于"${storyIdea}"的经典${genre}故事，主角面临重大挑战并成长。`,
+        genre: genre,
+        tone: '传统经典',
+        characters: ['主角', '导师', '对手'],
+        setting: '一个充满挑战的世界',
+        hook: '一切从一个意外的发现开始...'
+      },
+      {
+        id: 2,
+        title: `现代${genre}`,
+        premise: `将"${storyIdea}"置于现代背景下，探索传统与现代的碰撞。`,
+        genre: genre,
+        tone: '现代都市',
+        characters: ['现代主角', '神秘人物', '普通朋友'],
+        setting: '现代都市中的隐秘世界',
+        hook: '平凡的一天，不平凡的遭遇...'
+      },
+      {
+        id: 3,
+        title: `反转${genre}`,
+        premise: `对"${storyIdea}"的全新诠释，颠覆传统观念。`,
+        genre: genre,
+        tone: '黑暗反转',
+        characters: ['反英雄主角', '伪装导师', '真正盟友'],
+        setting: '表面平静，实则暗流涌动的世界',
+        hook: '真相往往与表象相反...'
+      }
+    ];
+  }
+
+  // ==================== 状态和统计方法 ====================
+
+  /**
+   * 获取服务状态
+   */
+  getStatus(): { initialized: boolean; aiServiceStats: any } {
+    return {
+      initialized: this.initialized,
+      aiServiceStats: unifiedAIService.getStats()
     };
   }
 
   /**
-   * 获取备用结局
+   * 重置服务
    */
-  private getFallbackEnding(storyState: StoryState, endingType?: string): string {
-    return `经过一系列的冒险和选择，故事来到了尾声。虽然道路充满挑战，但最终你找到了属于自己的答案。这段旅程不仅改变了你，也让你明白了${endingType === 'success' ? '成功的真正含义' : '人生的复杂性'}。
-
-${storyState.characters.length > 0 ? `与${storyState.characters[0].name}等伙伴的友谊` : '这段经历'}将成为你永远珍贵的回忆。虽然这个故事结束了，但新的冒险正在等待着你。`;
+  reset(): void {
+    unifiedAIService.resetStats();
+    console.log('🔄 StoryAI 服务已重置');
   }
 }
 
-// 导出单例实例
+// 创建并导出单例实例
 export const storyAI = new StoryAI();
-export default StoryAI;
+export default storyAI;

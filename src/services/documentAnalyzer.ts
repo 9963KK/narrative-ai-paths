@@ -1,5 +1,13 @@
-import { ModelConfig } from '@/components/model-config/constants';
-import { Character } from './modules';
+import { unifiedAIService } from './unifiedAIService';
+
+// 角色接口定义（保持兼容）
+export interface Character {
+  name: string;
+  role: string;
+  traits: string;
+  appearance?: string;
+  backstory?: string;
+}
 
 // 文档分析结果接口
 export interface DocumentAnalysisResult {
@@ -48,21 +56,8 @@ export const SUPPORTED_FILE_TYPES = {
 };
 
 class DocumentAnalyzer {
-  private modelConfig: ModelConfig | null = null;
-
-  setModelConfig(config: ModelConfig) {
-    this.modelConfig = config;
-  }
-
   // 分析文档内容
   async analyzeDocument(content: string, fileName: string): Promise<DocumentAnalysisResult> {
-    if (!this.modelConfig || !this.modelConfig.apiKey) {
-      return {
-        success: false,
-        error: 'AI模型配置不完整，请先配置模型'
-      };
-    }
-
     try {
       console.log('📄 开始分析文档:', fileName);
       
@@ -145,57 +140,33 @@ ${analysisContent}
 
 请确保输出的是有效的JSON格式，包含所有必需字段。`;
 
-      // 重试机制，最多3次
-      let parsedResult = null;
-      let lastError = null;
-      
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`📄 文档分析尝试 ${attempt}/3`);
-          
-          const response = await this.callAI(userPrompt, systemPrompt);
-          
-          if (!response.choices || !response.choices[0] || !response.choices[0].message) {
-            throw new Error('AI响应格式错误');
-          }
+      // 使用统一AI服务进行分析
+      const response = await unifiedAIService.makeRequest({
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        forceJsonOutput: true,
+        requestType: 'analysis',
+        maxTokens: 3000,
+        temperature: 0.7
+      });
 
-          const content_text = response.choices[0].message.content;
-          // 已移除AI分析原始响应调试输出
-
-          // 解析JSON响应
-          const tempResult = this.extractAnalysisContent(content_text);
-          
-          // 验证角色名称质量
-          const hasValidCharacterNames = tempResult.characters && tempResult.characters.length > 0 && 
-            tempResult.characters.some((char: any) => {
-              const name = char.name?.trim() || '';
-              // 检查是否是有效的角色名称（不是泛指词汇）
-              const invalidNames = ['主角', '男主', '女主', '主人公', '角色', '人物', '配角', '反派', '男性', '女性', '主要角色', '次要角色'];
-              return name.length > 0 && !invalidNames.includes(name);
-            });
-
-          if (hasValidCharacterNames || attempt === 3) {
-            // 如果角色名称有效，或者已经是最后一次尝试，就使用这个结果
-            parsedResult = tempResult;
-            console.log(`📄 文档分析完成 (尝试${attempt}):`, parsedResult);
-            break;
-          } else {
-            console.log(`📄 角色名称提取质量不佳，准备重试 (尝试${attempt})`);
-            // 如果是前两次尝试且角色名称质量不佳，继续重试
-            continue;
-          }
-        } catch (error) {
-          lastError = error;
-          console.error(`📄 文档分析尝试${attempt}失败:`, error);
-          
-          if (attempt === 3) {
-            // 最后一次尝试失败，抛出错误
-            throw error;
-          }
-          // 否则继续下一次尝试
-        }
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || '文档分析失败'
+        };
       }
+
+      // 解析AI响应
+      const parsedResult = this.extractAnalysisContent(response.content || '');
       
+      if (!parsedResult) {
+        return {
+          success: false,
+          error: '无法解析AI分析结果'
+        };
+      }
+
       return {
         success: true,
         data: parsedResult
@@ -363,87 +334,14 @@ ${analysisContent}
     }
   }
 
-  // 调用AI API
-  private async callAI(prompt: string, systemPrompt: string): Promise<any> {
-    if (!this.modelConfig || !this.modelConfig.apiKey) {
-      throw new Error('AI模型配置不完整');
-    }
-
-    const baseUrl = this.getApiBaseUrl();
-    const payload = this.createPayload(prompt, systemPrompt);
-
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.modelConfig.apiKey}`,
-        ...(this.modelConfig.provider === 'anthropic' && {
-          'anthropic-version': '2023-06-01'
-        })
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API请求失败: ${response.status} ${response.statusText}\n${errorText}`);
-    }
-
-    return await response.json();
+  // 验证文件是否可以上传分析
+  isFileTypeSupported(file: File): boolean {
+    return Object.keys(SUPPORTED_FILE_TYPES).includes(file.type);
   }
 
-  // 获取API基础URL
-  private getApiBaseUrl(): string {
-    if (!this.modelConfig) throw new Error('模型配置未设置');
-
-    switch (this.modelConfig.provider) {
-      case 'openai':
-        return 'https://api.openai.com/v1';
-      case 'anthropic':
-        return 'https://api.anthropic.com/v1';
-      case 'deepseek':
-        return 'https://api.deepseek.com/v1';
-      case 'moonshot':
-        return 'https://api.moonshot.cn/v1';
-      case 'zhipu':
-        return 'https://open.bigmodel.cn/api/paas/v4';
-      case 'openrouter':
-        return 'https://openrouter.ai/api/v1';
-      default:
-        return this.modelConfig.baseUrl || '';
-    }
-  }
-
-  // 创建请求载荷
-  private createPayload(prompt: string, systemPrompt: string) {
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt }
-    ];
-
-    const basePayload = {
-      model: this.modelConfig!.model,
-      messages,
-      temperature: 0.3, // 使用较低的温度以获得更准确的分析
-      max_tokens: this.modelConfig!.maxTokens || 3000
-    };
-
-    // 适配不同提供商的格式
-    switch (this.modelConfig!.provider) {
-      case 'anthropic':
-        return {
-          ...basePayload,
-          max_tokens: basePayload.max_tokens
-        };
-      case 'zhipu':
-        return {
-          ...basePayload,
-          top_p: 0.7,
-          stream: false
-        };
-      default:
-        return basePayload;
-    }
+  // 获取支持的文件扩展名列表
+  getSupportedExtensions(): string[] {
+    return Object.values(SUPPORTED_FILE_TYPES).flat();
   }
 
   // 读取文件内容
@@ -472,21 +370,6 @@ ${analysisContent}
         reader.readAsText(file, 'UTF-8');
       }
     });
-  }
-
-  // 验证文件类型
-  isFileTypeSupported(file: File): boolean {
-    const supportedTypes = Object.keys(SUPPORTED_FILE_TYPES);
-    const supportedExtensions = Object.values(SUPPORTED_FILE_TYPES).flat();
-    
-    // 检查MIME类型
-    if (supportedTypes.includes(file.type)) {
-      return true;
-    }
-    
-    // 检查文件扩展名
-    const fileName = file.name.toLowerCase();
-    return supportedExtensions.some(ext => fileName.endsWith(ext));
   }
 
   // 获取支持的文件类型描述
