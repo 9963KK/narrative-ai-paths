@@ -21,6 +21,7 @@ const QuickStart: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [hasValidConfig, setHasValidConfig] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   
   // 简单配置状态
   const [simpleConfig, setSimpleConfig] = useState<BaseStoryConfig>({
@@ -72,6 +73,8 @@ const QuickStart: React.FC = () => {
       } catch (error) {
         console.error('加载用户配置失败:', error);
         setHasValidConfig(false);
+      } finally {
+        setIsLoadingConfig(false);
       }
     };
     
@@ -450,7 +453,7 @@ const QuickStart: React.FC = () => {
             </Button>
             
             <div className="flex items-center gap-3">
-              {!modelConfig.apiKey && !hasValidConfig && (
+              {!isLoadingConfig && !modelConfig.apiKey && !hasValidConfig && (
                 <div className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
                   未配置AI模型
                 </div>
