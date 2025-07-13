@@ -84,9 +84,8 @@ const Settings: React.FC = () => {
           <AnimatedHeader>
             <div className="flex items-center justify-between mb-8">
               <Button
-                variant="ghost"
                 onClick={() => navigate('/app')}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-white/50 transition-all duration-200"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl px-6 py-3"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回主页
