@@ -61,7 +61,7 @@ const DocumentAnalysis: React.FC = () => {
   };
 
   // 基于文档分析创建故事
-  const handleCreateFromAnalysis = (selectedSeed?: any) => {
+  const handleCreateFromAnalysis = async (selectedSeed?: any) => {
     if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
     
     const hasApiKey = modelConfig.apiKey || hasValidConfig;

@@ -182,7 +182,7 @@ const QuickStart: React.FC = () => {
   };
   
   // 处理梗概选择
-  const handleOutlineSelection = (selectedOutline: {
+  const handleOutlineSelection = async (selectedOutline: {
     id: number;
     title: string;
     premise: string;
