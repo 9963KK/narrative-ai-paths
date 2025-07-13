@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, Settings2, ThermometerSun, Hash, MessageSquare } from 'lucide-react';
+import { Settings2, ThermometerSun, Hash, MessageSquare } from 'lucide-react';
 
 export interface ModelSettings {
   temperature: number;
@@ -30,30 +30,23 @@ export const SimpleModelSettings: React.FC<SimpleModelSettingsProps> = ({
   className = ''
 }) => {
   const [localSettings, setLocalSettings] = useState<ModelSettings>(settings);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  // 检测设置变化
-  useEffect(() => {
-    const isChanged = 
-      localSettings.temperature !== settings.temperature ||
-      localSettings.maxTokens !== settings.maxTokens ||
-      localSettings.customPrompt !== settings.customPrompt;
-    setHasChanges(isChanged);
-  }, [localSettings, settings]);
 
   // 同步外部设置变化
   useEffect(() => {
     setLocalSettings(settings);
   }, [settings]);
 
-  const handleSave = () => {
-    onSettingsChange(localSettings);
-    setHasChanges(false);
-  };
-
-  const handleReset = () => {
-    setLocalSettings(DEFAULT_SETTINGS);
-  };
+  // 自动保存设置变化
+  useEffect(() => {
+    // 防止初始化时触发保存
+    if (localSettings !== settings) {
+      const timer = setTimeout(() => {
+        onSettingsChange(localSettings);
+      }, 500); // 延迟500ms保存，避免频繁调用
+      
+      return () => clearTimeout(timer);
+    }
+  }, [localSettings, onSettingsChange, settings]);
 
   const handleTemperatureChange = (value: number[]) => {
     setLocalSettings(prev => ({ ...prev, temperature: value[0] }));
@@ -150,24 +143,6 @@ export const SimpleModelSettings: React.FC<SimpleModelSettingsProps> = ({
           </p>
         </div>
 
-        {/* 操作按钮 */}
-        <div className="flex gap-3 pt-4 border-t">
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {hasChanges ? '保存更改' : '已保存'}
-          </Button>
-          <Button
-            onClick={handleReset}
-            variant="outline"
-            className="flex-1"
-          >
-            重置默认
-          </Button>
-        </div>
 
         {/* 设置说明 */}
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
