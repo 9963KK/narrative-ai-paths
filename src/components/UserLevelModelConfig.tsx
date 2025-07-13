@@ -218,22 +218,18 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
 
   return (
     <Card className={`w-full ${embedded ? 'shadow-none border-none' : ''} ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-slate-600" />
-          <CardTitle className="text-xl font-bold text-slate-800">AI模型配置</CardTitle>
-        </div>
-        {levelInfo && !isGuest && (
+      {levelInfo && !isGuest && (
+        <CardHeader className="flex flex-row items-center justify-end pb-2">
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${levelInfo.bgColor}`}>
             <levelInfo.icon className={`h-4 w-4 ${levelInfo.color}`} />
             <span className={`text-sm font-medium ${levelInfo.color}`}>
               {levelInfo.label}
             </span>
           </div>
-        )}
-      </CardHeader>
+        </CardHeader>
+      )}
       
-      <CardContent className="space-y-6">
+      <CardContent className={`space-y-6 ${levelInfo && !isGuest ? 'pt-2' : 'pt-6'}`}>
         {/* 权限错误提示 */}
         {configError && (
           <Alert variant="destructive">
