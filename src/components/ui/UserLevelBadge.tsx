@@ -109,10 +109,10 @@ export const UserLevelPrivileges: React.FC<{ level: UserLevel | null }> = ({ lev
           color: 'from-purple-500 to-pink-500',
           privileges: [
             '✨ 无限使用所有AI模型',
-            '🚀 优先访问新功能',
+            '🚀 优先访问新功能 (待实现)',
             '💎 Premium模型专享',
-            '📞 24/7优先技术支持',
-            '🎯 个性化定制服务'
+            '📞 24/7优先技术支持 (待实现)',
+            '🎯 个性化定制服务 (待实现)'
           ]
         };
       case 'vip':
@@ -122,9 +122,9 @@ export const UserLevelPrivileges: React.FC<{ level: UserLevel | null }> = ({ lev
           privileges: [
             '⭐ 使用高级AI模型',
             '🔥 Advanced模型访问',
-            '📈 更高使用配额',
-            '💬 技术支持优先级',
-            '🎁 会员专属功能'
+            '📈 更高使用配额 (待实现)',
+            '💬 技术支持优先级 (待实现)',
+            '🎁 会员专属功能 (待实现)'
           ]
         };
       case 'basic':
@@ -134,8 +134,8 @@ export const UserLevelPrivileges: React.FC<{ level: UserLevel | null }> = ({ lev
           privileges: [
             '🌟 基础AI模型',
             '📝 核心创作功能',
-            '💾 云端保存',
-            '📱 多设备同步',
+            '💾 云端保存 (待实现)',
+            '📱 多设备同步 (待实现)',
             '📚 使用文档'
           ]
         };
