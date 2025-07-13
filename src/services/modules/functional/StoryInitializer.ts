@@ -88,10 +88,16 @@ export class StoryInitializer implements IStoryInitializer {
       }
 
       const content = response.choices[0].message.content;
+      console.log('📋 AI大纲原始响应:', content);
       
-      // 解析大纲（期望是JSON数组格式）
+      // 提取JSON内容（处理可能包含额外文本的响应）
       try {
-        const parsed = JSON.parse(content);
+        // 先尝试提取JSON
+        const cleanJsonContent = this.extractJsonFromText(content);
+        
+        console.log('📋 提取的JSON内容:', cleanJsonContent);
+        
+        const parsed = JSON.parse(cleanJsonContent);
         if (Array.isArray(parsed)) {
           console.log('✅ 故事大纲生成成功，共', parsed.length, '个选项');
           return parsed;
@@ -102,7 +108,17 @@ export class StoryInitializer implements IStoryInitializer {
           throw new Error('大纲格式不正确');
         }
       } catch (parseError) {
-        console.warn('⚠️ 大纲解析失败，使用默认大纲');
+        console.warn('⚠️ 大纲解析失败，尝试直接解析:', parseError);
+        console.warn('原始内容:', content.substring(0, 200));
+        
+        // 如果JSON解析失败，尝试从文本中提取故事大纲
+        const fallbackOutlines = this.extractOutlinesFromText(content);
+        if (fallbackOutlines.length > 0) {
+          console.log('✅ 从文本提取大纲成功，共', fallbackOutlines.length, '个选项');
+          return fallbackOutlines;
+        }
+        
+        console.warn('⚠️ 文本提取也失败，使用默认大纲');
         return this.getDefaultOutlines(config);
       }
     } catch (error) {
@@ -565,6 +581,83 @@ export class StoryInitializer implements IStoryInitializer {
    */
   private getDefaultSetting(config: StoryConfig): string {
     return `这是一个${config.genre}的世界，充满了神秘和冒险。在这里，${config.story_idea}的故事即将展开。这个世界有着独特的规则和文化，为冒险者们提供了无限的可能性。无论是古老的传说还是现代的奇迹，都在这片土地上交织成一幅壮丽的画卷。`;
+  }
+
+  /**
+   * 从文本中提取JSON内容
+   */
+  private extractJsonFromText(content: string): string {
+    let jsonContent = content.trim();
+    
+    // 如果内容包含代码块标记，提取其中的JSON
+    const jsonCodeBlockMatch = jsonContent.match(/```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/);
+    if (jsonCodeBlockMatch) {
+      return jsonCodeBlockMatch[1];
+    }
+    
+    // 如果没有代码块，尝试提取JSON数组或对象
+    const jsonArrayMatch = jsonContent.match(/\[[\s\S]*?\]/);
+    const jsonObjectMatch = jsonContent.match(/\{[\s\S]*?\}/);
+    
+    if (jsonArrayMatch) {
+      return jsonArrayMatch[0];
+    } else if (jsonObjectMatch) {
+      return jsonObjectMatch[0];
+    }
+    
+    // 如果都没有找到，返回原内容
+    return jsonContent;
+  }
+
+  /**
+   * 从文本中提取故事大纲（备用解析方法）
+   */
+  private extractOutlinesFromText(content: string): string[] {
+    const outlines: string[] = [];
+    
+    try {
+      // 尝试多种模式提取大纲
+      const lines = content.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      
+      for (const line of lines) {
+        // 匹配编号开头的行 (1. 2. 3. 等)
+        if (/^\d+\.\s+/.test(line)) {
+          const outline = line.replace(/^\d+\.\s+/, '').trim();
+          if (outline.length > 10) { // 确保大纲有一定长度
+            outlines.push(outline);
+          }
+        }
+        // 匹配项目符号开头的行 (- * • 等)
+        else if (/^[-*•]\s+/.test(line)) {
+          const outline = line.replace(/^[-*•]\s+/, '').trim();
+          if (outline.length > 10) {
+            outlines.push(outline);
+          }
+        }
+        // 如果没有特殊标记，但内容看起来像大纲（包含故事相关关键词）
+        else if (line.length > 20 && (
+          line.includes('故事') || line.includes('冒险') || line.includes('探索') ||
+          line.includes('主角') || line.includes('挑战') || line.includes('世界')
+        )) {
+          outlines.push(line);
+        }
+      }
+      
+      // 如果没有找到合适的大纲，尝试按句号分割
+      if (outlines.length === 0) {
+        const sentences = content.split(/[。！？]/).map(s => s.trim()).filter(s => s.length > 15);
+        for (let i = 0; i < Math.min(3, sentences.length); i++) {
+          if (sentences[i]) {
+            outlines.push(sentences[i] + '。');
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ 文本提取失败:', error);
+    }
+    
+    return outlines.slice(0, 5); // 最多返回5个大纲
   }
 }
 
