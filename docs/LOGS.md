@@ -753,6 +753,59 @@ Cannot start service: Host version "0.21.5" does not match binary version "0.25.
 
 ---
 
+## 📦 统一AI服务集成记录
+
+### 统一AI服务架构设计 (2025-07-13)
+
+#### 🔄 集成目标
+实现所有AI请求通过统一入口管理，支持：
+- 自动模型配置（用户在/settings页配置的模型）
+- Token统计和积分消耗跟踪
+- 统一错误处理和重试机制
+- 用户权限和配额管理
+
+#### 🏗️ 架构设计
+```
+用户操作 → StoryAI路由器 → 功能模块 → AIModelService → unifiedAIService → AI提供商
+                ↓                ↓              ↓
+        模块化功能处理     兼容性包装     统一请求管理
+```
+
+#### 📝 核心组件
+
+**1. UnifiedAIService (`src/services/unifiedAIService.ts`)**
+- 统一AI请求入口点
+- 自动获取用户配置的模型
+- Token计算和积分扣除
+- 错误处理和重试逻辑
+- 请求日志和统计
+
+**2. AIModelService 重构**
+- 保持原有模块化接口
+- 内部调用unifiedAIService
+- 兼容现有功能模块调用
+- 性能指标统计
+
+**3. ModelConfigAdapter 增强**
+- 添加`getUserModelConfig(includeApiKey: boolean)`方法
+- 增强`getRealApiKey()`支持系统模型池回退
+- 安全的API密钥管理
+
+#### ✅ 集成验证
+- ✅ 保持模块化架构完整性
+- ✅ 所有功能模块正常路由
+- ✅ 统一AI服务自动配置
+- ✅ Token统计和积分管理
+- ✅ 向后兼容性确保
+
+#### 🔧 关键修复
+1. **架构错误修复**: 恢复用户设计的模块化路由器架构
+2. **AI调用统一**: 所有AI请求通过unifiedAIService
+3. **配置自动化**: 使用/settings页面配置自动生效
+4. **兼容性保持**: 现有组件无需修改
+
+---
+
 ## 版本历史
 
 ### v2.2.3 (2025-07-02)
@@ -774,6 +827,12 @@ Cannot start service: Host version "0.21.5" does not match binary version "0.25.
 ### v2.2.0 (2025-07-02)
 - 完成所有功能模块的实现
 - 更新模块索引导出文件
+
+### v2.1.4 (2025-07-13)
+- **重大修复: 恢复模块化架构并集成统一AI服务**
+- 修复错误地简化了用户设计的模块化架构问题
+- 集成统一AI服务到现有模块化架构中
+- 保持路由器模式：storyAI.ts → 功能模块 → AIModelService → unifiedAIService
 
 ### v2.1.3 (2025-07-02)  
 - 初始模块化架构设计

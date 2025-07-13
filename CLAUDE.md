@@ -21,20 +21,20 @@
 ## 开发命令
 
 ```
- # 开发服务器
- npm run dev
- 
- # 构建生产版本
- npm run build
- 
- # 构建开发版本
- npm run build:dev
- 
- # 代码检查
- npm run lint
- 
- # 预览构建结果
- npm run preview
+ # 开发服务器
+ npm run dev
+ 
+ # 构建生产版本
+ npm run build
+ 
+ # 构建开发版本
+ npm run build:dev
+ 
+ # 代码检查
+ npm run lint
+ 
+ # 预览构建结果
+ npm run preview
 ```
 
 ## 项目架构
@@ -116,6 +116,10 @@
 * `main` - 主分支，与prod保持同步
 
 **每次代码修改都需要进行git commit以确保可追溯性。**
+
+## 项目管理规范
+
+- 项目的所有新功能的开发需要记录在 @docs/LOGS.md 里面
 
 ## 部署
 
@@ -204,22 +208,22 @@
 ### GitHub Actions 中的使用示例
 
 ```
- # 在 GitHub Actions 中部署
- npm install --global vercel@latest
- vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
- vercel build
- vercel deploy --prebuilt
+ # 在 GitHub Actions 中部署
+ npm install --global vercel@latest
+ vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+ vercel build
+ vercel deploy --prebuilt
 ```
 
 ### 自定义环境管理示例
 
 ```
- # 部署到自定义环境
- vercel deploy --target=staging
- 
- # 从自定义环境拉取环境变量
- vercel pull --environment=staging
- 
- # 向自定义环境添加环境变量
- vercel env add MY_KEY staging
+ # 部署到自定义环境
+ vercel deploy --target=staging
+ 
+ # 从自定义环境拉取环境变量
+ vercel pull --environment=staging
+ 
+ # 向自定义环境添加环境变量
+ vercel env add MY_KEY staging
 ```
