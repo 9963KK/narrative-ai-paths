@@ -9,6 +9,7 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { storyAI } from '@/services/storyAI';
+import { UserHeader } from '@/components/auth/UserHeader';
 
 // 基础故事配置
 interface BaseStoryConfig {
@@ -227,24 +228,22 @@ const QuickStart: React.FC = () => {
   if (showOutlineSelection) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
+        <UserHeader />
+
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-5xl mx-auto">
+            {/* Return Button */}
+            <div className="mb-6">
               <Button
                 variant="ghost"
                 onClick={() => setShowOutlineSelection(false)}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/80"
               >
                 <ArrowLeft className="h-4 w-4" />
-                返回修改
+                返回修改配置
               </Button>
             </div>
-          </div>
-        </div>
-
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-5xl mx-auto">
+            
             {/* Page Header */}
             <AnimatedHeader>
               <div className="text-center mb-12">
@@ -377,29 +376,7 @@ const QuickStart: React.FC = () => {
   // 主要的分步向导界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/80"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回首页
-            </Button>
-            
-            <div className="flex items-center gap-3">
-              {!isLoadingConfig && !modelConfig.apiKey && !hasValidConfig && (
-                <div className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                  未配置AI模型
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <UserHeader />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">

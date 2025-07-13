@@ -9,6 +9,7 @@ import { ModelConfig as ModelConfigType } from '@/components/model-config/consta
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 import { DocumentRecord } from '@/services/documentRecordManager';
+import { UserHeader } from '@/components/auth/UserHeader';
 
 const DocumentAnalysis: React.FC = () => {
   const navigate = useNavigate();
@@ -244,6 +245,7 @@ const DocumentAnalysis: React.FC = () => {
   if (showRecordManager) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+        <UserHeader />
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -285,19 +287,11 @@ const DocumentAnalysis: React.FC = () => {
   // 主要的文档分析界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+      <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/app')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回主页
-            </Button>
-            
+          <div className="flex justify-end mb-8">
             <Button
               type="button"
               variant="outline"
