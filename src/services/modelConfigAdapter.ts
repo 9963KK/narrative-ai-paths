@@ -15,19 +15,26 @@ class ModelConfigAdapter {
    */
   async getUserModelConfig(includeApiKey: boolean = false): Promise<ModelConfig | null> {
     try {
+      console.log(`🔧 获取用户模型配置，includeApiKey: ${includeApiKey}`);
+      
       // 获取用户基于等级的可用模型
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+      console.log(`📋 获取到 ${availableModels.length} 个可用模型`);
       
       if (availableModels.length === 0) {
-        console.warn('用户没有可用的模型');
+        console.warn('❌ 用户没有可用的模型');
         return null;
       }
 
       // 选择第一个有API密钥的模型
-      const defaultModel = availableModels.find(model => model.has_api_key) || availableModels[0];
+      const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
+      const defaultModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
+      
+      console.log(`🎯 选择的模型: ${defaultModel.model_id} (${defaultModel.provider}/${defaultModel.model})`);
+      console.log(`🔑 模型是否有API密钥: ${defaultModel.has_api_key}`);
       
       if (!defaultModel.has_api_key) {
-        console.warn('用户的模型未配置API密钥');
+        console.warn('❌ 选择的模型未配置API密钥');
         return null;
       }
 
@@ -38,12 +45,13 @@ class ModelConfigAdapter {
           const realApiKey = await this.getRealApiKey(defaultModel.model_id);
           if (realApiKey) {
             apiKey = realApiKey;
+            console.log(`✅ 成功获取API密钥，长度: ${realApiKey.length}`);
           } else {
-            console.warn('无法获取模型的真实API密钥');
+            console.warn('❌ 无法获取模型的真实API密钥');
             return null;
           }
         } catch (error) {
-          console.error('获取真实API密钥失败:', error);
+          console.error('❌ 获取真实API密钥失败:', error);
           return null;
         }
       }
@@ -59,9 +67,10 @@ class ModelConfigAdapter {
         customPrompt: ''
       };
 
+      console.log(`✅ 模型配置构建完成: ${modelConfig.provider}/${modelConfig.model}`);
       return modelConfig;
     } catch (error) {
-      console.error('获取用户模型配置失败:', error);
+      console.error('❌ 获取用户模型配置失败:', error);
       return null;
     }
   }
@@ -257,17 +266,29 @@ class ModelConfigAdapter {
    */
   private async getRealApiKey(modelId: string): Promise<string | null> {
     try {
+      console.log(`🔑 开始获取模型 ${modelId} 的API密钥...`);
+      
       // 从用户等级服务获取模型详情
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+      console.log(`📋 用户可用模型数量: ${availableModels.length}`);
+      
       const model = availableModels.find(m => m.model_id === modelId);
       
-      if (!model || !model.api_config) {
-        console.warn(`未找到模型 ${modelId} 的API配置`);
+      if (!model) {
+        console.warn(`❌ 未找到模型 ${modelId}，可用模型: ${availableModels.map(m => m.model_id).join(', ')}`);
+        return null;
+      }
+      
+      if (!model.api_config) {
+        console.warn(`❌ 模型 ${modelId} 没有API配置`);
         return null;
       }
 
+      console.log(`🔍 模型 ${modelId} 的API配置类型: ${typeof model.api_config}`);
+
       // 从api_config中提取API密钥
       if (typeof model.api_config === 'object' && model.api_config.api_key) {
+        console.log(`✅ 从对象配置中获取到API密钥`);
         return model.api_config.api_key;
       }
 
@@ -275,17 +296,24 @@ class ModelConfigAdapter {
       if (typeof model.api_config === 'string') {
         try {
           const config = JSON.parse(model.api_config);
-          return config.api_key || null;
+          if (config.api_key) {
+            console.log(`✅ 从JSON字符串配置中获取到API密钥`);
+            return config.api_key;
+          } else {
+            console.warn(`❌ JSON配置中没有api_key字段`);
+            return null;
+          }
         } catch (parseError) {
-          console.warn('解析API配置失败:', parseError);
+          console.warn('❌ 解析API配置JSON失败:', parseError);
+          console.warn('原始配置内容:', model.api_config);
           return null;
         }
       }
 
-      console.warn(`模型 ${modelId} 的API配置格式不正确`);
+      console.warn(`❌ 模型 ${modelId} 的API配置格式不正确，类型: ${typeof model.api_config}`);
       return null;
     } catch (error) {
-      console.error('获取真实API密钥失败:', error);
+      console.error('❌ 获取真实API密钥失败:', error);
       return null;
     }
   }

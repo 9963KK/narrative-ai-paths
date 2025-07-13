@@ -88,7 +88,13 @@ class UnifiedAIService {
       // 2. 获取用户模型配置
       const modelConfig = await this.getUserModelConfig();
       if (!modelConfig) {
-        return this.createErrorResponse('无法获取有效的AI模型配置，请检查设置页面');
+        return this.createErrorResponse(
+          '无法获取有效的AI模型配置。请检查：\n' +
+          '1. 您是否已登录\n' +
+          '2. 设置页面是否配置了AI模型\n' +
+          '3. 模型是否有有效的API密钥\n' +
+          '请前往设置页面配置AI模型后重试。'
+        );
       }
 
       // 3. 预估token使用量
@@ -145,17 +151,32 @@ class UnifiedAIService {
    */
   private async getUserModelConfig(): Promise<ModelConfig | null> {
     try {
+      console.log('🔍 开始获取用户模型配置...');
+      
       // 确保用户有可用模型
-      await modelConfigAdapter.ensureUserHasModels();
+      const hasModels = await modelConfigAdapter.ensureUserHasModels();
+      console.log('📋 用户模型分配结果:', hasModels);
       
       // 获取用户配置的模型（包含真实API密钥）
       const config = await modelConfigAdapter.getUserModelConfig(true);
+      console.log('⚙️ 获取到的模型配置:', config ? {
+        provider: config.provider,
+        model: config.model,
+        hasApiKey: !!config.apiKey && config.apiKey !== '***hidden***',
+        baseUrl: config.baseUrl
+      } : 'null');
       
-      if (!config || !config.apiKey || config.apiKey === '***hidden***') {
-        console.warn('⚠️ 用户模型配置无效或缺少API密钥');
+      if (!config) {
+        console.warn('⚠️ 无法获取用户模型配置');
+        return null;
+      }
+      
+      if (!config.apiKey || config.apiKey === '***hidden***') {
+        console.warn('⚠️ 用户模型配置缺少有效的API密钥');
         return null;
       }
 
+      console.log('✅ 用户模型配置获取成功');
       return config;
     } catch (error) {
       console.error('❌ 获取用户模型配置失败:', error);
