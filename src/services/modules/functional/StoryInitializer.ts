@@ -188,19 +188,73 @@ export class StoryInitializer implements IStoryInitializer {
    * 构建初始故事提示词
    */
   private buildInitialStoryPrompt(config: StoryConfig, isAdvanced?: boolean): string {
-    // 检查是否为高级配置
-    const isAdvancedConfig = config.tone || config.story_length || config.preferred_ending;
+    // 检查是否使用文档分析结果
+    const configAny = config as any;
+    const useDocumentAnalysis = configAny.useDocumentAnalysis;
+    const documentAnalysis = configAny.documentAnalysis;
     
-    if (isAdvancedConfig && isAdvanced) {
-      // 高级配置的提示词
+    if (useDocumentAnalysis && documentAnalysis?.success && documentAnalysis.data) {
+      // 基于文档分析的提示词
+      const analysisData = documentAnalysis.data;
+      
+      return `请基于以下文档分析结果创建一个高质量的故事开头：
+
+【文档分析信息】
+原始文档角色：${analysisData.characters.map(char => `${char.name}(${char.role}) - ${char.traits}`).join(', ')}
+文档世界观：时代${analysisData.setting.time}，地点${analysisData.setting.place}，${analysisData.setting.worldBackground}
+文档氛围：${analysisData.setting.atmosphere}
+核心主题：${analysisData.themes.mainThemes.join(', ')}
+关键情节：${analysisData.plotElements.mainConflict}
+重要事件：${analysisData.plotElements.keyEvents.slice(0, 3).join(', ')}
+
+【故事创作要求】
+故事类型：${config.genre}
+故事构想：${config.story_idea}
+主要目标：${config.main_goal || '探索未知的世界'}
+故事基调：${configAny.tone || '未指定'}
+故事长度：${configAny.story_length || '未指定'}
+期望结局：${configAny.preferred_ending || '未指定'}
+
+【重要创作指导】
+1. **深度融合文档元素**：将文档中的角色、设定、氛围完全融入新故事
+2. **保持角色本质**：使用文档角色的核心特征，但适应新的故事背景
+3. **世界观延续**：在文档世界观基础上构建故事场景
+4. **主题呼应**：让故事主题与文档深层含义产生共鸣
+5. **情节创新**：基于文档事件创造新的故事发展可能
+
+**重要：必须严格按照以下JSON格式返回，不要返回其他格式：**
+
+{
+  "scene": "基于文档分析的精彩开场场景（600-900字，深度融合文档元素）",
+  "characters": [
+    {
+      "name": "角色名字（优先使用文档角色）",
+      "role": "角色身份",
+      "traits": "性格特征（基于文档角色特征）",
+      "appearance": "外貌描述",
+      "backstory": "背景故事（融合文档背景）"
+    }
+  ],
+  "chapter_title": "章节标题（8-15字，呼应文档主题）",
+  "mood": "当前氛围（与文档氛围相呼应）",
+  "tension_level": 5,
+  "story_length_target": "故事长度目标",
+  "preferred_ending_type": "期望结局类型",
+  "setting_details": "详细设定描述（基于文档世界观）"
+}
+
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
+      
+    } else if (isAdvanced) {
+      // 高级配置的提示词（原有逻辑）
       return `请基于以下详细配置创建一个精确的故事开头：
 
 故事类型：${config.genre}
 故事构想：${config.story_idea}
 主要目标：${config.main_goal || '探索未知的世界'}
-故事基调：${(config as any).tone || '未指定'}
-故事长度：${(config as any).story_length || '未指定'}
-期望结局：${(config as any).preferred_ending || '未指定'}
+故事基调：${configAny.tone || '未指定'}
+故事长度：${configAny.story_length || '未指定'}
+期望结局：${configAny.preferred_ending || '未指定'}
 
 高级创作要求：
 1. 创建600-900字的精彩开场场景，融合环境、角色和情节
