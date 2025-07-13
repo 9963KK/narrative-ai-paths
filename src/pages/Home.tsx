@@ -170,12 +170,8 @@ const Home: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               {user ? (
-                // 已登录状态 - 显示用户信息和头像
+                // 已登录状态 - 显示头像和等级
                 <div className="flex items-center space-x-3">
-                  <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-sm font-medium text-gray-700">{user.username}</span>
-                    <UserLevelBadge level={userLevel} size="sm" />
-                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
@@ -214,6 +210,7 @@ const Home: React.FC = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                   </DropdownMenu>
+                  <UserLevelBadge level={userLevel} size="sm" />
                 </div>
               ) : (
                 // 未登录状态 - 显示登录按钮
