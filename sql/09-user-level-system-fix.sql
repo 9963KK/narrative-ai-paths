@@ -135,7 +135,7 @@ END $$;
 -- 5. 创建必要的函数
 -- ==========================================
 
--- 基于用户等级获取可用模型的函数
+-- 基于用户等级获取可用模型的函数（修复版本 - 包含api_config字段）
 CREATE OR REPLACE FUNCTION get_user_available_models_by_level(target_user_id UUID)
 RETURNS TABLE(
     model_id UUID,
@@ -145,7 +145,8 @@ RETURNS TABLE(
     description TEXT,
     performance_level VARCHAR(20),
     cost_per_1k_tokens DECIMAL(10,6),
-    has_api_key BOOLEAN
+    has_api_key BOOLEAN,
+    api_config JSONB
 ) AS $$
 DECLARE
     user_level_val VARCHAR(10);
@@ -169,7 +170,7 @@ BEGIN
         RETURN; -- 等级配置不存在，返回空结果
     END IF;
     
-    -- 返回用户可以访问的模型
+    -- 返回用户可以访问的模型（包含api_config字段）
     RETURN QUERY
     SELECT 
         smp.id,
@@ -183,7 +184,8 @@ BEGIN
             WHEN (smp.api_config->>'api_key') IS NOT NULL AND (smp.api_config->>'api_key') != '' 
             THEN true 
             ELSE false 
-        END as has_api_key
+        END as has_api_key,
+        smp.api_config
     FROM system_model_pool smp
     WHERE smp.is_active = true
     AND smp.performance_level = ANY(allowed_levels)

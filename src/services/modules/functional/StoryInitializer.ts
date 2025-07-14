@@ -16,7 +16,6 @@ import {
 export class StoryInitializer implements IStoryInitializer {
 
   constructor() {
-    console.log('🎬 StoryInitializer 初始化完成');
   }
 
   // ==================== 故事生成 ====================

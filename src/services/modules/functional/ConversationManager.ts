@@ -19,7 +19,6 @@ export class ConversationManager implements IConversationManager {
 
   constructor(maxHistoryLength: number = 50) {
     this.maxHistoryLength = maxHistoryLength;
-    console.log('💬 ConversationManager 初始化完成');
   }
 
   // ==================== 历史管理 ====================

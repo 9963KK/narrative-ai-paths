@@ -227,3 +227,8 @@
  # 向自定义环境添加环境变量
  vercel env add MY_KEY staging
 ```
+
+## 登录测试账号
+
+- 测试账号: jenkinschen5@gmail.com
+- 测试密码: cjh180498

@@ -17,7 +17,6 @@ import {
 export class ContentGenerator implements IContentGenerator {
 
   constructor() {
-    console.log('🎬 ContentGenerator 初始化完成');
   }
 
   // ==================== 内容生成 ====================

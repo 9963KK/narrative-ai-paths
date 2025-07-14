@@ -13,7 +13,6 @@ import {
 export class EndingGenerator implements IEndingGenerator {
 
   constructor() {
-    console.log('🏁 EndingGenerator 初始化完成');
   }
 
   // ==================== 结束判断 ====================

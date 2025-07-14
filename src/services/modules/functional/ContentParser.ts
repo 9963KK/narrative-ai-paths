@@ -15,7 +15,6 @@ import {
 export class ContentParser implements IContentParser {
 
   constructor() {
-    console.log('🔍 ContentParser 初始化完成');
   }
 
   // ==================== 解析方法 ====================

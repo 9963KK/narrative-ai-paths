@@ -16,7 +16,6 @@ export class StoryStateManager implements IStoryStateManager {
   private currentState: StoryState | null = null;
 
   constructor() {
-    console.log('🎮 StoryStateManager 初始化完成');
   }
 
   // ==================== 状态管理 ====================

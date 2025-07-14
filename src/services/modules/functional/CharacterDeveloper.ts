@@ -15,7 +15,6 @@ import {
 export class CharacterDeveloper implements ICharacterDeveloper {
 
   constructor() {
-    console.log('👥 CharacterDeveloper 初始化完成');
   }
 
   // ==================== 角色开发 ====================

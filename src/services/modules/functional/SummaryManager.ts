@@ -19,7 +19,6 @@ export class SummaryManager implements ISummaryManager {
 
   constructor(triggerInterval: number = 10) {
     this.summaryTriggerInterval = triggerInterval;
-    console.log('📋 SummaryManager 初始化完成');
   }
 
   // ==================== 摘要生成 ====================

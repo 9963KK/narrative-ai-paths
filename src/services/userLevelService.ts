@@ -46,7 +46,7 @@ export interface ModelByLevel {
   performance_level: string;
   cost_per_1k_tokens: number;
   has_api_key: boolean;
-  api_config?: any; // API配置，可能是对象或JSON字符串
+  api_config: any; // API配置，包含实际的API密钥等信息
 }
 
 class UserLevelService {

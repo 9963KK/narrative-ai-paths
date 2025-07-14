@@ -15,7 +15,6 @@ import {
 export class ChoiceGenerator implements IChoiceGenerator {
 
   constructor() {
-    console.log('🎯 ChoiceGenerator 初始化完成');
   }
 
   // ==================== 选择生成 ====================

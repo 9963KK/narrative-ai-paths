@@ -261,8 +261,21 @@ export class UnifiedAuthService {
   logout(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(CURRENT_USER_KEY);
+      
       // 清除临时存储的API密钥
       tempApiKeyStore.onUserLogout();
+      
+      // 清除配置管理器缓存
+      import('./configurationManager').then(({ configurationManager }) => {
+        configurationManager.onUserLogout();
+      });
+      
+      // 清除UnifiedAIService缓存
+      import('./unifiedAIService').then(({ unifiedAIService }) => {
+        unifiedAIService.clearSessionCache();
+      });
+      
+      console.log('👋 用户登出，所有缓存已清理');
     }
   }
 

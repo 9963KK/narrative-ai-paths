@@ -15,7 +15,6 @@ import {
 export class DocumentAnalyzer implements IDocumentAnalyzer {
 
   constructor() {
-    console.log('📄 DocumentAnalyzer 初始化完成');
   }
 
   // ==================== 模型配置 ====================

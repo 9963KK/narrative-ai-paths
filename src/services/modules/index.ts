@@ -27,13 +27,7 @@ export { documentAnalyzer, DocumentAnalyzer } from './functional/DocumentAnalyze
  * 初始化所有模块
  */
 export function initializeModules() {
-  console.log('🚀 初始化 StoryAI 模块化架构...');
-  
-  // 核心模块已通过导入自动初始化
-  console.log('✅ 核心模块初始化完成');
-  console.log('✅ 功能模块初始化完成');
-  
-  console.log('🎉 StoryAI 模块化架构初始化成功');
+  // 核心模块和功能模块已通过导入自动初始化
 }
 
 /**

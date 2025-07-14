@@ -58,6 +58,12 @@ class UnifiedAIService {
   private config: AIServiceConfig;
   private requestCount: number = 0;
   private successCount: number = 0;
+  
+  // 会话级别的配置缓存
+  private sessionModelConfig: ModelConfig | null = null;
+  private sessionUserId: string | null = null;
+  private sessionConfigTimestamp: number = 0;
+  private readonly SESSION_CONFIG_TTL = 5 * 60 * 1000; // 5分钟过期
 
   constructor() {
     this.config = {
@@ -67,6 +73,7 @@ class UnifiedAIService {
       enableCreditCheck: true,
       enableTokenMonitoring: true
     };
+    
   }
 
   /**
@@ -144,22 +151,30 @@ class UnifiedAIService {
 
   /**
    * 获取用户模型配置
-   * 使用新的ConfigurationManager，消除循环依赖并提供更好的缓存机制
+   * 使用会话级缓存减少重复数据库查询
    */
   private async getUserModelConfig(): Promise<ModelConfig | null> {
     try {
-      console.log('🔍 通过ConfigurationManager获取用户模型配置...');
+      const currentUser = unifiedAuthService.getCurrentUser();
+      const currentUserId = currentUser?.id;
+      const now = Date.now();
+      
+      // 检查会话缓存是否有效
+      if (this.sessionModelConfig && 
+          this.sessionUserId === currentUserId &&
+          (now - this.sessionConfigTimestamp) < this.SESSION_CONFIG_TTL) {
+        return this.sessionModelConfig;
+      }
       
       // 使用新的统一配置管理器
       const configResult = await configurationManager.getUserModelConfig();
       
       if (configResult.success && configResult.config) {
-        console.log('✅ 用户模型配置获取成功:', {
-          provider: configResult.config.provider,
-          model: configResult.config.model,
-          hasApiKey: !!configResult.config.apiKey,
-          source: configResult.source
-        });
+        // 更新会话缓存
+        this.sessionModelConfig = configResult.config;
+        this.sessionUserId = currentUserId || null;
+        this.sessionConfigTimestamp = now;
+        
         return configResult.config;
       } else {
         console.warn('⚠️ 无法获取用户模型配置:', configResult.error);
@@ -169,6 +184,23 @@ class UnifiedAIService {
       console.error('❌ 配置获取过程发生错误:', error);
       return null;
     }
+  }
+
+  /**
+   * 清除会话缓存（用户登出或配置变更时调用）
+   */
+  clearSessionCache(): void {
+    this.sessionModelConfig = null;
+    this.sessionUserId = null;
+    this.sessionConfigTimestamp = 0;
+  }
+
+  /**
+   * 强制刷新配置（绕过会话缓存）
+   */
+  async refreshConfig(): Promise<void> {
+    this.clearSessionCache();
+    await this.getUserModelConfig();
   }
 
   /**
@@ -238,8 +270,7 @@ class UnifiedAIService {
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
-        console.log(`🤖 执行AI请求 (尝试 ${attempt}/${this.config.retryAttempts})`);
-        console.log(`📊 模型: ${modelConfig.provider}/${modelConfig.model}`);
+        console.log(`🤖 AI请求 (${attempt}/${this.config.retryAttempts}) - ${modelConfig.provider}/${modelConfig.model}`);
 
         const response = await this.callAIProvider(request, modelConfig);
         
