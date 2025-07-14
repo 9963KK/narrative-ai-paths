@@ -25,7 +25,6 @@ export class TempApiKeyStore {
         timestamp: Date.now()
       }));
       
-      console.log('✅ 用户模型配置已临时存储');
     } catch (error) {
       console.error('❌ 存储临时模型配置失败:', error);
     }
@@ -49,7 +48,6 @@ export class TempApiKeyStore {
       const maxAge = 24 * 60 * 60 * 1000; // 24小时
       
       if (now - stored > maxAge) {
-        console.warn('⚠️ 临时模型配置已过期，自动清除');
         this.clearTempStorage();
         return null;
       }
@@ -95,7 +93,6 @@ export class TempApiKeyStore {
       
       keysToRemove.forEach(key => sessionStorage.removeItem(key));
       
-      console.log('🧹 临时API密钥存储已清除');
     } catch (error) {
       console.error('❌ 清除临时存储失败:', error);
     }

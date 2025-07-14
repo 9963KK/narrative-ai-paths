@@ -24,7 +24,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
    */
   async generateChoices(state: StoryState, context: string): Promise<Choice[]> {
     try {
-      console.log('🎯 开始生成选择项...');
 
       const choiceCount = this.determineChoiceCount(state);
       const prompt = this.buildChoicesPrompt(state, context, choiceCount);
@@ -37,7 +36,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
       while (attempts < maxAttempts) {
         try {
           attempts++;
-          console.log(`🔄 第${attempts}次尝试生成选择项...`);
 
           const response = await aiModelService.callAI(
             prompt,
@@ -60,7 +58,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
             const validatedChoices = this.validateAndOptimizeChoices(choices, state);
             
             if (validatedChoices.length > 0) {
-              console.log(`✅ 第${attempts}次尝试成功，生成 ${validatedChoices.length} 个选择项`);
               return validatedChoices;
             } else {
               throw new Error('所有选择项验证失败');
@@ -71,7 +68,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
         } catch (parseError) {
           console.warn(`❌ 第${attempts}次尝试失败:`, parseError);
           if (attempts >= maxAttempts) {
-            console.warn('达到最大重试次数，使用回退方案');
             return this.generateFallbackChoices(state, context);
           }
         }
@@ -117,7 +113,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
       baseCount = Math.min(5, baseCount + 1);
     }
 
-    console.log(`📊 确定选择数量: ${baseCount} (章节: ${state.chapter}, 紧张度: ${state.tension_level}, 氛围: ${state.mood})`);
     return baseCount;
   }
 
@@ -159,7 +154,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
    */
   async predictConsequences(choice: Choice, state: StoryState): Promise<string> {
     try {
-      console.log('🔮 开始预测选择后果...');
 
       const prompt = this.buildConsequencesPrompt(choice, state);
       const systemPrompt = this.getConsequencesSystemPrompt();
@@ -176,7 +170,6 @@ export class ChoiceGenerator implements IChoiceGenerator {
       }
 
       const consequences = response.choices[0].message.content.trim();
-      console.log('✅ 后果预测成功');
       return consequences;
     } catch (error) {
       console.error('❌ 后果预测失败:', error);
@@ -412,7 +405,6 @@ ${context}
    * 生成回退选择项
    */
   private generateFallbackChoices(state: StoryState, _context: string): Choice[] {
-    console.log('🔄 生成回退选择项...');
     
     const baseChoices = contentParser.getDefaultChoices();
     

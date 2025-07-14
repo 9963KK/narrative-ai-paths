@@ -53,7 +53,6 @@ export class AIModelService implements IAIModelService {
     const startTime = Date.now();
 
     try {
-      console.log('🤖 AIModelService 调用统一AI服务...');
 
       // 构建统一AI服务请求
       const request: AIRequest = {
@@ -128,8 +127,6 @@ export class AIModelService implements IAIModelService {
     this.modelConfig = config;
     this.state.initialized = true;
     this.state.lastUpdate = new Date().toISOString();
-    console.log(`🔧 AI模型配置已更新: ${config.provider}/${config.model}`);
-    console.log('📝 注意：当前使用统一AI服务，模型配置将由系统自动管理');
   }
 
   /**

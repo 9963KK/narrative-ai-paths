@@ -24,28 +24,13 @@ export class ContentParser implements IContentParser {
    */
   parseStoryResponse(response: string): StoryGenerationResponse | null {
     try {
-      console.log('📖 开始解析故事响应...');
-      console.log('🔍 AI原始响应内容（前500字符）:', response.substring(0, 500));
       
       const content = this.extractJsonFromResponse(response);
-      console.log('✂️ 提取的JSON内容（前500字符）:', content.substring(0, 500));
       
       const parsed = JSON.parse(content);
-      console.log('📝 解析后的对象结构:', {
-        hasScene: !!parsed.scene,
-        sceneLength: parsed.scene?.length || 0,
-        scenePreview: parsed.scene?.substring(0, 100) + '...',
-        hasCharacters: !!parsed.characters,
-        characterCount: parsed.characters?.length || 0,
-        chapterTitle: parsed.chapter_title,
-        mood: parsed.mood,
-        tensionLevel: parsed.tension_level
-      });
       
       // 检查是否错误地返回了数组
       if (Array.isArray(parsed)) {
-        console.error('❌ AI返回了数组而不是对象，这不符合故事生成的格式要求');
-        console.error('返回的数组内容:', parsed);
         return {
           success: false,
           error: 'AI返回了数组格式而不是预期的JSON对象格式，请重试'

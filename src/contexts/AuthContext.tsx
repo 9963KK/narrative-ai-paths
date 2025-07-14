@@ -19,7 +19,7 @@ interface AuthContextType {
   connectionStatus: () => Promise<{ isProduction: boolean; supabaseConnected: boolean; storageMode: 'supabase' | 'local'; oauthSupported: boolean }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;

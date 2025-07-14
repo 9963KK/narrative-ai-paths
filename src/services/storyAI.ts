@@ -66,7 +66,6 @@ class StoryAI {
     try {
       initializeModules();
       this.initialized = true;
-      console.log('🎮 StoryAI v2.1.3 初始化完成 - 模块化架构');
     } catch (error) {
       console.error('❌ StoryAI 初始化失败:', error);
       throw error;
@@ -78,7 +77,7 @@ class StoryAI {
    */
   setModelConfig(config: ModelConfig): void {
     aiModelService.setModelConfig(config);
-    console.log('🔧 AI模型配置已更新');
+    console.log('');
   }
 
   /**
@@ -142,7 +141,6 @@ class StoryAI {
    */
   async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
-      console.log('🎬 开始生成初始故事，配置由统一AI服务自动管理...');
 
       // 使用 StoryInitializer 模块（配置由unifiedAIService自动处理）
       const response = await storyInitializer.generateInitialStory(config, isAdvanced);
@@ -171,7 +169,6 @@ class StoryAI {
         // 清空对话历史，为新故事开始
         conversationManager.clearHistory();
         
-        console.log('✅ 初始故事生成成功');
         return response;
       } else {
         throw new Error(response.error || '初始故事生成失败');
@@ -195,21 +192,18 @@ class StoryAI {
     storyState?: StoryState
   ): Promise<StoryGenerationResponse> {
     try {
-      console.log('📖 开始生成下一章节...');
 
       // 获取当前故事状态
       let currentState = storyStateManager.getState();
       
       // 如果传入了 storyState 参数，优先使用它并同步到 storyStateManager
       if (storyState) {
-        console.log('📝 使用传入的故事状态并同步到storyStateManager');
         storyStateManager.setState(storyState);
         currentState = storyState;
       }
       // 如果 storyStateManager 中没有状态，但传入了 currentStory 参数
       else if (!currentState && currentStory) {
         console.warn('⚠️ storyStateManager 中无状态，但有 currentStory 参数，这可能是状态同步问题');
-        console.log('🔧 尝试从传入参数重建基本状态...');
         
         // 创建临时状态用于生成下一章节
         const tempState: StoryState = {
@@ -227,7 +221,6 @@ class StoryAI {
         
         currentState = tempState;
         storyStateManager.setState(tempState);
-        console.log('📝 已创建并设置临时状态');
       }
       
       if (!currentState) {
@@ -271,7 +264,6 @@ class StoryAI {
         // 保存生成的内容到对话历史
         conversationManager.addToHistory('assistant', storyResponse.content.scene);
         
-        console.log('✅ 下一章节生成成功');
         return storyResponse;
       } else {
         throw new Error('章节响应解析失败');
@@ -289,13 +281,11 @@ class StoryAI {
    */
   async generateChoices(scene: string, characters: Character[], setting: string): Promise<Choice[]> {
     try {
-      console.log('🎯 开始生成选择项...');
 
       // 配置由统一AI服务自动管理
 
       const currentState = storyStateManager.getState();
       if (!currentState) {
-        console.warn('⚠️ 未找到当前故事状态，使用传入参数');
         // 创建临时状态用于生成选择项
         const tempState: StoryState = {
           story_id: 'temp',
@@ -326,7 +316,6 @@ class StoryAI {
    */
   async generateStoryEnding(storyState: StoryState, endingType?: string): Promise<string> {
     try {
-      console.log('🏁 开始生成故事结局...');
 
       // 使用 EndingGenerator 模块生成结局
       const ending = endingType 
@@ -354,7 +343,6 @@ class StoryAI {
         story_progress: 100
       });
 
-      console.log('✅ 故事结局生成成功');
       return ending;
     } catch (error) {
       console.error('❌ 故事结局生成失败:', error);
@@ -371,7 +359,6 @@ class StoryAI {
     const history = conversationManager.getHistory();
     
     if (summaryManager.shouldTriggerSummary(history.length)) {
-      console.log('📋 触发摘要生成...');
       
       try {
         const historyForSummary = conversationManager.getHistoryForSummary(
@@ -387,7 +374,6 @@ class StoryAI {
           conversationManager.setSummaryState(mergedSummary);
           summaryManager.updateSummaryIndex(history.length);
           
-          console.log('✅ 摘要生成并合并成功');
         }
       } catch (error) {
         console.error('❌ 摘要生成失败:', error);
@@ -402,7 +388,6 @@ class StoryAI {
    */
   async generateStoryOutlines(userIdea: string, genre: string, mainGoal?: string): Promise<string[]> {
     try {
-      console.log('📋 开始生成故事大纲，配置由统一AI服务自动管理...');
 
       const config: StoryConfig = {
         genre,
@@ -444,7 +429,6 @@ class StoryAI {
     storyStateManager.resetState();
     conversationManager.clearHistory();
     summaryManager.resetSummaryState();
-    console.log('🔄 故事状态已重置');
   }
 
   /**
@@ -452,7 +436,6 @@ class StoryAI {
    */
   clearConversationHistory(): void {
     conversationManager.clearHistory();
-    console.log('🔄 对话历史已清空');
   }
 
   /**
@@ -475,7 +458,6 @@ class StoryAI {
       conversationManager.setSummaryState(summaryData.toString(), summaryData);
     }
     
-    console.log('📝 对话历史已设置');
   }
 
   /**

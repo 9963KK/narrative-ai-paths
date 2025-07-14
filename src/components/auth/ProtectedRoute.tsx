@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useContext } from 'react';
+import { AuthContext } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 interface ProtectedRouteProps {
@@ -7,12 +7,25 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  // 直接检查 AuthContext 是否存在，避免 useAuth 的错误抛出
+  const authContext = useContext(AuthContext);
+  
+  // 如果 AuthContext 不存在，说明不在 AuthProvider 内部
+  if (!authContext) {
+    console.error('❌ ProtectedRoute - AuthProvider 未初始化');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">正在初始化认证系统...</p>
+        </div>
+      </div>
+    );
+  }
 
-  console.log('🛡️ ProtectedRoute - 用户状态:', { user: user ? user.username : 'null', isLoading });
+  const { user, isLoading } = authContext;
 
   if (isLoading) {
-    console.log('⏳ ProtectedRoute - 正在加载用户状态...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -21,10 +34,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    console.log('❌ ProtectedRoute - 未找到用户，重定向到登录页面');
     return <Navigate to="/login" replace />;
   }
 
-  console.log('✅ ProtectedRoute - 用户已认证，显示受保护内容');
   return <>{children}</>;
 };

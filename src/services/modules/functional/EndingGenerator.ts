@@ -21,29 +21,24 @@ export class EndingGenerator implements IEndingGenerator {
    * 判断故事是否应该结束
    */
   shouldStoryEnd(state: StoryState): boolean {
-    console.log('🔍 检查故事结束条件...');
 
     // 1. 强制结束条件：章节数限制
     if (state.chapter >= 20) {
-      console.log('📚 达到最大章节数，强制结束');
       return true;
     }
 
     // 2. 故事已标记为完成
     if (state.is_completed) {
-      console.log('✅ 故事已标记为完成');
       return true;
     }
 
     // 3. 故事进度检查
     if (state.story_progress && state.story_progress >= 95) {
-      console.log('📈 故事进度达到95%，触发结局');
       return true;
     }
 
     // 4. 主要目标完成检查
     if (state.main_goal_status === 'completed' && state.chapter >= 8) {
-      console.log('🎯 主要目标已完成，可以结束');
       return true;
     }
 
@@ -53,20 +48,17 @@ export class EndingGenerator implements IEndingGenerator {
       const completionRate = completedGoals.length / state.story_goals.length;
       
       if (completionRate >= 0.8 && state.chapter >= 6) {
-        console.log(`🎯 80%的故事目标已完成，可以结束 (${completedGoals.length}/${state.story_goals.length})`);
         return true;
       }
     }
 
     // 6. 长故事自然结束点
     if (state.chapter >= 12 && state.story_progress && state.story_progress >= 80) {
-      console.log('📖 长故事自然结束点');
       return true;
     }
 
     // 7. 极高紧张度的紧急结束
     if (state.tension_level >= 9 && state.chapter >= 6) {
-      console.log('⚡ 极高紧张度，可能需要高潮结局');
       return true;
     }
 
@@ -76,12 +68,10 @@ export class EndingGenerator implements IEndingGenerator {
       const endingKeywords = ['结束', '完成', '离开', '告别', '回家', '终结', '解决', '胜利', '失败'];
       
       if (endingKeywords.some(keyword => recentChoices.includes(keyword))) {
-        console.log('🔚 选择历史显示结束意向');
         return true;
       }
     }
 
-    console.log('▶️ 故事继续进行');
     return false;
   }
 
@@ -89,30 +79,24 @@ export class EndingGenerator implements IEndingGenerator {
    * 确定结局类型
    */
   determineEndingType(state: StoryState): 'success' | 'failure' | 'neutral' | 'cliffhanger' {
-    console.log('🎭 分析结局类型...');
 
     // 1. 检查明确的完成状态
     if (state.completion_type) {
-      console.log(`📋 使用预设结局类型: ${state.completion_type}`);
       return state.completion_type;
     }
 
     // 2. 基于主要目标状态判断
     if (state.main_goal_status === 'completed') {
-      console.log('🎯 主要目标完成，成功结局');
       return 'success';
     } else if (state.main_goal_status === 'failed') {
-      console.log('💔 主要目标失败，失败结局');
       return 'failure';
     }
 
     // 3. 基于故事进度判断
     if (state.story_progress) {
       if (state.story_progress >= 90) {
-        console.log('📈 故事进度>=90%，成功结局');
         return 'success';
       } else if (state.story_progress <= 30) {
-        console.log('📉 故事进度<=30%，失败结局');
         return 'failure';
       }
     }
@@ -127,10 +111,8 @@ export class EndingGenerator implements IEndingGenerator {
       const failureRate = failedGoals / totalGoals;
 
       if (successRate >= 0.7) {
-        console.log(`🏆 目标成功率>=70% (${completedGoals}/${totalGoals})，成功结局`);
         return 'success';
       } else if (failureRate >= 0.5) {
-        console.log(`💥 目标失败率>=50% (${failedGoals}/${totalGoals})，失败结局`);
         return 'failure';
       }
     }
@@ -141,26 +123,21 @@ export class EndingGenerator implements IEndingGenerator {
       const negativeAtmospheres = ['绝望', '恐惧', '悲伤', '愤怒', '痛苦'];
       
       if (positiveAtmospheres.some(mood => state.mood.includes(mood))) {
-        console.log(`😊 积极氛围 "${state.mood}"，成功结局`);
         return 'success';
       } else if (negativeAtmospheres.some(mood => state.mood.includes(mood))) {
-        console.log(`😔 消极氛围 "${state.mood}"，失败结局`);
         return 'failure';
       }
 
       // 极高紧张度可能是悬崖结局
       if (state.tension_level >= 9) {
-        console.log(`⚡ 极高紧张度 (${state.tension_level})，悬崖结局`);
         return 'cliffhanger';
       }
     }
 
     // 6. 基于章节长度判断
     if (state.chapter >= 15) {
-      console.log('📚 长篇故事，中性结局');
       return 'neutral';
     } else if (state.chapter <= 5) {
-      console.log('📖 短篇故事，悬崖结局');
       return 'cliffhanger';
     }
 
@@ -175,16 +152,13 @@ export class EndingGenerator implements IEndingGenerator {
       const failureMatches = failureKeywords.filter(keyword => recentChoices.includes(keyword)).length;
       
       if (successMatches > failureMatches) {
-        console.log('📈 最近选择倾向成功');
         return 'success';
       } else if (failureMatches > successMatches) {
-        console.log('📉 最近选择倾向失败');
         return 'failure';
       }
     }
 
     // 默认：中性结局
-    console.log('⚖️ 无明确倾向，中性结局');
     return 'neutral';
   }
 
@@ -203,7 +177,6 @@ export class EndingGenerator implements IEndingGenerator {
    */
   async generateCustomEnding(state: StoryState, endingType: string): Promise<string> {
     try {
-      console.log(`🏁 开始生成${endingType}结局...`);
 
       const prompt = this.buildEndingPrompt(state, endingType);
       const systemPrompt = this.getEndingSystemPrompt(endingType);
@@ -215,7 +188,6 @@ export class EndingGenerator implements IEndingGenerator {
       while (attempts < maxAttempts) {
         try {
           attempts++;
-          console.log(`🔄 第${attempts}次尝试生成结局...`);
 
           const response = await aiModelService.callAI(
             prompt,
@@ -232,7 +204,6 @@ export class EndingGenerator implements IEndingGenerator {
           
           // 验证结局质量
           if (this.validateEnding(ending, endingType)) {
-            console.log(`✅ 第${attempts}次尝试成功生成${endingType}结局`);
             return ending;
           } else {
             throw new Error('结局质量不符合要求');
@@ -240,7 +211,6 @@ export class EndingGenerator implements IEndingGenerator {
         } catch (generateError) {
           console.warn(`❌ 第${attempts}次尝试失败:`, generateError);
           if (attempts >= maxAttempts) {
-            console.warn('达到最大重试次数，使用回退结局');
             return this.generateFallbackEnding(state, endingType);
           }
         }
@@ -307,7 +277,6 @@ export class EndingGenerator implements IEndingGenerator {
     // 计算百分比
     const finalScore = Math.round((completionScore / maxScore) * 100);
     
-    console.log(`📊 故事完成度评估: ${finalScore}% (${completionScore}/${maxScore})`);
     return Math.max(0, Math.min(100, finalScore));
   }
 
@@ -455,7 +424,6 @@ ${characters}
    * 生成回退结局
    */
   private generateFallbackEnding(state: StoryState, endingType: string): string {
-    console.log('🔄 生成回退结局...');
 
     const characterName = state.characters[0]?.name || '主角';
     const setting = state.setting || '这个神秘的世界';

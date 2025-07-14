@@ -24,7 +24,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
    */
   async developCharacter(character: Character, context: string): Promise<Character> {
     try {
-      console.log(`🌱 开始发展角色: ${character.name}...`);
 
       const prompt = this.buildCharacterDevelopmentPrompt(character, context);
       const systemPrompt = this.getCharacterDevelopmentSystemPrompt();
@@ -50,7 +49,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         
         // 验证角色
         if (this.validateCharacter(developedCharacter)) {
-          console.log(`✅ 角色 ${character.name} 发展成功`);
           return developedCharacter;
         } else {
           throw new Error('发展后的角色验证失败');
@@ -69,7 +67,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
    */
   async createNewCharacter(requirements: string): Promise<Character> {
     try {
-      console.log('🆕 开始创建新角色...');
 
       const prompt = this.buildCharacterCreationPrompt(requirements);
       const systemPrompt = this.getCharacterCreationSystemPrompt();
@@ -94,7 +91,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         const newCharacter = newCharacters[0];
         
         if (this.validateCharacter(newCharacter)) {
-          console.log(`✅ 新角色 ${newCharacter.name} 创建成功`);
           return newCharacter;
         } else {
           throw new Error('新角色验证失败');
@@ -115,10 +111,8 @@ export class CharacterDeveloper implements ICharacterDeveloper {
    */
   async updateCharacterRelationships(characters: Character[]): Promise<Character[]> {
     try {
-      console.log('🤝 开始更新角色关系...');
 
       if (characters.length < 2) {
-        console.log('角色数量不足，跳过关系更新');
         return characters;
       }
 
@@ -146,7 +140,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         const validCharacters = updatedCharacters.filter(char => this.validateCharacter(char));
         
         if (validCharacters.length > 0) {
-          console.log(`✅ ${validCharacters.length} 个角色关系更新成功`);
           return validCharacters;
         } else {
           throw new Error('所有更新后的角色验证失败');
@@ -165,7 +158,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
    */
   async trackCharacterArc(character: Character, story: StoryState): Promise<string> {
     try {
-      console.log(`📈 追踪角色 ${character.name} 的发展弧线...`);
 
       const prompt = this.buildCharacterArcPrompt(character, story);
       const systemPrompt = this.getCharacterArcSystemPrompt();
@@ -182,7 +174,6 @@ export class CharacterDeveloper implements ICharacterDeveloper {
       }
 
       const arcAnalysis = response.choices[0].message.content.trim();
-      console.log(`✅ 角色 ${character.name} 弧线分析完成`);
       return arcAnalysis;
     } catch (error) {
       console.error(`❌ 角色 ${character.name} 弧线追踪失败:`, error);
@@ -484,7 +475,6 @@ ${characterList}
    * 获取回退发展角色
    */
   private getFallbackDevelopedCharacter(character: Character, context: string): Character {
-    console.log('🔄 生成回退发展角色...');
 
     // 基于上下文简单发展角色
     const developedTraits = this.enhanceTraits(character.traits, context);
@@ -504,7 +494,6 @@ ${characterList}
    * 获取回退新角色
    */
   private getFallbackNewCharacter(requirements: string): Character {
-    console.log('🔄 生成回退新角色...');
 
     // 基于需求创建基础角色
     const nameKeywords = ['艾莉', '达文', '塞拉', '凯尔', '瑞恩', '诺娅'];
@@ -532,7 +521,6 @@ ${characterList}
    * 获取回退关系更新
    */
   private getFallbackRelationshipUpdate(characters: Character[]): Character[] {
-    console.log('🔄 生成回退关系更新...');
 
     // 简单地为每个角色添加基础关系信息
     return characters.map((char, index) => {

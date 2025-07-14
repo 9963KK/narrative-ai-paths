@@ -39,7 +39,6 @@ export class ConversationManager implements IConversationManager {
     // 自动管理历史长度
     this.optimizeContextWindow();
 
-    console.log(`📝 对话历史已添加: ${role} (${content.length}字符)`);
   }
 
   /**
@@ -56,7 +55,6 @@ export class ConversationManager implements IConversationManager {
     this.conversationHistory = [];
     this.historySummary = '';
     this.summaryData = undefined;
-    console.log('🗑️ 对话历史已清空');
   }
 
   // ==================== 上下文管理 ====================

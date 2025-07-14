@@ -26,7 +26,6 @@ export class ContentGenerator implements IContentGenerator {
    */
   async generateNextChapter(state: StoryState, choice?: string): Promise<StoryGenerationResponse> {
     try {
-      console.log('📖 开始生成下一章节...');
 
       const prompt = this.buildChapterPrompt(state, choice);
       const systemPrompt = this.getChapterSystemPrompt(state);
@@ -38,7 +37,6 @@ export class ContentGenerator implements IContentGenerator {
       while (attempts < maxAttempts) {
         try {
           attempts++;
-          console.log(`🔄 第${attempts}次尝试生成章节...`);
 
           // 调用AI生成内容
           const response = await aiModelService.callAI(
@@ -63,15 +61,12 @@ export class ContentGenerator implements IContentGenerator {
               storyResponse.content.mood = this.truncateMood(storyResponse.content.mood);
             }
 
-            console.log(`✅ 第${attempts}次尝试成功生成章节`);
             return storyResponse;
           } else {
             throw new Error('章节响应解析失败');
           }
         } catch (parseError) {
-          console.warn(`❌ 第${attempts}次尝试失败:`, parseError);
           if (attempts >= maxAttempts) {
-            console.warn('达到最大重试次数，使用回退方案');
             return this.generateFallbackChapter(state, choice);
           }
         }
@@ -90,7 +85,6 @@ export class ContentGenerator implements IContentGenerator {
    */
   async generateSceneDescription(context: string): Promise<string> {
     try {
-      console.log('🎨 开始生成场景描述...');
 
       const prompt = this.buildScenePrompt(context);
       const systemPrompt = this.getSceneSystemPrompt();
@@ -107,7 +101,6 @@ export class ContentGenerator implements IContentGenerator {
       }
 
       const sceneDescription = response.choices[0].message.content.trim();
-      console.log('✅ 场景描述生成成功');
       return sceneDescription;
     } catch (error) {
       console.error('❌ 场景描述生成失败:', error);
@@ -152,7 +145,6 @@ export class ContentGenerator implements IContentGenerator {
    */
   async advancePlot(state: StoryState): Promise<string> {
     try {
-      console.log('📈 开始推进情节...');
 
       const prompt = this.buildPlotAdvancementPrompt(state);
       const systemPrompt = this.getPlotSystemPrompt();
@@ -169,7 +161,6 @@ export class ContentGenerator implements IContentGenerator {
       }
 
       const plotAdvancement = response.choices[0].message.content.trim();
-      console.log('✅ 情节推进成功');
       return plotAdvancement;
     } catch (error) {
       console.error('❌ 情节推进失败:', error);
@@ -182,7 +173,6 @@ export class ContentGenerator implements IContentGenerator {
    */
   async buildTension(currentLevel: number, target: number): Promise<string> {
     try {
-      console.log(`🎭 构建紧张感: ${currentLevel} → ${target}`);
 
       const prompt = this.buildTensionPrompt(currentLevel, target);
       const systemPrompt = this.getTensionSystemPrompt();
@@ -199,7 +189,6 @@ export class ContentGenerator implements IContentGenerator {
       }
 
       const tensionElement = response.choices[0].message.content.trim();
-      console.log('✅ 紧张感构建成功');
       return tensionElement;
     } catch (error) {
       console.error('❌ 紧张感构建失败:', error);

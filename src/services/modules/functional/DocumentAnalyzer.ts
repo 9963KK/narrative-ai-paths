@@ -25,7 +25,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
   setModelConfig(config: any): void {
     try {
       aiModelService.setModelConfig(config);
-      console.log('📄 DocumentAnalyzer 模型配置已更新');
     } catch (error) {
       console.error('📄 DocumentAnalyzer 模型配置设置失败:', error);
     }
@@ -38,7 +37,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async analyzeDocument(content: string, fileName: string): Promise<DocumentAnalysisResult> {
     try {
-      console.log(`📖 开始分析文档: ${fileName}...`);
 
       if (!content || content.trim().length === 0) {
         throw new Error('文档内容为空');
@@ -57,7 +55,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          console.log(`📄 文档分析尝试 ${attempt}/3`);
           
           const prompt = this.buildDocumentAnalysisPrompt(cleanedContent, fileName);
           const systemPrompt = this.getDocumentAnalysisSystemPrompt();
@@ -91,10 +88,8 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
           if (hasValidCharacterNames || attempt === 3) {
             // 如果角色名称有效，或者已经是最后一次尝试，就使用这个结果
             analysisData = tempResult;
-            console.log(`📄 文档分析完成 (尝试${attempt}):`, analysisData);
-            break;
+              break;
           } else {
-            console.log(`📄 角色名称提取质量不佳，准备重试 (尝试${attempt})`);
             // 如果是前两次尝试且角色名称质量不佳，继续重试
             continue;
           }
@@ -111,7 +106,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
       
       if (analysisData) {
-        console.log(`✅ 文档 ${fileName} 分析成功`);
         return {
           success: true,
           data: analysisData
@@ -197,7 +191,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async extractCharacters(content: string): Promise<Character[]> {
     try {
-      console.log('👥 开始提取角色信息...');
 
       const prompt = this.buildCharacterExtractionPrompt(content);
       const systemPrompt = this.getCharacterExtractionSystemPrompt();
@@ -214,7 +207,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const characters = contentParser.parseCharacters(response.choices[0].message.content);
-      console.log(`✅ 成功提取 ${characters?.length || 0} 个角色`);
       return characters || [];
     } catch (error) {
       console.error('❌ 角色提取失败:', error);
@@ -227,7 +219,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async extractSetting(content: string): Promise<any> {
     try {
-      console.log('🌍 开始提取设定信息...');
 
       const prompt = this.buildSettingExtractionPrompt(content);
       const systemPrompt = this.getSettingExtractionSystemPrompt();
@@ -244,7 +235,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const settingData = this.parseSettingData(response.choices[0].message.content);
-      console.log('✅ 设定信息提取成功');
       return settingData;
     } catch (error) {
       console.error('❌ 设定提取失败:', error);
@@ -257,7 +247,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async extractThemes(content: string): Promise<any> {
     try {
-      console.log('🎯 开始提取主题信息...');
 
       const prompt = this.buildThemeExtractionPrompt(content);
       const systemPrompt = this.getThemeExtractionSystemPrompt();
@@ -274,7 +263,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const themeData = this.parseThemeData(response.choices[0].message.content);
-      console.log('✅ 主题信息提取成功');
       return themeData;
     } catch (error) {
       console.error('❌ 主题提取失败:', error);
@@ -287,7 +275,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async extractPlotElements(content: string): Promise<any> {
     try {
-      console.log('📚 开始提取情节元素...');
 
       const prompt = this.buildPlotExtractionPrompt(content);
       const systemPrompt = this.getPlotExtractionSystemPrompt();
@@ -304,7 +291,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const plotData = this.parsePlotData(response.choices[0].message.content);
-      console.log('✅ 情节元素提取成功');
       return plotData;
     } catch (error) {
       console.error('❌ 情节提取失败:', error);
@@ -317,7 +303,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async extractWritingStyle(content: string): Promise<any> {
     try {
-      console.log('✍️ 开始提取写作风格...');
 
       const prompt = this.buildStyleExtractionPrompt(content);
       const systemPrompt = this.getStyleExtractionSystemPrompt();
@@ -334,7 +319,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const styleData = this.parseStyleData(response.choices[0].message.content);
-      console.log('✅ 写作风格提取成功');
       return styleData;
     } catch (error) {
       console.error('❌ 写作风格提取失败:', error);
@@ -349,7 +333,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
    */
   async generateStorySeeds(analysisResult: DocumentAnalysisResult): Promise<any[]> {
     try {
-      console.log('🌱 开始生成故事种子...');
 
       if (!analysisResult.success || !analysisResult.data) {
         throw new Error('分析结果无效');
@@ -370,7 +353,6 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       }
 
       const seeds = this.parseSeedsData(response.choices[0].message.content);
-      console.log(`✅ 成功生成 ${seeds?.length || 0} 个故事种子`);
       return seeds || [];
     } catch (error) {
       console.error('❌ 故事种子生成失败:', error);

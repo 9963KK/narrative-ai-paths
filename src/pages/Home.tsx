@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
+import { AuthContext } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
@@ -32,8 +32,22 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const authContext = useContext(AuthContext);
   const [userLevel, setUserLevel] = React.useState<UserLevel | null>(null);
+
+  // 防御性检查：如果 AuthContext 未初始化，显示加载状态
+  if (!authContext) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">正在初始化系统...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { user, logout } = authContext;
 
   // 获取用户等级
   React.useEffect(() => {

@@ -31,14 +31,11 @@ export class StoryStateManager implements IStoryStateManager {
    * 设置故事状态
    */
   setState(state: StoryState): void {
-    console.log('🔍 尝试设置故事状态:', state);
     if (!this.validateState(state)) {
-      console.error('❌ 故事状态验证失败，状态详情:', state);
       throw new Error('故事状态验证失败');
     }
     
     this.currentState = { ...state };
-    console.log(`📖 故事状态已更新: 第${state.chapter}章 - ${state.chapter_title || '未命名章节'}`);
   }
 
   /**
@@ -58,7 +55,6 @@ export class StoryStateManager implements IStoryStateManager {
     }
 
     this.currentState = updatedState;
-    console.log('📝 故事状态已部分更新:', Object.keys(updates));
   }
 
   // ==================== 持久化 ====================
@@ -79,7 +75,6 @@ export class StoryStateManager implements IStoryStateManager {
       };
 
       await userStorage.saveStoryState(userId, stateData);
-      console.log(`💾 故事状态已保存 (用户: ${userId})`);
     } catch (error) {
       console.error('保存故事状态失败:', error);
       throw new Error(`保存故事状态失败: ${(error as Error).message}`);
@@ -107,7 +102,6 @@ export class StoryStateManager implements IStoryStateManager {
       }
 
       this.currentState = loadedState;
-      console.log(`📂 故事状态已加载 (用户: ${userId}, 第${loadedState.chapter}章)`);
       
       return { ...loadedState };
     } catch (error) {

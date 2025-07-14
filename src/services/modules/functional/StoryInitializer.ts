@@ -25,7 +25,6 @@ export class StoryInitializer implements IStoryInitializer {
    */
   async generateInitialStory(config: StoryConfig, isAdvanced?: boolean): Promise<StoryGenerationResponse> {
     try {
-      console.log('🎭 开始生成初始故事...', { config, isAdvanced });
 
       const prompt = this.buildInitialStoryPrompt(config, isAdvanced);
       const systemPrompt = this.getInitialStorySystemPrompt(isAdvanced);
@@ -48,10 +47,8 @@ export class StoryInitializer implements IStoryInitializer {
       const storyResponse = contentParser.parseStoryResponse(content);
       
       if (storyResponse && storyResponse.success) {
-        console.log('✅ 初始故事生成成功');
         return storyResponse;
       } else {
-        console.error('❌ 初始故事解析失败');
         
         const errorMessage = storyResponse?.error || '解析返回null或success为false';
         throw new Error(`初始故事解析失败: ${errorMessage}`);
@@ -70,7 +67,6 @@ export class StoryInitializer implements IStoryInitializer {
    */
   async generateStoryOutlines(config: StoryConfig): Promise<string[]> {
     try {
-      console.log('📋 开始生成故事大纲...', config);
 
       const prompt = this.buildOutlinePrompt(config);
       const systemPrompt = this.getOutlineSystemPrompt();
@@ -87,14 +83,12 @@ export class StoryInitializer implements IStoryInitializer {
       }
 
       const content = response.choices[0].message.content;
-      console.log('📋 AI大纲原始响应:', content);
       
       // 提取JSON内容（处理可能包含额外文本的响应）
       try {
         // 先尝试提取JSON
         const cleanJsonContent = this.extractJsonFromText(content);
         
-        console.log('📋 提取的JSON内容:', cleanJsonContent);
         
         const parsed = JSON.parse(cleanJsonContent);
         if (Array.isArray(parsed)) {
@@ -113,7 +107,6 @@ export class StoryInitializer implements IStoryInitializer {
               return String(item);
             }
           });
-          console.log('✅ 故事大纲生成成功，共', processedOutlines.length, '个选项');
           return processedOutlines;
         } else if (parsed.outlines && Array.isArray(parsed.outlines)) {
           // 同样的处理逻辑应用到 parsed.outlines
@@ -130,23 +123,18 @@ export class StoryInitializer implements IStoryInitializer {
               return String(item);
             }
           });
-          console.log('✅ 故事大纲生成成功，共', processedOutlines.length, '个选项');
           return processedOutlines;
         } else {
           throw new Error('大纲格式不正确');
         }
       } catch (parseError) {
-        console.warn('⚠️ 大纲解析失败，尝试直接解析:', parseError);
-        console.warn('原始内容:', content.substring(0, 200));
         
         // 如果JSON解析失败，尝试从文本中提取故事大纲
         const fallbackOutlines = this.extractOutlinesFromText(content);
         if (fallbackOutlines.length > 0) {
-          console.log('✅ 从文本提取大纲成功，共', fallbackOutlines.length, '个选项');
           return fallbackOutlines;
         }
         
-        console.warn('⚠️ 文本提取也失败，使用默认大纲');
         return this.getDefaultOutlines(config);
       }
     } catch (error) {

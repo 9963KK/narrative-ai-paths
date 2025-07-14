@@ -28,12 +28,10 @@ export class SummaryManager implements ISummaryManager {
    */
   async generateSummary(history: ConversationHistory[]): Promise<string> {
     if (!history || history.length === 0) {
-      console.log('📋 历史记录为空，无法生成摘要');
       return '';
     }
 
     try {
-      console.log(`📋 开始生成摘要，处理 ${history.length} 条历史记录...`);
       
       // 构建摘要请求
       const historyText = this.buildHistoryText(history);
@@ -53,17 +51,14 @@ export class SummaryManager implements ISummaryManager {
       }
 
       const content = response.choices[0].message.content;
-      console.log('📋 AI摘要响应:', content.substring(0, 200));
 
       // 解析摘要
       const summaryData = contentParser.parseSummaryJSON(content);
       if (summaryData) {
         const formattedSummary = this.formatSummaryForDisplay(summaryData);
-        console.log('✅ 摘要生成成功');
         return formattedSummary;
       } else {
         // 如果解析失败，使用备用摘要
-        console.warn('⚠️ 摘要解析失败，使用备用摘要');
         return this.createFallbackSummary(history);
       }
     } catch (error) {
@@ -117,7 +112,6 @@ export class SummaryManager implements ISummaryManager {
     const shouldTrigger = (conversationCount - this.lastSummaryIndex) >= this.summaryTriggerInterval;
     
     if (shouldTrigger) {
-      console.log(`📋 达到摘要触发条件: ${conversationCount} - ${this.lastSummaryIndex} >= ${this.summaryTriggerInterval}`);
     }
     
     return shouldTrigger;
