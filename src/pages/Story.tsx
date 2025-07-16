@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { Settings, Wand2, Wrench, Upload, BookOpen, FolderOpen, Sparkles, TrendingUp, Clock, Star } from 'lucide-react';
@@ -145,7 +144,6 @@ const Story: React.FC = () => {
   if (showStoryManager) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/60 to-pink-50/40">
-        <UserHeader />
         <div className="container mx-auto">
           <StoryManager 
             preloadedContext={loadedStoryContext}
@@ -163,7 +161,6 @@ const Story: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50/60 to-pink-50/40">
-      <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

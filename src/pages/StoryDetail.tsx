@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserHeader } from '@/components/auth/UserHeader';
 import StoryManager from '@/components/StoryManager';
 import { Button } from '@/components/ui/button';
 import { BookOpen, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -103,7 +102,7 @@ const StoryDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
-        <UserHeader />
+        
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -127,7 +126,7 @@ const StoryDetail: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
-        <UserHeader />
+        
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -159,7 +158,7 @@ const StoryDetail: React.FC = () => {
       background: 'radial-gradient(ellipse at top right, rgba(59, 130, 246, 0.1), rgb(249, 250, 251), rgb(249, 250, 251))',
       backgroundColor: 'rgb(249, 250, 251)'
     }}>
-      <UserHeader />
+      
       <StoryManager 
         preloadedContext={loadedStoryContext}
         onReturnToHome={handleReturnToHome}

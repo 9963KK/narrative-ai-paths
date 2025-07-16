@@ -73,10 +73,10 @@ export const useCardAnimation = (options: UseCardAnimationOptions = {}): UseCard
     };
   }, [delay, threshold, rootMargin, hasAnimated, performanceConfig.enableAnimations, disabled]);
 
-  // 生成动画类名和样式
+  // 生成动画类名和样式 - 匹配文档分析页面的slide-in效果
   const animationClass = isVisible 
     ? 'opacity-100 translate-y-0' 
-    : 'opacity-0 translate-y-8';
+    : 'opacity-0 translate-y-4';
 
   const style: React.CSSProperties = {
     transitionDuration: `${duration}ms`,

@@ -74,19 +74,19 @@ const detectPageNavigationStatus = (): 'first-visit' | 'page-return' => {
 const animationLevels = {
   high: {
     delay: 150,
-    duration: 600,
+    duration: 700, // 匹配文档分析页面的动画时长
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // 更加优雅的缓动曲线
     stagger: 150
   },
   medium: {
     delay: 120,
-    duration: 500,
+    duration: 600, // 匹配文档分析页面的动画时长
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
     stagger: 120
   },
   low: {
     delay: 100,
-    duration: 400,
+    duration: 500, // 匹配文档分析页面的动画时长
     easing: 'ease-out',
     stagger: 100
   }
@@ -96,19 +96,19 @@ const animationLevels = {
 const returningUserAnimationLevels = {
   high: {
     delay: 80,
-    duration: 600, // 保持与原来相同的播放时间
+    duration: 700, // 保持与文档分析页面相同的播放时间
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
     stagger: 80 // 只缩短触发间隔
   },
   medium: {
     delay: 60,
-    duration: 500, // 保持与原来相同的播放时间
+    duration: 600, // 保持与文档分析页面相同的播放时间
     easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
     stagger: 60 // 只缩短触发间隔
   },
   low: {
     delay: 50,
-    duration: 400, // 保持与原来相同的播放时间
+    duration: 500, // 保持与文档分析页面相同的播放时间
     easing: 'ease-out',
     stagger: 50 // 只缩短触发间隔
   }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserHeader } from '@/components/auth/UserHeader';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, Sparkles, Wand2, Users, Map, Target, ArrowLeft } from 'lucide-react';
@@ -62,7 +61,7 @@ const StoryCreating: React.FC = () => {
   if (showStoryManager) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-        <UserHeader />
+        
         <StoryManager 
           onReturnToHome={handleReturnToHome}
           onNavigate={navigate}
@@ -74,7 +73,7 @@ const StoryCreating: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      <UserHeader />
+      
       
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-4xl mx-auto">
