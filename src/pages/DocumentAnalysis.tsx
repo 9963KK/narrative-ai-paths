@@ -291,7 +291,18 @@ const DocumentAnalysis: React.FC = () => {
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-end mb-8">
+          <div className="flex justify-between items-center mb-8">
+            {/* 返回主页按钮 */}
+            <Button
+              onClick={() => navigate('/app')}
+              variant="outline"
+              className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回主页
+            </Button>
+            
+            {/* 查询历史记录按钮 */}
             <Button
               type="button"
               variant="outline"
