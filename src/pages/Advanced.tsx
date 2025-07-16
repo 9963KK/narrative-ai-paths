@@ -206,9 +206,9 @@ const Advanced: React.FC = () => {
               {/* 返回按钮 */}
               <div className="flex justify-start mb-6">
                 <Button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/app')}
                   variant="outline"
-                  className="px-4 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                  className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回主页
