@@ -9,7 +9,6 @@ import { ModelConfig as ModelConfigType } from '@/components/model-config/consta
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
 import { DocumentRecord } from '@/services/documentRecordManager';
-import { UserHeader } from '@/components/auth/UserHeader';
 
 const DocumentAnalysis: React.FC = () => {
   const navigate = useNavigate();

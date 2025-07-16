@@ -12,7 +12,6 @@ import { AnimatedCard, AnimatedHeader } from '@/components/AnimatedCard';
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { DocumentAnalysisResult } from '@/services/documentAnalyzer';
-import { UserHeader } from '@/components/auth/UserHeader';
 
 // 高级故事配置
 interface AdvancedStoryConfig {
@@ -196,8 +195,6 @@ const Advanced: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-50/20 via-gray-50 to-gray-50">
-      <UserHeader />
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Page Header */}

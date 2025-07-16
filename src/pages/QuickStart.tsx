@@ -9,7 +9,6 @@ import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/Animate
 import { ModelConfig as ModelConfigType } from '@/components/model-config/constants';
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { storyAI } from '@/services/storyAI';
-import { UserHeader } from '@/components/auth/UserHeader';
 
 // 基础故事配置
 interface BaseStoryConfig {
@@ -228,8 +227,6 @@ const QuickStart: React.FC = () => {
   if (showOutlineSelection) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-        <UserHeader />
-
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-5xl mx-auto">
             {/* Return Button */}
@@ -376,8 +373,6 @@ const QuickStart: React.FC = () => {
   // 主要的分步向导界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-      <UserHeader />
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Page Header */}

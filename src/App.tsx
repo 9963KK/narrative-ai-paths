@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { setupHashCleaner } from "@/utils/urlUtils";
 
 const queryClient = new QueryClient();
@@ -25,9 +26,11 @@ const App: React.FC<AppProps> = ({ children }) => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {children}
+          <AppLayout>
+            <Toaster />
+            <Sonner />
+            {children}
+          </AppLayout>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

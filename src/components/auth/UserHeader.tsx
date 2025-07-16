@@ -1,45 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreditBadge } from '@/components/ui/CreditBadge';
-import { unifiedAuthService } from '@/services/unifiedAuthService';
-import { userLevelService, type UserLevel } from '@/services/userLevelService';
 import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
+import { type UserLevel } from '@/services/userLevelService';
 import { LogOut, User, Settings, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export const UserHeader: React.FC = () => {
-  const { user, logout } = useAuth();
+const UserHeaderComponent: React.FC = () => {
+  const { user, logout, userLevel, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
-
-  // 检查管理员权限和用户等级
-  useEffect(() => {
-    const checkUserStatus = async () => {
-      if (user) {
-        try {
-          const [adminStatus, level] = await Promise.all([
-            unifiedAuthService.isAdmin(),
-            userLevelService.getUserLevel()
-          ]);
-          setIsAdmin(adminStatus);
-          setUserLevel(level);
-        } catch (error) {
-          console.error('检查用户状态失败:', error);
-          setIsAdmin(false);
-          setUserLevel(null);
-        }
-      } else {
-        setIsAdmin(false);
-        setUserLevel(null);
-      }
-    };
-
-    checkUserStatus();
-  }, [user]);
 
   if (!user) return null;
 
@@ -55,8 +27,6 @@ export const UserHeader: React.FC = () => {
   const getInitials = (username: string) => {
     return username.slice(0, 2).toUpperCase();
   };
-
-
 
   // 获取头像样式（根据等级）
   const getAvatarStyle = (level: UserLevel | null) => {
@@ -142,3 +112,8 @@ export const UserHeader: React.FC = () => {
     </div>
   );
 };
+
+// 使用memo优化组件，只有在用户状态真正变化时才重新渲染
+export const UserHeader = memo(UserHeaderComponent);
+
+UserHeader.displayName = 'UserHeader';

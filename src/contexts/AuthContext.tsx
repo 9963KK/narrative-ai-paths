@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { unifiedAuthService, AuthUser } from '@/services/unifiedAuthService';
 import { userStorage } from '@/services/userStorage';
 import { celebrateFirstLogin, celebrateRegistration } from '@/components/ConfettiWrapper';
+import { userLevelService, type UserLevel } from '@/services/userLevelService';
 import type { OAuthProvider } from '@/lib/supabase';
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
+  userLevel: UserLevel | null;
+  isAdmin: boolean;
+  isStatusLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithOAuth: (provider: OAuthProvider) => Promise<boolean>;
@@ -16,6 +20,7 @@ interface AuthContextType {
   updateUser: (updates: Partial<Pick<AuthUser, 'username' | 'email'>>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
+  refreshUserStatus: () => Promise<void>;
   connectionStatus: () => Promise<{ isProduction: boolean; supabaseConnected: boolean; storageMode: 'supabase' | 'local'; oauthSupported: boolean }>;
 }
 
@@ -28,6 +33,69 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isStatusLoading, setIsStatusLoading] = useState(false);
+
+  // 缓存用户状态信息，避免重复API调用
+  const loadUserStatus = async (forceRefresh: boolean = false): Promise<void> => {
+    if (!user || isStatusLoading) return;
+
+    // 检查缓存
+    const cachedLevel = localStorage.getItem(`user_level_${user.id}`);
+    const cachedAdmin = localStorage.getItem(`user_admin_${user.id}`);
+    const cachedTimestamp = localStorage.getItem(`user_cache_timestamp_${user.id}`);
+    
+    // 如果有缓存且不是强制刷新，且缓存时间在5分钟内，则使用缓存
+    const now = Date.now();
+    const cacheAge = cachedTimestamp ? now - parseInt(cachedTimestamp) : Infinity;
+    const isCacheValid = cacheAge < 5 * 60 * 1000; // 5分钟缓存
+
+    if (!forceRefresh && isCacheValid && cachedLevel && cachedAdmin !== null) {
+      setUserLevel(cachedLevel as UserLevel);
+      setIsAdmin(cachedAdmin === 'true');
+      return;
+    }
+
+    setIsStatusLoading(true);
+    try {
+      const [adminStatus, level] = await Promise.all([
+        unifiedAuthService.isAdmin(),
+        userLevelService.getUserLevel()
+      ]);
+      
+      setIsAdmin(adminStatus);
+      setUserLevel(level);
+      
+      // 更新缓存
+      localStorage.setItem(`user_level_${user.id}`, level || '');
+      localStorage.setItem(`user_admin_${user.id}`, adminStatus.toString());
+      localStorage.setItem(`user_cache_timestamp_${user.id}`, now.toString());
+      
+    } catch (error) {
+      console.error('加载用户状态失败:', error);
+      // 清除可能损坏的缓存
+      clearUserStatusCache();
+    } finally {
+      setIsStatusLoading(false);
+    }
+  };
+
+  // 清除用户状态缓存
+  const clearUserStatusCache = () => {
+    if (user) {
+      localStorage.removeItem(`user_level_${user.id}`);
+      localStorage.removeItem(`user_admin_${user.id}`);
+      localStorage.removeItem(`user_cache_timestamp_${user.id}`);
+    }
+    setUserLevel(null);
+    setIsAdmin(false);
+  };
+
+  // 手动刷新用户状态
+  const refreshUserStatus = async (): Promise<void> => {
+    await loadUserStatus(true);
+  };
 
   // 检查是否是首次登录/注册
   const checkFirstTime = (userId: string, action: 'login' | 'register'): boolean => {
@@ -75,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             handleOAuthSession(session);
           } else if (event === 'SIGNED_OUT') {
             setUser(null);
+            clearUserStatusCache();
           }
         });
         
@@ -107,6 +176,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initAuth();
   }, []);
+
+  // 当用户状态变化时，加载用户状态信息
+  useEffect(() => {
+    if (user) {
+      loadUserStatus();
+    } else {
+      clearUserStatusCache();
+    }
+  }, [user]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -151,11 +229,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     unifiedAuthService.logout();
     setUser(null);
+    clearUserStatusCache();
   };
 
   const forceSignOut = async () => {
     await unifiedAuthService.forceSignOut();
     setUser(null);
+    clearUserStatusCache();
   };
 
   const updateUser = async (updates: Partial<Pick<AuthUser, 'username' | 'email'>>): Promise<boolean> => {
@@ -247,6 +327,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     isLoading,
+    userLevel,
+    isAdmin,
+    isStatusLoading,
     login,
     register,
     signInWithOAuth,
@@ -256,6 +339,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
     changePassword,
     deleteAccount,
+    refreshUserStatus,
     connectionStatus
   };
 
