@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { OAuthCallback } from "@/components/auth/OAuthCallback";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 // 导入所有页面组件
 import Home from "../pages/Home";
@@ -24,114 +25,120 @@ import DebugApiKey from "../pages/DebugApiKey";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Home />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/auth/callback",
-    element: <OAuthCallback />,
-  },
-  {
-    path: "/auth/test",
-    element: <AuthCallbackTest />,
-  },
-  {
-    path: "/db/test",
-    element: <DatabaseTest />,
-  },
-  {
-    path: "/debug/api-key",
-    element: (
-      <ProtectedRoute>
-        <DebugApiKey />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app",
-    element: (
-      <ProtectedRoute>
-        <Story />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/quick",
-    element: (
-      <ProtectedRoute>
-        <QuickStart />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/advanced",
-    element: (
-      <ProtectedRoute>
-        <Advanced />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/filebase",
-    element: (
-      <ProtectedRoute>
-        <DocumentAnalysis />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/story",
-    element: (
-      <ProtectedRoute>
-        <StoryDetail />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/app/creating",
-    element: (
-      <ProtectedRoute>
-        <StoryCreating />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/saves",
-    element: (
-      <ProtectedRoute>
-        <SaveArchive />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/settings",
-    element: (
-      <ProtectedRoute>
-        <Settings />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <Profile />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin",
-    element: (
-      <ProtectedRoute>
-        <AdminDashboard />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "*",
-    element: <NotFound />,
+    element: <AppLayout />,
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "auth/callback",
+        element: <OAuthCallback />,
+      },
+      {
+        path: "auth/test",
+        element: <AuthCallbackTest />,
+      },
+      {
+        path: "db/test",
+        element: <DatabaseTest />,
+      },
+      {
+        path: "debug/api-key",
+        element: (
+          <ProtectedRoute>
+            <DebugApiKey />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app",
+        element: (
+          <ProtectedRoute>
+            <Story />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app/quick",
+        element: (
+          <ProtectedRoute>
+            <QuickStart />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app/advanced",
+        element: (
+          <ProtectedRoute>
+            <Advanced />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app/filebase",
+        element: (
+          <ProtectedRoute>
+            <DocumentAnalysis />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app/story",
+        element: (
+          <ProtectedRoute>
+            <StoryDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "app/creating",
+        element: (
+          <ProtectedRoute>
+            <StoryCreating />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "saves",
+        element: (
+          <ProtectedRoute>
+            <SaveArchive />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin",
+        element: (
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
+    ],
   },
 ]);
