@@ -244,21 +244,20 @@ const DocumentAnalysis: React.FC = () => {
   if (showRecordManager) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
-        <UserHeader />
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-8 animate-in slide-in-from-top-4 fade-in-0 duration-500">
               <Button
                 variant="ghost"
                 onClick={() => setShowRecordManager(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-4 py-2"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl px-4 py-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回分析
               </Button>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 animate-in slide-in-from-top-4 fade-in-0 duration-600">
                 <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
                   <Database className="w-5 h-5 text-white" />
                 </div>
@@ -271,7 +270,7 @@ const DocumentAnalysis: React.FC = () => {
               <div className="w-[120px]"></div>
             </div>
             
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden p-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden p-6 animate-in slide-in-from-bottom-4 fade-in-0 duration-700">
               <DocumentRecordManager
                 onSelectRecord={handleSelectRecord}
                 onViewResult={handleViewRecordResult}
@@ -286,16 +285,15 @@ const DocumentAnalysis: React.FC = () => {
   // 主要的文档分析界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
-      <UserHeader />
       <div className="container mx-auto p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8 animate-in slide-in-from-top-4 fade-in-0 duration-500">
             {/* 返回主页按钮 */}
             <Button
               onClick={() => navigate('/app')}
               variant="outline"
-              className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
+              className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回主页
@@ -306,7 +304,7 @@ const DocumentAnalysis: React.FC = () => {
               type="button"
               variant="outline"
               onClick={() => setShowRecordManager(true)}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-xl"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl"
             >
               <Database className="h-4 w-4" />
               查询历史记录
@@ -314,7 +312,7 @@ const DocumentAnalysis: React.FC = () => {
           </div>
 
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden animate-in slide-in-from-bottom-4 fade-in-0 duration-700">
             <DocumentAnalyzer
               modelConfig={modelConfig}
               onAnalysisComplete={handleDocumentAnalysisComplete}
