@@ -383,6 +383,18 @@ const QuickStart: React.FC = () => {
           {/* Page Header */}
           <AnimatedHeader>
             <div className="text-center mb-12">
+              {/* 返回主页按钮 */}
+              <div className="flex justify-start mb-6">
+                <Button
+                  onClick={() => navigate('/app')}
+                  variant="outline"
+                  className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回主页
+                </Button>
+              </div>
+              
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl mb-6 shadow-xl">
                 <Wand2 className="w-10 h-10 text-white" />
               </div>
