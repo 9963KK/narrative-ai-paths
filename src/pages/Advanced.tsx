@@ -203,6 +203,18 @@ const Advanced: React.FC = () => {
           {/* Page Header */}
           <AnimatedHeader>
             <div className="text-center mb-12">
+              {/* 返回按钮 */}
+              <div className="flex justify-start mb-6">
+                <Button
+                  onClick={() => navigate('/')}
+                  variant="outline"
+                  className="px-4 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回主页
+                </Button>
+              </div>
+              
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl mb-6 shadow-xl">
                 <Wrench className="w-10 h-10 text-white" />
               </div>
