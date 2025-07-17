@@ -358,7 +358,7 @@ export class StoryInitializer implements IStoryInitializer {
   }
 
   private buildOutlinePrompt(config: StoryConfig): string {
-    return `请为以下故事构想生成3-5个不同的故事大纲选项：
+    return `请为以下故事构想生成3个不同的故事大纲选项：
 
 故事类型：${config.genre}
 故事构想：${config.story_idea}
@@ -370,7 +370,7 @@ export class StoryInitializer implements IStoryInitializer {
 3. 适合互动式故事游戏
 4. 长度控制在2-3句话
 
-请以JSON数组格式返回，每个元素是一个大纲字符串。`;
+请严格返回3个大纲，以JSON数组格式返回，每个元素是一个大纲字符串。`;
   }
 
   /**
