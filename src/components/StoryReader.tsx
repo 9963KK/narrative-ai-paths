@@ -1154,7 +1154,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <StageProgressIndicator
                         progress={story.story_progress || (story.chapter / 12) * 100}
                         totalStages={5}
-                        showPercentage={true}
+                        showPercentage={false}
                         size="sm"
                         className="w-full"
                       />
@@ -1913,7 +1913,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       progress={story.story_progress || Math.min((story.chapter / 20) * 100, 100)}
                       totalStages={5}
                       stageDescription={getStoryStageDescription(story.chapter)}
-                      showPercentage={true}
+                      showPercentage={false}
                       size="md"
                       className="mb-1"
                     />

@@ -85,11 +85,7 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
         return cn(
           baseClasses,
           'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-xl',
-          'transform scale-110 opacity-100',
-          'animate-pulse',
-          'before:absolute before:inset-0 before:rounded-full',
-          'before:bg-gradient-to-r before:from-blue-400 before:to-indigo-500',
-          'before:animate-ping before:opacity-75'
+          'transform scale-110 opacity-100'
         );
       case 'pending':
         return cn(
@@ -160,7 +156,7 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
                   )}
                   {currentState === 'current' && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                      <div className="w-1 h-1 bg-white rounded-full" />
                     </div>
                   )}
                 </div>
