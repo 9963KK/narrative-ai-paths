@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import StageProgressIndicator from '@/components/ui/StageProgressIndicator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -1149,9 +1150,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                         <span className="text-sm text-slate-600">{story.chapter_title}</span>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Progress value={story.story_progress || (story.chapter / 12) * 100} className="w-20 h-2" />
-                      <span className="text-xs text-slate-500">{Math.round(story.story_progress || (story.chapter / 12) * 100)}%</span>
+                    <div className="w-24">
+                      <StageProgressIndicator
+                        progress={story.story_progress || (story.chapter / 12) * 100}
+                        totalStages={5}
+                        showPercentage={true}
+                        size="sm"
+                        className="w-full"
+                      />
                     </div>
                   </div>
                   
@@ -1902,19 +1908,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {!story.is_completed && (
               <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-xl overflow-hidden">
                 <CardContent className="pt-3 pb-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-blue-700">
-                        {getStoryStageDescription(story.chapter)}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {Math.round(story.story_progress || Math.min((story.chapter / 20) * 100, 100))}%
-                      </span>
-                    </div>
-                    
-                    <Progress 
-                      value={story.story_progress || Math.min((story.chapter / 20) * 100, 100)} 
-                      className="h-2"
+                  <div className="space-y-3">
+                    <StageProgressIndicator
+                      progress={story.story_progress || Math.min((story.chapter / 20) * 100, 100)}
+                      totalStages={5}
+                      stageDescription={getStoryStageDescription(story.chapter)}
+                      showPercentage={true}
+                      size="md"
+                      className="mb-1"
                     />
                     
                     {story.chapter >= 5 && (
