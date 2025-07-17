@@ -375,7 +375,7 @@ const Home: React.FC = () => {
               加入我们的创作者社区，体验AI辅助创作的无限可能
             </p>
           </AnimatedHeader>
-          <AnimatedCard index={13} className="flex flex-col sm:flex-row gap-4 justify-center">
+          <AnimatedCard index={1} className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Button 
                 size="lg" 
@@ -411,7 +411,7 @@ const Home: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedCard index={14} className="text-center">
+          <AnimatedCard index={1} className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-6">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
