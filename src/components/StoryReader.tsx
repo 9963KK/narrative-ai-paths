@@ -162,6 +162,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory]);
+  
+  // 调试：监控savedChoices变化
+  useEffect(() => {
+    console.log('🔍 savedChoices状态变化:', {
+      savedChoices: savedChoices,
+      length: savedChoices?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+  }, [savedChoices]);
 
   // 当故事发生变化时，标记为有未保存的进度
   useEffect(() => {
@@ -683,10 +692,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       setCurrentText('');
       setShowChoices(false);
       setChoices([]);
-      setPendingChoices(null); // 清空之前的预生成选项
-      // 重置所有生成状态
-      setIsPreGenerating(false);
-      setIsGeneratingChoices(false);
       
       // 检查是否需要生成选项
       const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
@@ -707,16 +712,28 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         hasSavedChoices: savedChoices?.length || 0
       });
       
-      // 检查是否有保存的选项可以复用
+      // 优先处理保存的选项 - 修复存档读取问题
       if (shouldShowChoices) {
         if (savedChoices && savedChoices.length > 0) {
-          console.log('🎉 发现保存的选项，将在打字机完成后直接显示:', savedChoices);
+          console.log('🎉 发现保存的选项，直接使用（不清空）:', savedChoices);
+          // 立即设置保存的选项，不清空 pendingChoices
           setPendingChoices(savedChoices);
+          // 重置生成状态，确保不会触发新的生成
+          setIsPreGenerating(false);
+          setIsGeneratingChoices(false);
         } else {
-          // 没有保存的选项，需要生成新的
-          console.log('📝 没有保存的选项，开始预生成...');
+          // 只有在没有保存选项时才清空并重新生成
+          console.log('📝 没有保存的选项，清空状态并开始预生成...');
+          setPendingChoices(null);
+          setIsPreGenerating(false);
+          setIsGeneratingChoices(false);
           preGenerateChoices(story.current_scene, story.characters);
         }
+      } else {
+        // 不需要选项时才清空
+        setPendingChoices(null);
+        setIsPreGenerating(false);
+        setIsGeneratingChoices(false);
       }
       
       // 打字机效果（与选项生成并行）
@@ -731,11 +748,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           // 打字完成后检查选项状态
           if (shouldShowChoices) {
-            // 统一处理选项显示逻辑，确保状态一致性
+            // 统一处理选项显示逻辑，优先使用保存的选项
             setTimeout(() => {
               if (pendingChoices && pendingChoices.length > 0) {
-                // 选项已经预生成完成，立即显示
-                console.log('🎉 选项已预生成完成，立即显示!');
+                // 选项已经准备好，立即显示（可能是保存的选项或预生成的选项）
+                const choiceSource = savedChoices && savedChoices.length > 0 ? '保存的选项' : '预生成的选项';
+                console.log(`🎉 ${choiceSource}已准备完成，立即显示!`);
                 setChoices(pendingChoices);
                 setShowChoices(true);
                 // 通知父组件选项已更新
@@ -748,9 +766,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 // 选项还在生成中，等待完成
                 console.log('⏳ 选项还在生成中，等待完成...');
                 // 这种情况下，会由下面的useEffect来处理显示
-              } else {
-                // 选项预生成失败，现在重新生成
-                console.log('⚠️ 选项预生成失败，现在重新生成...');
+              } else if (!savedChoices || savedChoices.length === 0) {
+                // 只有在没有保存选项的情况下才重新生成
+                console.log('⚠️ 没有保存选项且预生成失败，现在重新生成...');
                 (async () => {
                   setIsGeneratingChoices(true);
                   const newChoices = await generateAIChoices(story.current_scene, story.characters);
@@ -773,6 +791,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   }
                   setIsGeneratingChoices(false);
                 })();
+              } else {
+                // 有保存的选项但未正确设置到 pendingChoices，立即修复
+                console.log('🔧 发现保存的选项未正确设置，立即修复...');
+                setChoices(savedChoices);
+                setShowChoices(true);
+                onChoicesUpdate?.(savedChoices);
+                setIsPreGenerating(false);
+                setIsGeneratingChoices(false);
               }
             }, 100); // 等待100ms确保打字机状态稳定
           } else {

@@ -102,12 +102,19 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   useEffect(() => {
     if (preloadedContext) {
       console.log('🎯 处理预加载的故事上下文:', preloadedContext.title);
+      console.log('📋 预加载的选择项:', preloadedContext.currentChoices);
       
       // 恢复故事状态
       setCurrentStory(preloadedContext.storyState);
       setCurrentModelConfig(preloadedContext.modelConfig);
       setCurrentContextId(preloadedContext.id);
       setHasSavedProgress(true);
+
+      // 恢复保存的选择项到当前选择项状态
+      if (preloadedContext.currentChoices && preloadedContext.currentChoices.length > 0) {
+        setCurrentChoices(preloadedContext.currentChoices);
+        console.log('📋 已恢复保存的选择项到当前状态');
+      }
 
       // 恢复对话历史（模型配置现在由统一AI服务自动管理）
       storyAI.setConversationHistory(preloadedContext.conversationHistory, preloadedContext.summaryState);
