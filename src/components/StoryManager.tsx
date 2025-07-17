@@ -990,7 +990,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
           title,
           createSnapshot: false, // 更新主存档，不创建快照
           summaryState, // 包含摘要状态
-          currentChoices // 包含当前选项
+          currentChoices: [] // 不保存当前选项，读档后重新生成
         }
       );
 
@@ -1122,8 +1122,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 获取摘要状态
       const summaryState = storyAI.getSummaryState();
 
-      // 更新自动保存以包含摘要状态和当前选项
-      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, currentChoices);
+      // 更新自动保存以包含摘要状态，但不保存当前选项（读档后重新生成）
+      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, []);
       if (contextId) {
         setCurrentContextId(contextId);
       }
@@ -1349,7 +1349,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       autoSaveEnabled={autoSaveEnabled}
       onToggleAutoSave={handleToggleAutoSave}
       hasSavedProgress={hasSavedProgress}
-      savedChoices={preloadedContext?.currentChoices}
+      savedChoices={undefined} // 不传递存档中的选项，让StoryReader重新生成
       onChoicesUpdate={handleChoicesUpdate}
     />
   );

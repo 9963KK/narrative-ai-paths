@@ -241,7 +241,12 @@ export class CreditService {
           throw error;
         }
 
-        return data === true;
+        const success = data === true;
+        if (success) {
+          // 触发积分更新事件
+          this.triggerCreditUpdateEvent(userId, 'deduct');
+        }
+        return success;
       } catch (error) {
         console.error('扣除积分失败 (Supabase):', error);
         return false;
@@ -283,6 +288,9 @@ export class CreditService {
       actual_cost: actualCost
     });
 
+    // 触发积分更新事件
+    this.triggerCreditUpdateEvent(userId, 'deduct');
+
     return true;
   }
 
@@ -290,6 +298,19 @@ export class CreditService {
   private isValidUUID(id: string): boolean {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(id);
+  }
+
+  // 触发积分更新事件
+  private triggerCreditUpdateEvent(userId: string, operation: string): void {
+    const creditUpdateEvent = new CustomEvent('creditUpdated', {
+      detail: {
+        userId,
+        operation,
+        timestamp: new Date().toISOString()
+      }
+    });
+    window.dispatchEvent(creditUpdateEvent);
+    console.log(`💰 积分${operation}操作完成，已触发UI更新事件`);
   }
 
   // 管理员添加积分
@@ -320,7 +341,12 @@ export class CreditService {
           throw error;
         }
 
-        return data === true;
+        const success = data === true;
+        if (success) {
+          // 触发积分更新事件
+          this.triggerCreditUpdateEvent(targetUserId, 'admin_add');
+        }
+        return success;
       } catch (error) {
         console.error('管理员添加积分失败 (Supabase):', error);
         // 降级到本地存储
@@ -361,6 +387,9 @@ export class CreditService {
       admin_id: adminUserId,
       admin_note: note
     });
+
+    // 触发积分更新事件
+    this.triggerCreditUpdateEvent(targetUserId, 'admin_add');
 
     return true;
   }

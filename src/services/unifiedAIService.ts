@@ -467,7 +467,21 @@ class UnifiedAIService {
         `AI${requestType === 'other' ? '服务' : requestType}消费`
       );
 
-      if (!deductSuccess) {
+      if (deductSuccess) {
+        // 积分扣除成功，触发全局积分更新事件
+        const creditUpdateEvent = new CustomEvent('creditUpdated', {
+          detail: {
+            userId,
+            deductedAmount: creditCalculation.required_credits,
+            provider: modelConfig.provider,
+            model: modelConfig.model,
+            tokensUsed: usage.totalTokens,
+            timestamp: new Date().toISOString()
+          }
+        });
+        window.dispatchEvent(creditUpdateEvent);
+        console.log('💰 积分扣除成功，已触发UI更新事件');
+      } else {
         console.warn('⚠️ 积分扣除失败，但AI请求已完成');
       }
 

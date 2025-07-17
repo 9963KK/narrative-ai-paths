@@ -20,6 +20,7 @@ import StoryCreating from "../pages/StoryCreating";
 import AuthCallbackTest from "../pages/AuthCallbackTest";
 import DatabaseTest from "../pages/DatabaseTest";
 import DebugApiKey from "../pages/DebugApiKey";
+import CreditTest from "../pages/CreditTest";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -52,6 +53,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <DebugApiKey />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "debug/credit",
+        element: (
+          <ProtectedRoute>
+            <CreditTest />
           </ProtectedRoute>
         ),
       },

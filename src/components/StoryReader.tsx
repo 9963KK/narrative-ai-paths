@@ -721,23 +721,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         hasSavedChoices: savedChoices?.length || 0
       });
       
-      // 优先处理保存的选项 - 修复存档读取问题
+      // 修复存档读取问题：读档后应该重新生成选项，而不是使用存档中的旧选项
       if (shouldShowChoices) {
-        if (savedChoices && savedChoices.length > 0) {
-          console.log('🎉 发现保存的选项，直接使用（不清空）:', savedChoices);
-          // 立即设置保存的选项，不清空 pendingChoices
-          setPendingChoices(savedChoices);
-          // 重置生成状态，确保不会触发新的生成
-          setIsPreGenerating(false);
-          setIsGeneratingChoices(false);
-        } else {
-          // 只有在没有保存选项时才清空并重新生成
-          console.log('📝 没有保存的选项，清空状态并开始预生成...');
-          setPendingChoices(null);
-          setIsPreGenerating(false);
-          setIsGeneratingChoices(false);
-          preGenerateChoices(story.current_scene, story.characters);
-        }
+        console.log('📝 需要显示选项，开始重新生成（忽略存档中的旧选项）...');
+        // 清空状态并重新生成选项，确保选项与当前故事状态匹配
+        setPendingChoices(null);
+        setIsPreGenerating(false);
+        setIsGeneratingChoices(false);
+        preGenerateChoices(story.current_scene, story.characters);
       } else {
         // 不需要选项时才清空
         setPendingChoices(null);
@@ -757,12 +748,11 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           // 打字完成后检查选项状态
           if (shouldShowChoices) {
-            // 统一处理选项显示逻辑，优先使用保存的选项
+            // 统一处理选项显示逻辑，总是使用重新生成的选项
             setTimeout(() => {
               if (pendingChoices && pendingChoices.length > 0) {
-                // 选项已经准备好，立即显示（可能是保存的选项或预生成的选项）
-                const choiceSource = savedChoices && savedChoices.length > 0 ? '保存的选项' : '预生成的选项';
-                console.log(`🎉 ${choiceSource}已准备完成，立即显示!`);
+                // 选项已经准备好，立即显示（重新生成的选项）
+                console.log('🎉 重新生成的选项已准备完成，立即显示!');
                 setChoices(pendingChoices);
                 setShowChoices(true);
                 // 通知父组件选项已更新
@@ -775,9 +765,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 // 选项还在生成中，等待完成
                 console.log('⏳ 选项还在生成中，等待完成...');
                 // 这种情况下，会由下面的useEffect来处理显示
-              } else if (!savedChoices || savedChoices.length === 0) {
-                // 只有在没有保存选项的情况下才重新生成
-                console.log('⚠️ 没有保存选项且预生成失败，现在重新生成...');
+              } else {
+                // 预生成失败，现在重新生成
+                console.log('⚠️ 预生成失败，现在重新生成...');
                 (async () => {
                   setIsGeneratingChoices(true);
                   const newChoices = await generateAIChoices(story.current_scene, story.characters);
@@ -800,14 +790,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   }
                   setIsGeneratingChoices(false);
                 })();
-              } else {
-                // 有保存的选项但未正确设置到 pendingChoices，立即修复
-                console.log('🔧 发现保存的选项未正确设置，立即修复...');
-                setChoices(savedChoices);
-                setShowChoices(true);
-                onChoicesUpdate?.(savedChoices);
-                setIsPreGenerating(false);
-                setIsGeneratingChoices(false);
               }
             }, 100); // 等待100ms确保打字机状态稳定
           } else {

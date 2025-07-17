@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Coins, AlertCircle, RefreshCw } from 'lucide-react';
-import { creditService, type UserCredit } from '@/services/creditService';
-import { unifiedAuthService } from '@/services/unifiedAuthService';
+import { useCredit } from '@/contexts/CreditContext';
 
 interface CreditBadgeProps {
   variant?: 'compact' | 'detailed';
@@ -9,44 +8,12 @@ interface CreditBadgeProps {
   className?: string;
 }
 
-export function CreditBadge({ 
-  variant = 'compact', 
-  showRefresh = false, 
-  className = '' 
+export function CreditBadge({
+  variant = 'compact',
+  showRefresh = false,
+  className = ''
 }: CreditBadgeProps) {
-  const [userCredits, setUserCredits] = useState<UserCredit | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadUserCredits = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const currentUser = unifiedAuthService.getCurrentUser();
-      if (!currentUser) {
-        setError('用户未登录');
-        return;
-      }
-
-      // 尝试初始化用户积分（如果不存在）
-      await creditService.initializeUserCredits(currentUser.id);
-      
-      // 获取用户积分
-      const credits = await creditService.getUserCredits(currentUser.id);
-      setUserCredits(credits);
-      
-    } catch (err) {
-      console.error('获取用户积分失败:', err);
-      setError('获取积分信息失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadUserCredits();
-  }, []);
+  const { userCredits, isLoading: loading, error, refreshCredits } = useCredit();
 
   if (loading) {
     return (
@@ -87,7 +54,7 @@ export function CreditBadge({
         
         {showRefresh && (
           <button
-            onClick={loadUserCredits}
+            onClick={refreshCredits}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
             title="刷新积分"
           >
@@ -109,7 +76,7 @@ export function CreditBadge({
         
         {showRefresh && (
           <button
-            onClick={loadUserCredits}
+            onClick={refreshCredits}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             title="刷新积分"
           >
