@@ -774,9 +774,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 // 选项还在生成中，等待完成
                 console.log('⏳ 选项还在生成中，等待完成...');
                 // 这种情况下，会由下面的useEffect来处理显示
-              } else {
-                // 预生成失败，现在重新生成
-                console.log('⚠️ 预生成失败，现在重新生成...');
+              } else if (!showChoices && choices.length === 0) {
+                // 只有在没有显示选项且没有选项的情况下才重新生成
+                console.log('⚠️ 预生成失败且没有可用选项，现在重新生成...');
                 (async () => {
                   setIsGeneratingChoices(true);
                   const newChoices = await generateAIChoices(story.current_scene, story.characters);
@@ -799,6 +799,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   }
                   setIsGeneratingChoices(false);
                 })();
+              } else {
+                // 选项已经存在，不需要重新生成
+                console.log('✅ 选项已存在，跳过重新生成');
               }
             }, 100); // 等待100ms确保打字机状态稳定
           } else {
@@ -815,12 +818,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   
   // 监听预生成完成，但只在打字机完全结束后才显示选项
   useEffect(() => {
-    if (pendingChoices && pendingChoices.length > 0 && !isTyping && !showChoices) {
+    if (pendingChoices && pendingChoices.length > 0 && !isTyping && !showChoices && choices.length === 0) {
       console.log('🎉 预生成完成且打字机已结束，立即显示选项!');
-      
+
       // 稍微延迟以确保打字机完全结束
       setTimeout(() => {
-        if (!isTyping && pendingChoices && pendingChoices.length > 0 && !showChoices) {
+        if (!isTyping && pendingChoices && pendingChoices.length > 0 && !showChoices && choices.length === 0) {
           setChoices(pendingChoices);
           setShowChoices(true);
           onChoicesUpdate?.(pendingChoices);
@@ -832,7 +835,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         }
       }, 50);
     }
-  }, [pendingChoices, isTyping, showChoices]);
+  }, [pendingChoices, isTyping, showChoices, choices.length]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
