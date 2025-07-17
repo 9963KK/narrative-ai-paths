@@ -721,14 +721,22 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         hasSavedChoices: savedChoices?.length || 0
       });
       
-      // 修复存档读取问题：读档后应该重新生成选项，而不是使用存档中的旧选项
+      // 智能处理存档选项：首次读档使用存档选项，后续重新生成
       if (shouldShowChoices) {
-        console.log('📝 需要显示选项，开始重新生成（忽略存档中的旧选项）...');
-        // 清空状态并重新生成选项，确保选项与当前故事状态匹配
-        setPendingChoices(null);
-        setIsPreGenerating(false);
-        setIsGeneratingChoices(false);
-        preGenerateChoices(story.current_scene, story.characters);
+        if (savedChoices && savedChoices.length > 0) {
+          console.log('🎉 发现存档选项，直接使用（首次读档）:', savedChoices);
+          // 立即设置存档选项
+          setPendingChoices(savedChoices);
+          setIsPreGenerating(false);
+          setIsGeneratingChoices(false);
+        } else {
+          console.log('📝 没有存档选项或非首次读档，重新生成选项...');
+          // 清空状态并重新生成选项
+          setPendingChoices(null);
+          setIsPreGenerating(false);
+          setIsGeneratingChoices(false);
+          preGenerateChoices(story.current_scene, story.characters);
+        }
       } else {
         // 不需要选项时才清空
         setPendingChoices(null);
@@ -748,11 +756,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           // 打字完成后检查选项状态
           if (shouldShowChoices) {
-            // 统一处理选项显示逻辑，总是使用重新生成的选项
+            // 统一处理选项显示逻辑，优先使用存档选项，否则使用重新生成的选项
             setTimeout(() => {
               if (pendingChoices && pendingChoices.length > 0) {
-                // 选项已经准备好，立即显示（重新生成的选项）
-                console.log('🎉 重新生成的选项已准备完成，立即显示!');
+                // 选项已经准备好，立即显示（可能是存档选项或重新生成的选项）
+                const choiceSource = savedChoices && savedChoices.length > 0 ? '存档选项' : '重新生成的选项';
+                console.log(`🎉 ${choiceSource}已准备完成，立即显示!`);
                 setChoices(pendingChoices);
                 setShowChoices(true);
                 // 通知父组件选项已更新

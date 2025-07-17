@@ -64,6 +64,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // 自动保存状态
   const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
   const [currentChoices, setCurrentChoices] = useState<Choice[]>([]); // 当前选项
+  const [isFirstLoadFromSave, setIsFirstLoadFromSave] = useState(false); // 是否是首次从存档加载
 
   // 处理选项更新
   const handleChoicesUpdate = (choices: Choice[]) => {
@@ -312,7 +313,13 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
     // 开始处理状态
     setIsProcessingChoice(true);
-    
+
+    // 用户做出选择后，清除首次加载状态，确保后续选项重新生成
+    if (isFirstLoadFromSave) {
+      setIsFirstLoadFromSave(false);
+      console.log('🔄 用户已做出选择，后续选项将重新生成');
+    }
+
     console.log(`👆 玩家选择: [${choiceId}] ${choiceText}`);
 
     try {
@@ -990,7 +997,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
           title,
           createSnapshot: false, // 更新主存档，不创建快照
           summaryState, // 包含摘要状态
-          currentChoices: [] // 不保存当前选项，读档后重新生成
+          currentChoices // 保存当前选项，用于读档时恢复
         }
       );
 
@@ -1091,6 +1098,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       setCurrentModelConfig(savedContext.modelConfig);
       setCurrentContextId(contextId);
       setHasSavedProgress(true); // 设置为已有存档状态
+      setIsFirstLoadFromSave(true); // 标记为首次从存档加载
 
       // 恢复对话历史和摘要状态（模型配置现在由统一AI服务自动管理）
       storyAI.setConversationHistory(savedContext.conversationHistory, savedContext.summaryState);
@@ -1122,8 +1130,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 获取摘要状态
       const summaryState = storyAI.getSummaryState();
 
-      // 更新自动保存以包含摘要状态，但不保存当前选项（读档后重新生成）
-      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, []);
+      // 更新自动保存以包含摘要状态和当前选项
+      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, currentChoices);
       if (contextId) {
         setCurrentContextId(contextId);
       }
@@ -1349,7 +1357,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       autoSaveEnabled={autoSaveEnabled}
       onToggleAutoSave={handleToggleAutoSave}
       hasSavedProgress={hasSavedProgress}
-      savedChoices={undefined} // 不传递存档中的选项，让StoryReader重新生成
+      savedChoices={isFirstLoadFromSave ? preloadedContext?.currentChoices : undefined} // 只在首次读档时使用存档选项
       onChoicesUpdate={handleChoicesUpdate}
     />
   );
