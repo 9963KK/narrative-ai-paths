@@ -111,10 +111,19 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         }
       });
       
-      // 如果当前文本与最新的助手回复不同，说明是新的内容，需要加上
-      const lastAssistantMsg = conversationHistory.filter(msg => msg.role === 'assistant').pop();
-      if (!lastAssistantMsg || currentText !== lastAssistantMsg.content) {
-        totalWords += currentText.length;
+      // 在打字机效果期间，使用完整的场景文本长度而不是当前显示的文本
+      if (isTyping && story.current_scene) {
+        // 打字机效果期间，检查当前场景是否已经在历史记录中
+        const lastAssistantMsg = conversationHistory.filter(msg => msg.role === 'assistant').pop();
+        if (!lastAssistantMsg || story.current_scene !== lastAssistantMsg.content) {
+          totalWords += story.current_scene.length;
+        }
+      } else {
+        // 打字机效果完成后，使用标准逻辑
+        const lastAssistantMsg = conversationHistory.filter(msg => msg.role === 'assistant').pop();
+        if (!lastAssistantMsg || currentText !== lastAssistantMsg.content) {
+          totalWords += currentText.length;
+        }
       }
       
       return totalWords;
