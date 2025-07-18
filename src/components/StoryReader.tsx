@@ -821,6 +821,13 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
   // 专门处理选项重新生成的useEffect，避免与显示逻辑竞争
   useEffect(() => {
+    // 重新计算是否应该显示选项的条件
+    const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
+    const shouldShowChoices = story.needs_choice !== false &&
+                            !story.is_completed &&
+                            !initialStory.is_completed &&
+                            !hasReachedEndingCondition;
+
     // 只有在打字机完成、没有选项、没有正在生成、没有待显示选项时才重新生成
     if (!isTyping && !showChoices && choices.length === 0 && !pendingChoices &&
         !isPreGenerating && !isGeneratingChoices && shouldShowChoices) {
@@ -829,9 +836,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
       // 添加一个小延迟，确保所有状态都已稳定
       const timeoutId = setTimeout(async () => {
-        // 再次检查条件，确保状态没有变化
+        // 再次计算条件，确保状态没有变化
+        const hasReachedEndingCondition2 = (story.story_progress || 0) >= 95 || story.chapter >= 20;
+        const shouldShowChoices2 = story.needs_choice !== false &&
+                                 !story.is_completed &&
+                                 !initialStory.is_completed &&
+                                 !hasReachedEndingCondition2;
+
         if (!isTyping && !showChoices && choices.length === 0 && !pendingChoices &&
-            !isPreGenerating && !isGeneratingChoices && shouldShowChoices) {
+            !isPreGenerating && !isGeneratingChoices && shouldShowChoices2) {
 
           console.log('⚠️ 确认需要重新生成选项，开始AI调用...');
           setIsGeneratingChoices(true);
@@ -868,7 +881,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isTyping, showChoices, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, shouldShowChoices, story.current_scene, story.characters]);
+  }, [isTyping, showChoices, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter, story.current_scene, story.characters]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
