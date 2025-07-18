@@ -774,37 +774,15 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 // 选项还在生成中，等待完成
                 console.log('⏳ 选项还在生成中，等待完成...');
                 // 这种情况下，会由下面的useEffect来处理显示
-              } else if (!showChoices && choices.length === 0 && !pendingChoices) {
-                // 只有在没有显示选项、没有选项、且没有待显示选项的情况下才重新生成
-                console.log('⚠️ 预生成失败且没有可用选项，现在重新生成...');
-                (async () => {
-                  setIsGeneratingChoices(true);
-                  const newChoices = await generateAIChoices(story.current_scene, story.characters);
-                  if (newChoices && newChoices.length > 0) {
-                    setChoices(newChoices);
-                    setShowChoices(true);
-                    onChoicesUpdate?.(newChoices);
-                    console.log('✅ 重新生成的选项已显示');
-                  } else {
-                    console.error('❌ 重新生成也失败，使用回退选项');
-                    setIsStoryStuck(true);
-                    const fallbackChoices = [
-                      { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
-                      { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
-                      { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
-                    ];
-                    setChoices(fallbackChoices);
-                    setShowChoices(true);
-                    onChoicesUpdate?.(fallbackChoices);
-                  }
-                  setIsGeneratingChoices(false);
-                })();
               } else {
-                // 选项已经存在或正在准备中，不需要重新生成
-                console.log('✅ 选项已存在或正在准备中，跳过重新生成', {
+                // 打字机完成后的状态检查，不在这里重新生成选项
+                // 重新生成逻辑由专门的useEffect处理，避免竞争条件
+                console.log('✅ 打字机完成，选项状态检查完毕', {
                   showChoices,
                   choicesLength: choices.length,
-                  hasPendingChoices: !!pendingChoices
+                  hasPendingChoices: !!pendingChoices,
+                  isPreGenerating,
+                  isGeneratingChoices
                 });
               }
             }, 100); // 等待100ms确保打字机状态稳定
@@ -840,6 +818,57 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       }, 50);
     }
   }, [pendingChoices, isTyping, showChoices, choices.length]);
+
+  // 专门处理选项重新生成的useEffect，避免与显示逻辑竞争
+  useEffect(() => {
+    // 只有在打字机完成、没有选项、没有正在生成、没有待显示选项时才重新生成
+    if (!isTyping && !showChoices && choices.length === 0 && !pendingChoices &&
+        !isPreGenerating && !isGeneratingChoices && shouldShowChoices) {
+
+      console.log('🔄 检测到需要重新生成选项的条件满足，开始重新生成...');
+
+      // 添加一个小延迟，确保所有状态都已稳定
+      const timeoutId = setTimeout(async () => {
+        // 再次检查条件，确保状态没有变化
+        if (!isTyping && !showChoices && choices.length === 0 && !pendingChoices &&
+            !isPreGenerating && !isGeneratingChoices && shouldShowChoices) {
+
+          console.log('⚠️ 确认需要重新生成选项，开始AI调用...');
+          setIsGeneratingChoices(true);
+
+          try {
+            const newChoices = await generateAIChoices(story.current_scene, story.characters);
+            if (newChoices && newChoices.length > 0) {
+              setChoices(newChoices);
+              setShowChoices(true);
+              onChoicesUpdate?.(newChoices);
+              console.log('✅ 重新生成的选项已显示');
+            } else {
+              console.error('❌ 重新生成也失败，使用回退选项');
+              setIsStoryStuck(true);
+              const fallbackChoices = [
+                { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
+                { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
+                { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
+              ];
+              setChoices(fallbackChoices);
+              setShowChoices(true);
+              onChoicesUpdate?.(fallbackChoices);
+            }
+          } catch (error) {
+            console.error('❌ 重新生成选项时发生错误:', error);
+            setIsStoryStuck(true);
+          } finally {
+            setIsGeneratingChoices(false);
+          }
+        } else {
+          console.log('✅ 状态已变化，取消重新生成');
+        }
+      }, 200); // 200ms延迟，确保状态稳定
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isTyping, showChoices, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, shouldShowChoices, story.current_scene, story.characters]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
