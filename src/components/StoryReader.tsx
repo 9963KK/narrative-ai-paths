@@ -823,6 +823,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [choiceGenerationRetryCount, setChoiceGenerationRetryCount] = useState(0);
   const MAX_RETRY_COUNT = 3;
 
+  // 本地处理状态 - 立即阻止重新生成，避免React异步状态更新的时序问题
+  const [localProcessingChoice, setLocalProcessingChoice] = useState(false);
+
   // 专门处理选项重新生成的useEffect - 基于存储变量状态而非显示状态
   useEffect(() => {
     // 重新计算是否应该显示选项的条件
@@ -833,12 +836,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                             !hasReachedEndingCondition;
 
     // 核心逻辑：检测存储变量是否为空（说明选项被消费了）
-    // 条件：打字机完成 + 存储变量都为空 + 没有正在生成 + 应该显示选项 + 重试次数未超限
+    // 条件：打字机完成 + 存储变量都为空 + 没有正在生成 + 没有正在处理选择(本地+外部) + 应该显示选项 + 重试次数未超限
     if (!isTyping &&
         choices.length === 0 &&
         !pendingChoices &&
         !isPreGenerating &&
         !isGeneratingChoices &&
+        !isProcessingChoice &&
+        !localProcessingChoice &&
         shouldShowChoices &&
         choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
@@ -858,6 +863,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             !pendingChoices &&
             !isPreGenerating &&
             !isGeneratingChoices &&
+            !isProcessingChoice &&
+            !localProcessingChoice &&
             shouldShowChoices2 &&
             choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
@@ -903,7 +910,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isTyping, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, choiceGenerationRetryCount, story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter, story.current_scene, story.characters]);
+  }, [isTyping, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, isProcessingChoice, localProcessingChoice, choiceGenerationRetryCount, story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter, story.current_scene, story.characters]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
@@ -932,12 +939,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           console.log('✅ AI完成 + 最小显示时间达到，重置加载状态');
           setSelectedChoiceText('');
           setChoiceStartTime(0);
+          setLocalProcessingChoice(false); // 重置本地处理状态
         }, remainingTime);
       } else {
         // AI完成且已经显示足够时间，立即重置
         console.log('✅ AI完成且已达到最小显示时间，立即重置加载状态');
         setSelectedChoiceText('');
         setChoiceStartTime(0);
+        setLocalProcessingChoice(false); // 重置本地处理状态
       }
     }
   }, [initialStory.current_scene]);
@@ -957,6 +966,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     setIsPreGenerating(false);
     setIsGeneratingChoices(false);
     setChoiceGenerationRetryCount(0); // 重置重试计数
+    setLocalProcessingChoice(true); // 立即设置本地处理状态，阻止重新生成
     
     console.log('🔄 选择处理开始:', {
       choiceId,
