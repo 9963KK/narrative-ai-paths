@@ -774,8 +774,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 // 选项还在生成中，等待完成
                 console.log('⏳ 选项还在生成中，等待完成...');
                 // 这种情况下，会由下面的useEffect来处理显示
-              } else if (!showChoices && choices.length === 0) {
-                // 只有在没有显示选项且没有选项的情况下才重新生成
+              } else if (!showChoices && choices.length === 0 && !pendingChoices) {
+                // 只有在没有显示选项、没有选项、且没有待显示选项的情况下才重新生成
                 console.log('⚠️ 预生成失败且没有可用选项，现在重新生成...');
                 (async () => {
                   setIsGeneratingChoices(true);
@@ -800,8 +800,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   setIsGeneratingChoices(false);
                 })();
               } else {
-                // 选项已经存在，不需要重新生成
-                console.log('✅ 选项已存在，跳过重新生成');
+                // 选项已经存在或正在准备中，不需要重新生成
+                console.log('✅ 选项已存在或正在准备中，跳过重新生成', {
+                  showChoices,
+                  choicesLength: choices.length,
+                  hasPendingChoices: !!pendingChoices
+                });
               }
             }, 100); // 等待100ms确保打字机状态稳定
           } else {
