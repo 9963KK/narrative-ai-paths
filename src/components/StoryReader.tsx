@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +86,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [showChoices, setShowChoices] = useState(false);
   const [isGeneratingChoices, setIsGeneratingChoices] = useState(false);
   const [selectedChoiceText, setSelectedChoiceText] = useState<string>('');
-  const [choiceStartTime, setChoiceStartTime] = useState<number>(0);
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
 
   // 解析性格特征为标签数组
@@ -133,39 +132,29 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       return story.current_scene?.length || 0;
     }
   };
-  const [choiceGenerationStartTime, setChoiceGenerationStartTime] = useState<number>(0);
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
   
   // 新增：选项预生成状态管理
   const [pendingChoices, setPendingChoices] = useState<Choice[] | null>(null); // 预生成的选项
-  const [isPreGenerating, setIsPreGenerating] = useState(false); // 是否正在预生成选项
-  const [preGenerationStartTime, setPreGenerationStartTime] = useState<number>(0); // 预生成开始时间
   
   // 监控isProcessingChoice状态变化
   useEffect(() => {
     // 已移除状态变化调试输出
   }, [isProcessingChoice]);
 
-  // 监控选择生成超时 - 考虑重试机制，延长超时时间
+  // 监控选择生成超时
   useEffect(() => {
-    if (choiceGenerationStartTime > 0) {
-      // 由于AI内部有3次重试，每次可能需要几秒，总超时时间应该更长
+    if (isGeneratingChoices) {
       const timeoutId = setTimeout(() => {
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - choiceGenerationStartTime;
-        
-        if (elapsedTime >= 45000) { // 延长到45秒，给重试机制足够时间
-          console.error('⏰ 选择生成超时（包括AI内部3次重试），故事确实卡住了');
-          setIsStoryStuck(true);
-          setIsGeneratingChoices(false);
-          setChoiceGenerationStartTime(0);
-        }
-      }, 45000); // 从30秒延长到45秒
+        console.error('⏰ 选择生成超时，故事可能卡住了');
+        setIsStoryStuck(true);
+        setIsGeneratingChoices(false);
+      }, 45000); // 45秒超时
 
       return () => clearTimeout(timeoutId);
     }
-  }, [choiceGenerationStartTime]);
+  }, [isGeneratingChoices]);
 
   // 当外部story更新时，同步本地state
   useEffect(() => {
@@ -225,7 +214,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       }
     } else {
       // AI错误清除时，重置卡住状态（除非其他原因导致卡住）
-      if (isStoryStuck && !choiceGenerationStartTime) {
+      if (isStoryStuck && !isGeneratingChoices) {
         setIsStoryStuck(false);
       }
     }
@@ -596,7 +585,6 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   // 模拟AI生成选择（可以后续替换为真实AI调用）
   const generateAIChoices = async (scene: string, characters: any[]): Promise<Choice[]> => {
     setIsGeneratingChoices(true);
-    setChoiceGenerationStartTime(Date.now());
     setIsStoryStuck(false); // 重置卡住状态
     
     // 直接开始生成，不添加人工延时
@@ -665,31 +653,50 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       ];
     } finally {
       setIsGeneratingChoices(false);
-      setChoiceGenerationStartTime(0);
     }
   };
 
-  // 预生成选项的函数
-  const preGenerateChoices = async (scene: string, characters: any[]) => {
-    setIsPreGenerating(true);
-    setPreGenerationStartTime(Date.now());
-    console.log('🚀 故事内容解析完成，立即开始预生成选项...');
-    
+  // 检查是否应该显示选项的条件
+  const shouldShowChoices = useCallback(() => {
+    const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
+    return story.needs_choice !== false &&
+           !story.is_completed &&
+           !initialStory.is_completed &&
+           !hasReachedEndingCondition;
+  }, [story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter]);
+
+  // 统一的选项生成函数
+  const generateChoicesIfNeeded = async (scene: string, characters: any[], reason: string = '选项生成') => {
+    if (!shouldShowChoices()) {
+      console.log(`❌ ${reason}: 不满足生成条件，跳过`);
+      return false;
+    }
+
+    // 检查是否已经在生成中
+    if (isGeneratingChoices) {
+      console.log(`⏳ ${reason}: 已在生成中，跳过`);
+      return false;
+    }
+
+    setIsGeneratingChoices(true);
+    console.log(`🚀 ${reason}: 开始生成选项...`);
+
     try {
       const newChoices = await generateAIChoices(scene, characters);
       if (newChoices && newChoices.length > 0) {
         setPendingChoices(newChoices);
-        console.log('✅ 选项预生成完成，等待打字机效果结束', newChoices);
+        console.log(`✅ ${reason}: 选项生成完成`, newChoices);
+        return true;
       } else {
-        console.warn('⚠️ 选项预生成失败，将在打字机结束后重试');
+        console.warn(`⚠️ ${reason}: 选项生成失败`);
         setPendingChoices(null);
+        return false;
       }
     } catch (error) {
-      console.error('❌ 选项预生成遇到错误:', error);
+      console.error(`❌ ${reason}: 选项生成遇到错误:`, error);
       setPendingChoices(null);
+      return false;
     } finally {
-      setIsPreGenerating(false);
-      // 确保也清除原有的生成状态
       setIsGeneratingChoices(false);
     }
   };
@@ -703,11 +710,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       setChoices([]);
       
       // 检查是否需要生成选项
-      const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
-      const shouldShowChoices = story.needs_choice !== false && 
-                              !story.is_completed && 
-                              !initialStory.is_completed &&
-                              !hasReachedEndingCondition;
+      const needsChoices = shouldShowChoices();
       
       console.log('🎯 检查是否需要生成选项:', {
         needs_choice: story.needs_choice,
@@ -722,25 +725,22 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       });
       
       // 智能处理存档选项：首次读档使用存档选项，后续重新生成
-      if (shouldShowChoices) {
+      if (needsChoices) {
         if (savedChoices && savedChoices.length > 0) {
           console.log('🎉 发现存档选项，直接使用（首次读档）:', savedChoices);
           // 立即设置存档选项
           setPendingChoices(savedChoices);
-          setIsPreGenerating(false);
           setIsGeneratingChoices(false);
         } else {
           console.log('📝 没有存档选项或非首次读档，重新生成选项...');
           // 清空状态并重新生成选项
           setPendingChoices(null);
-          setIsPreGenerating(false);
           setIsGeneratingChoices(false);
-          preGenerateChoices(story.current_scene, story.characters);
+          generateChoicesIfNeeded(story.current_scene, story.characters, '预生成选项');
         }
       } else {
         // 不需要选项时才清空
         setPendingChoices(null);
-        setIsPreGenerating(false);
         setIsGeneratingChoices(false);
       }
       
@@ -754,41 +754,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           setIsTyping(false);
           console.log('✅ 打字机效果完成，检查选项状态...');
           
-          // 打字完成后检查选项状态
-          if (shouldShowChoices) {
-            // 统一处理选项显示逻辑，优先使用存档选项，否则使用重新生成的选项
-            setTimeout(() => {
-              if (pendingChoices && pendingChoices.length > 0) {
-                // 选项已经准备好，立即显示（可能是存档选项或重新生成的选项）
-                const choiceSource = savedChoices && savedChoices.length > 0 ? '存档选项' : '重新生成的选项';
-                console.log(`🎉 ${choiceSource}已准备完成，立即显示!`);
-                setChoices(pendingChoices);
-                setShowChoices(true);
-                // 通知父组件选项已更新
-                onChoicesUpdate?.(pendingChoices);
-                setPendingChoices(null);
-                // 确保清除加载状态
-                setIsPreGenerating(false);
-                setIsGeneratingChoices(false);
-              } else if (isPreGenerating || isGeneratingChoices) {
-                // 选项还在生成中，等待完成
-                console.log('⏳ 选项还在生成中，等待完成...');
-                // 这种情况下，会由下面的useEffect来处理显示
-              } else {
-                // 打字机完成后的状态检查，不在这里重新生成选项
-                // 重新生成逻辑由专门的useEffect处理，避免竞争条件
-                console.log('✅ 打字机完成，选项状态检查完毕', {
-                  showChoices,
-                  choicesLength: choices.length,
-                  hasPendingChoices: !!pendingChoices,
-                  isPreGenerating,
-                  isGeneratingChoices
-                });
-              }
-            }, 100); // 等待100ms确保打字机状态稳定
-          } else {
-            console.log('❌ 不需要显示选择项，或故事已完成');
-          }
+          // 打字完成，触发选项显示检查
+          console.log('✅ 打字机完成，触发选项显示检查');
           
           clearInterval(interval);
         }
@@ -798,26 +765,38 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     }
   }, [story.current_scene]);
   
-  // 监听预生成完成，但只在打字机完全结束后才显示选项
+  // 统一的选项显示状态机
   useEffect(() => {
-    if (pendingChoices && pendingChoices.length > 0 && !isTyping && !showChoices && choices.length === 0) {
-      console.log('🎉 预生成完成且打字机已结束，立即显示选项!');
+    // 显示条件：有待显示选项 + 打字机完成 + 当前没有显示选项 + 应该显示选项
+    if (pendingChoices &&
+        pendingChoices.length > 0 &&
+        !isTyping &&
+        !showChoices &&
+        choices.length === 0 &&
+        shouldShowChoices()) {
+
+      console.log('🎉 选项显示条件满足，准备显示选项!');
 
       // 稍微延迟以确保打字机完全结束
       setTimeout(() => {
-        if (!isTyping && pendingChoices && pendingChoices.length > 0 && !showChoices && choices.length === 0) {
+        // 再次检查条件，确保状态没有变化
+        if (!isTyping &&
+            pendingChoices &&
+            pendingChoices.length > 0 &&
+            !showChoices &&
+            choices.length === 0 &&
+            shouldShowChoices()) {
+
           setChoices(pendingChoices);
           setShowChoices(true);
           onChoicesUpdate?.(pendingChoices);
           setPendingChoices(null);
-          // 清除所有加载状态
-          setIsPreGenerating(false);
           setIsGeneratingChoices(false);
-          console.log('✅ 选项已显示，所有加载状态已清除');
+          console.log('✅ 选项已显示，所有状态已清除');
         }
-      }, 50);
+      }, 100); // 增加延迟确保状态稳定
     }
-  }, [pendingChoices, isTyping, showChoices, choices.length]);
+  }, [pendingChoices, isTyping, showChoices, choices.length, shouldShowChoices]);
 
   // 添加重试计数状态
   const [choiceGenerationRetryCount, setChoiceGenerationRetryCount] = useState(0);
@@ -828,23 +807,14 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
   // 专门处理选项重新生成的useEffect - 基于存储变量状态而非显示状态
   useEffect(() => {
-    // 重新计算是否应该显示选项的条件
-    const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
-    const shouldShowChoices = story.needs_choice !== false &&
-                            !story.is_completed &&
-                            !initialStory.is_completed &&
-                            !hasReachedEndingCondition;
-
     // 核心逻辑：检测存储变量是否为空（说明选项被消费了）
-    // 条件：打字机完成 + 存储变量都为空 + 没有正在生成 + 没有正在处理选择(本地+外部) + 应该显示选项 + 重试次数未超限
+    // 条件：打字机完成 + 存储变量都为空 + 没有正在生成 + 没有正在处理选择(本地+外部) + 重试次数未超限
     if (!isTyping &&
         choices.length === 0 &&
         !pendingChoices &&
-        !isPreGenerating &&
         !isGeneratingChoices &&
         !isProcessingChoice &&
         !localProcessingChoice &&
-        shouldShowChoices &&
         choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
       console.log(`🔄 检测到选项存储变量为空，开始重新生成... (重试次数: ${choiceGenerationRetryCount + 1}/${MAX_RETRY_COUNT})`);
@@ -852,56 +822,37 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       // 添加延迟，确保状态稳定
       const timeoutId = setTimeout(async () => {
         // 再次检查条件，确保状态没有变化
-        const hasReachedEndingCondition2 = (story.story_progress || 0) >= 95 || story.chapter >= 20;
-        const shouldShowChoices2 = story.needs_choice !== false &&
-                                 !story.is_completed &&
-                                 !initialStory.is_completed &&
-                                 !hasReachedEndingCondition2;
-
         if (!isTyping &&
             choices.length === 0 &&
             !pendingChoices &&
-            !isPreGenerating &&
             !isGeneratingChoices &&
             !isProcessingChoice &&
             !localProcessingChoice &&
-            shouldShowChoices2 &&
             choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
-          console.log(`⚠️ 确认需要重新生成选项，开始AI调用... (第${choiceGenerationRetryCount + 1}次尝试)`);
-          setIsGeneratingChoices(true);
+          console.log(`⚠️ 确认需要重新生成选项... (第${choiceGenerationRetryCount + 1}次尝试)`);
           setChoiceGenerationRetryCount(prev => prev + 1);
 
-          try {
-            const newChoices = await generateAIChoices(story.current_scene, story.characters);
-            if (newChoices && newChoices.length > 0) {
-              setPendingChoices(newChoices); // 设置到pendingChoices，让显示逻辑处理
-              onChoicesUpdate?.(newChoices);
-              setChoiceGenerationRetryCount(0); // 成功后重置计数
-              console.log('✅ 重新生成的选项已设置到pendingChoices');
-            } else {
-              console.error(`❌ 第${choiceGenerationRetryCount}次重新生成失败`);
-              if (choiceGenerationRetryCount >= MAX_RETRY_COUNT) {
-                console.error('❌ 达到最大重试次数，使用回退选项');
-                setIsStoryStuck(true);
-                const fallbackChoices = [
-                  { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
-                  { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
-                  { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
-                ];
-                setPendingChoices(fallbackChoices);
-                onChoicesUpdate?.(fallbackChoices);
-                setChoiceGenerationRetryCount(0);
-              }
-            }
-          } catch (error) {
-            console.error(`❌ 第${choiceGenerationRetryCount}次重新生成选项时发生错误:`, error);
-            if (choiceGenerationRetryCount >= MAX_RETRY_COUNT) {
-              setIsStoryStuck(true);
-              setChoiceGenerationRetryCount(0);
-            }
-          } finally {
-            setIsGeneratingChoices(false);
+          const success = await generateChoicesIfNeeded(
+            story.current_scene,
+            story.characters,
+            `重新生成选项(第${choiceGenerationRetryCount + 1}次)`
+          );
+
+          if (success) {
+            onChoicesUpdate?.(pendingChoices || []);
+            setChoiceGenerationRetryCount(0); // 成功后重置计数
+          } else if (choiceGenerationRetryCount >= MAX_RETRY_COUNT) {
+            console.error('❌ 达到最大重试次数，使用回退选项');
+            setIsStoryStuck(true);
+            const fallbackChoices = [
+              { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
+              { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
+              { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
+            ];
+            setPendingChoices(fallbackChoices);
+            onChoicesUpdate?.(fallbackChoices);
+            setChoiceGenerationRetryCount(0);
           }
         } else {
           console.log('✅ 状态已变化，取消重新生成');
@@ -910,69 +861,38 @@ const StoryReader: React.FC<StoryReaderProps> = ({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isTyping, choices.length, pendingChoices, isPreGenerating, isGeneratingChoices, isProcessingChoice, localProcessingChoice, choiceGenerationRetryCount, story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter, story.current_scene, story.characters]);
+  }, [isTyping, choices.length, pendingChoices, isGeneratingChoices, isProcessingChoice, localProcessingChoice, choiceGenerationRetryCount, story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter, story.current_scene, story.characters]);
 
   // 当外部故事更新时，重置选择处理状态
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory]);
 
-  // 当外部故事变化时（AI处理完成），智能重置选择处理状态
+  // 当外部故事变化时（AI处理完成），重置选择处理状态
   useEffect(() => {
-    if (initialStory.current_scene !== story.current_scene && isProcessingChoice && choiceStartTime > 0) {
-      const elapsedTime = Date.now() - choiceStartTime;
-      const minDisplayTime = 0; // 不强制等待，立即响应
-      
-      console.log('🎯 AI处理完成，检查是否可以重置加载状态:', {
-        elapsedTime,
-        minDisplayTime,
-        aiFinished: true,
-        shouldWait: elapsedTime < minDisplayTime
-      });
-      
-      if (elapsedTime < minDisplayTime) {
-        // AI完成了，但还没达到最小显示时间，等待剩余时间
-        const remainingTime = minDisplayTime - elapsedTime;
-        console.log('⏳ AI已完成，但需等待最小显示时间:', remainingTime + 'ms');
-        
-        setTimeout(() => {
-          console.log('✅ AI完成 + 最小显示时间达到，重置加载状态');
-          setSelectedChoiceText('');
-          setChoiceStartTime(0);
-          setLocalProcessingChoice(false); // 重置本地处理状态
-        }, remainingTime);
-      } else {
-        // AI完成且已经显示足够时间，立即重置
-        console.log('✅ AI完成且已达到最小显示时间，立即重置加载状态');
-        setSelectedChoiceText('');
-        setChoiceStartTime(0);
-        setLocalProcessingChoice(false); // 重置本地处理状态
-      }
+    if (initialStory.current_scene !== story.current_scene && isProcessingChoice) {
+      console.log('🎯 AI处理完成，重置选择处理状态');
+      setSelectedChoiceText('');
+      setLocalProcessingChoice(false);
     }
-  }, [initialStory.current_scene]);
+  }, [initialStory.current_scene, isProcessingChoice]);
 
   const handleChoice = (choiceId: number) => {
     const selectedChoice = choices.find(c => c.id === choiceId);
-    
-    // 记录选择开始时间，确保加载状态至少显示1.5秒
-    const startTime = Date.now();
-    setChoiceStartTime(startTime);
-    
+
     // 立即显示选择处理状态并清理所有相关状态
     setSelectedChoiceText(selectedChoice?.text || '');
     setShowChoices(false);
     setChoices([]);
     setPendingChoices(null);
-    setIsPreGenerating(false);
     setIsGeneratingChoices(false);
     setChoiceGenerationRetryCount(0); // 重置重试计数
     setLocalProcessingChoice(true); // 立即设置本地处理状态，阻止重新生成
-    
+
     console.log('🔄 选择处理开始:', {
       choiceId,
       selectedText: selectedChoice?.text,
-      isProcessingChoice: true,
-      startTime
+      isProcessingChoice: true
     });
     
     // 调用父组件的选择处理方法
@@ -1382,8 +1302,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
               </Card>
             )}
 
-            {/* 选择项预生成中 - 新增 */}
-            {(isPreGenerating || isGeneratingChoices) && !isProcessingChoice && !showChoices && (
+            {/* 选择项生成中 - 新增 */}
+            {isGeneratingChoices && !isProcessingChoice && !showChoices && (
               <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
                 <CardContent className="pt-6 pb-6">
                   <div className="text-center space-y-3">
