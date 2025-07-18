@@ -716,9 +716,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         needs_choice: story.needs_choice,
         is_completed: story.is_completed,
         initialStory_is_completed: initialStory.is_completed,
-        hasReachedEndingCondition,
         story_progress: story.story_progress,
-        shouldShowChoices,
+        shouldShowChoices: needsChoices,
         scene_length: story.current_scene?.length,
         chapter: story.chapter,
         hasSavedChoices: savedChoices?.length || 0
