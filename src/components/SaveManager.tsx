@@ -130,6 +130,14 @@ const SaveManager: React.FC<SaveManagerProps> = ({
     return `${minutes}分钟`;
   };
 
+  const getStoryStageDescription = (chapter: number): string => {
+    if (chapter <= 2) return '故事开篇阶段';
+    if (chapter <= 5) return '故事发展阶段';
+    if (chapter <= 8) return '故事深入阶段';
+    if (chapter <= 12) return '故事高潮阶段';
+    return '故事结局阶段';
+  };
+
   const sortedContexts = Object.values(savedContexts).sort((a, b) => 
     new Date(b.lastPlayTime).getTime() - new Date(a.lastPlayTime).getTime()
   );
@@ -213,9 +221,11 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         <StageProgressIndicator
                           progress={context.storyState.story_progress || 0}
                           totalStages={5}
-                          showPercentage={true}
+                          stageDescription={getStoryStageDescription(context.storyState.chapter)}
+                          showPercentage={false}
                           size="sm"
                           className="scale-90"
+                          showStageNumbers={false}
                         />
                       </div>
                       
@@ -428,9 +438,11 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       <StageProgressIndicator
                         progress={context.storyState.story_progress || 0}
                         totalStages={5}
-                        showPercentage={true}
+                        stageDescription={getStoryStageDescription(context.storyState.chapter)}
+                        showPercentage={false}
                         size="sm"
                         className="scale-90"
+                        showStageNumbers={false}
                       />
                     </div>
                     

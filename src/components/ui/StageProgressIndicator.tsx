@@ -26,6 +26,10 @@ interface StageProgressIndicatorProps {
    * 自定义样式类名
    */
   className?: string;
+  /**
+   * 是否显示阶段编号
+   */
+  showStageNumbers?: boolean;
 }
 
 const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
@@ -34,7 +38,8 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   stageDescription,
   showPercentage = true,
   size = 'md',
-  className
+  className,
+  showStageNumbers = false
 }) => {
   // 根据进度计算当前阶段
   const currentStage = Math.min(Math.ceil((progress / 100) * totalStages), totalStages);
@@ -162,13 +167,15 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
                 </div>
                 
                 {/* 阶段编号提示 */}
-                <div className={cn(
-                  'absolute -bottom-5 left-1/2 transform -translate-x-1/2',
-                  'text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity',
-                  size === 'sm' ? 'text-xs' : size === 'md' ? 'text-xs' : 'text-sm'
-                )}>
-                  {stageIndex}
-                </div>
+                {showStageNumbers && (
+                  <div className={cn(
+                    'absolute -bottom-5 left-1/2 transform -translate-x-1/2',
+                    'text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity',
+                    size === 'sm' ? 'text-xs' : size === 'md' ? 'text-xs' : 'text-sm'
+                  )}>
+                    {stageIndex}
+                  </div>
+                )}
               </div>
               
               {/* 连接线 */}
