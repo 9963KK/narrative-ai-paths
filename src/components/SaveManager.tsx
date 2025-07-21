@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, BookOpen, Gamepad2, ArrowLeft } from 'lucide-react';
 import { AnimatedCard } from './AnimatedCard';
+import StageProgressIndicator from './ui/StageProgressIndicator';
 import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
 
 interface SaveManagerProps {
@@ -207,25 +208,15 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         </div>
                       </div>
                       
-                      {/* 故事进度条 */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>进度</span>
-                          <span>{Math.round(context.storyState.story_progress || 0)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            className={`h-1.5 rounded-full transition-all duration-300 ${
-                              (context.storyState.story_progress || 0) >= 100 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
-                                : index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
-                                  index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' :
-                                  index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600' :
-                                  'bg-gradient-to-r from-orange-500 to-red-600'
-                            }`}
-                            style={{ width: `${Math.min(100, Math.max(5, context.storyState.story_progress || 0))}%` }}
-                          ></div>
-                        </div>
+                      {/* 故事进度指示器 */}
+                      <div className="px-2">
+                        <StageProgressIndicator
+                          progress={context.storyState.story_progress || 0}
+                          totalStages={5}
+                          showPercentage={true}
+                          size="sm"
+                          className="scale-90"
+                        />
                       </div>
                       
                       {/* 操作按钮 */}
@@ -432,25 +423,15 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                       </div>
                     </div>
                     
-                    {/* 故事进度条 */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>进度</span>
-                        <span>{Math.round(context.storyState.story_progress || 0)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div 
-                          className={`h-1.5 rounded-full transition-all duration-300 ${
-                            (context.storyState.story_progress || 0) >= 100 
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
-                              : index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
-                                index % 4 === 1 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' :
-                                index % 4 === 2 ? 'bg-gradient-to-r from-purple-500 to-pink-600' :
-                                'bg-gradient-to-r from-orange-500 to-red-600'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(5, context.storyState.story_progress || 0))}%` }}
-                        ></div>
-                      </div>
+                    {/* 故事进度指示器 */}
+                    <div className="px-2">
+                      <StageProgressIndicator
+                        progress={context.storyState.story_progress || 0}
+                        totalStages={5}
+                        showPercentage={true}
+                        size="sm"
+                        className="scale-90"
+                      />
                     </div>
                     
                     {/* 操作按钮 */}
