@@ -226,6 +226,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                           size="sm"
                           className="scale-90"
                           showStageNumbers={false}
+                          descriptionVariant="compact"
                         />
                       </div>
                       
@@ -443,6 +444,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
                         size="sm"
                         className="scale-90"
                         showStageNumbers={false}
+                        descriptionVariant="compact"
                       />
                     </div>
                     

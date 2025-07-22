@@ -30,6 +30,10 @@ interface StageProgressIndicatorProps {
    * 是否显示阶段编号
    */
   showStageNumbers?: boolean;
+  /**
+   * 阶段描述文本样式变体
+   */
+  descriptionVariant?: 'default' | 'subtle' | 'compact';
 }
 
 const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
@@ -39,7 +43,8 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   showPercentage = true,
   size = 'md',
   className,
-  showStageNumbers = false
+  showStageNumbers = false,
+  descriptionVariant = 'default'
 }) => {
   // 根据进度计算当前阶段
   const currentStage = Math.min(Math.ceil((progress / 100) * totalStages), totalStages);
@@ -67,6 +72,30 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   };
 
   const config = sizeConfig[size];
+
+  // 文本样式变体配置
+  const getDescriptionStyles = () => {
+    switch (descriptionVariant) {
+      case 'subtle':
+        return 'font-normal text-gray-600';
+      case 'compact':
+        return 'font-normal text-gray-500 text-xs';
+      default:
+        return 'font-medium text-blue-700';
+    }
+  };
+
+  // 间距配置
+  const getDescriptionSpacing = () => {
+    switch (descriptionVariant) {
+      case 'compact':
+        return 'mb-1';
+      case 'subtle':
+        return 'mb-2';
+      default:
+        return 'mb-3';
+    }
+  };
 
   // 生成圆点状态
   const getDotState = (stageIndex: number): 'completed' | 'current' | 'pending' => {
@@ -118,9 +147,9 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
     <div className={cn('w-full', className)}>
       {/* 阶段描述和百分比 */}
       {(stageDescription || showPercentage) && (
-        <div className="flex items-center justify-between mb-3">
+        <div className={cn('flex items-center justify-between', getDescriptionSpacing())}>
           {stageDescription && (
-            <span className={cn('font-medium text-blue-700', config.text)}>
+            <span className={cn(getDescriptionStyles(), config.text)}>
               {stageDescription}
             </span>
           )}
