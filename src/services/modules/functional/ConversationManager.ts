@@ -5,6 +5,7 @@
  */
 
 import { userStorage } from '../../userStorage';
+import { devError, stateLog } from '@/utils/logger';
 import { 
   IConversationManager, 
   ConversationHistory, 
@@ -89,7 +90,7 @@ export class ConversationManager implements IConversationManager {
       const removedCount = this.conversationHistory.length - this.maxHistoryLength;
       this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
       
-      console.log(`🔄 对话历史已优化，移除了 ${removedCount} 条旧记录`);
+      stateLog(`🔄 对话历史已优化，移除了 ${removedCount} 条旧记录`);
     }
 
     // 检查总Token数量，如果过多则进一步压缩
@@ -102,7 +103,7 @@ export class ConversationManager implements IConversationManager {
       
       if (targetLength < this.conversationHistory.length) {
         this.conversationHistory = this.conversationHistory.slice(-targetLength);
-        console.log(`🔄 基于Token数量优化，保留最近 ${targetLength} 条记录`);
+        stateLog(`🔄 基于Token数量优化，保留最近 ${targetLength} 条记录`);
       }
     }
   }
@@ -123,9 +124,9 @@ export class ConversationManager implements IConversationManager {
       };
 
       await userStorage.saveConversationHistory(userId, conversationData);
-      console.log(`💾 会话已保存 (用户: ${userId}, ${this.conversationHistory.length} 条记录)`);
+      stateLog(`💾 会话已保存 (用户: ${userId}, ${this.conversationHistory.length} 条记录)`);
     } catch (error) {
-      console.error('保存会话失败:', error);
+      devError('保存会话失败:', error);
       throw new Error(`保存会话失败: ${(error as Error).message}`);
     }
   }
@@ -138,7 +139,7 @@ export class ConversationManager implements IConversationManager {
       const conversationData = await userStorage.loadConversationHistory(userId);
       
       if (!conversationData) {
-        console.log(`📭 用户 ${userId} 没有保存的会话历史`);
+        stateLog(`📭 用户 ${userId} 没有保存的会话历史`);
         return [];
       }
 
@@ -147,11 +148,11 @@ export class ConversationManager implements IConversationManager {
       this.historySummary = conversationData.summary || '';
       this.summaryData = conversationData.summaryData;
 
-      console.log(`📂 会话已加载 (用户: ${userId}, ${this.conversationHistory.length} 条记录)`);
+      stateLog(`📂 会话已加载 (用户: ${userId}, ${this.conversationHistory.length} 条记录)`);
       
       return [...this.conversationHistory];
     } catch (error) {
-      console.error('加载会话失败:', error);
+      devError('加载会话失败:', error);
       throw new Error(`加载会话失败: ${(error as Error).message}`);
     }
   }
@@ -164,7 +165,7 @@ export class ConversationManager implements IConversationManager {
   setSummaryState(summary: string, summaryData?: SummaryData): void {
     this.historySummary = summary;
     this.summaryData = summaryData;
-    console.log(`📋 摘要状态已更新 (${summary.length}字符)`);
+    stateLog(`📋 摘要状态已更新 (${summary.length}字符)`);
   }
 
   /**
@@ -295,12 +296,12 @@ export class ConversationManager implements IConversationManager {
    */
   removeMessage(index: number): boolean {
     if (index < 0 || index >= this.conversationHistory.length) {
-      console.warn(`⚠️ 无效的消息索引: ${index}`);
+      devError(`⚠️ 无效的消息索引: ${index}`);
       return false;
     }
 
     const removedMessage = this.conversationHistory.splice(index, 1)[0];
-    console.log(`🗑️ 已移除消息: ${removedMessage.role} (索引: ${index})`);
+    stateLog(`🗑️ 已移除消息: ${removedMessage.role} (索引: ${index})`);
     return true;
   }
 
@@ -309,7 +310,7 @@ export class ConversationManager implements IConversationManager {
    */
   updateMessage(index: number, newContent: string): boolean {
     if (index < 0 || index >= this.conversationHistory.length) {
-      console.warn(`⚠️ 无效的消息索引: ${index}`);
+      devError(`⚠️ 无效的消息索引: ${index}`);
       return false;
     }
 
@@ -317,7 +318,7 @@ export class ConversationManager implements IConversationManager {
     this.conversationHistory[index].content = newContent;
     this.conversationHistory[index].tokens = this.estimateTokens(newContent);
     
-    console.log(`📝 已更新消息 (索引: ${index}): ${oldContent.substring(0, 50)}... -> ${newContent.substring(0, 50)}...`);
+    stateLog(`📝 已更新消息 (索引: ${index}): ${oldContent.substring(0, 50)}... -> ${newContent.substring(0, 50)}...`);
     return true;
   }
 
@@ -329,7 +330,7 @@ export class ConversationManager implements IConversationManager {
   setMaxHistoryLength(length: number): void {
     this.maxHistoryLength = Math.max(1, length);
     this.optimizeContextWindow();
-    console.log(`⚙️ 最大历史长度已设置为: ${this.maxHistoryLength}`);
+    stateLog(`⚙️ 最大历史长度已设置为: ${this.maxHistoryLength}`);
   }
 
   /**
@@ -383,7 +384,7 @@ export class ConversationManager implements IConversationManager {
       if (this.validateMessage(message)) {
         this.conversationHistory.push(message);
       } else {
-        console.warn('⚠️ 跳过无效的消息格式:', message);
+        devError('⚠️ 跳过无效的消息格式:', message);
       }
     }
     

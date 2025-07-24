@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError } from '@/utils/logger';
 import { 
   ICharacterDeveloper, 
   Character,
@@ -57,7 +58,7 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         throw new Error('角色发展解析失败');
       }
     } catch (error) {
-      console.error(`❌ 角色 ${character.name} 发展失败:`, error);
+      devError(`❌ 角色 ${character.name} 发展失败:`, error);
       return this.getFallbackDevelopedCharacter(character, context);
     }
   }
@@ -99,7 +100,7 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         throw new Error('新角色解析失败');
       }
     } catch (error) {
-      console.error('❌ 新角色创建失败:', error);
+      devError('❌ 新角色创建失败:', error);
       return this.getFallbackNewCharacter(requirements);
     }
   }
@@ -148,7 +149,7 @@ export class CharacterDeveloper implements ICharacterDeveloper {
         throw new Error('角色关系更新解析失败');
       }
     } catch (error) {
-      console.error('❌ 角色关系更新失败:', error);
+      devError('❌ 角色关系更新失败:', error);
       return this.getFallbackRelationshipUpdate(characters);
     }
   }
@@ -176,7 +177,7 @@ export class CharacterDeveloper implements ICharacterDeveloper {
       const arcAnalysis = response.choices[0].message.content.trim();
       return arcAnalysis;
     } catch (error) {
-      console.error(`❌ 角色 ${character.name} 弧线追踪失败:`, error);
+      devError(`❌ 角色 ${character.name} 弧线追踪失败:`, error);
       return this.getFallbackCharacterArc(character, story);
     }
   }
@@ -188,45 +189,45 @@ export class CharacterDeveloper implements ICharacterDeveloper {
    */
   validateCharacter(character: Character): boolean {
     if (!character || typeof character !== 'object') {
-      console.warn('⚠️ 角色对象无效');
+      devError('⚠️ 角色对象无效');
       return false;
     }
 
     // 必需字段检查
     if (!character.name || typeof character.name !== 'string' || character.name.trim() === '') {
-      console.warn('⚠️ 角色名称无效');
+      devError('⚠️ 角色名称无效');
       return false;
     }
 
     if (!character.role || typeof character.role !== 'string' || character.role.trim() === '') {
-      console.warn('⚠️ 角色定位无效');
+      devError('⚠️ 角色定位无效');
       return false;
     }
 
     if (!character.traits || typeof character.traits !== 'string' || character.traits.trim() === '') {
-      console.warn('⚠️ 角色特征无效');
+      devError('⚠️ 角色特征无效');
       return false;
     }
 
     // 可选字段类型检查
     if (character.appearance !== undefined && typeof character.appearance !== 'string') {
-      console.warn('⚠️ 角色外貌字段类型错误');
+      devError('⚠️ 角色外貌字段类型错误');
       return false;
     }
 
     if (character.backstory !== undefined && typeof character.backstory !== 'string') {
-      console.warn('⚠️ 角色背景字段类型错误');
+      devError('⚠️ 角色背景字段类型错误');
       return false;
     }
 
     // 长度检查
     if (character.name.length > 50) {
-      console.warn('⚠️ 角色名称过长');
+      devError('⚠️ 角色名称过长');
       return false;
     }
 
     if (character.role.length > 100) {
-      console.warn('⚠️ 角色定位过长');
+      devError('⚠️ 角色定位过长');
       return false;
     }
 
@@ -248,7 +249,7 @@ export class CharacterDeveloper implements ICharacterDeveloper {
 
     // 验证合并后的角色
     if (!this.validateCharacter(merged)) {
-      console.warn('⚠️ 角色合并后验证失败，返回原角色');
+      devError('⚠️ 角色合并后验证失败，返回原角色');
       return existing;
     }
 

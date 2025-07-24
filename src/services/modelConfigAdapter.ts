@@ -3,6 +3,7 @@ import { userLevelService, type ModelByLevel } from './userLevelService';
 import { ModelConfig } from '@/components/model-config/constants';
 import { supabase } from '@/lib/supabase';
 import { tempApiKeyStore } from './tempApiKeyStore';
+import { devLog, devError, apiLog } from '@/utils/logger';
 
 /**
  * 模型配置适配器
@@ -17,28 +18,28 @@ class ModelConfigAdapter {
    */
   async getUserModelConfig(includeApiKey: boolean = false): Promise<ModelConfig | null> {
     try {
-      console.log(`🔧 获取用户模型配置，includeApiKey: ${includeApiKey}`);
+      devLog(`🔧 获取用户模型配置，includeApiKey: ${includeApiKey}`);
       
       // 优先使用临时存储的配置（登录时已获取）
       if (includeApiKey) {
         const tempConfig = tempApiKeyStore.getTempModelConfig();
         if (tempConfig) {
-          console.log('✅ 使用临时存储的模型配置:', {
+          devLog('使用临时存储的模型配置:', {
             provider: tempConfig.provider,
             model: tempConfig.model,
             hasApiKey: !!tempConfig.apiKey
           });
           return tempConfig;
         }
-        console.log('⚠️ 临时存储中没有配置，回退到数据库查询');
+        devLog('临时存储中没有配置，回退到数据库查询');
       }
       
       // 回退到原有的数据库查询逻辑
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
-      console.log(`📋 获取到 ${availableModels.length} 个可用模型`);
+      devLog(`📋 获取到 ${availableModels.length} 个可用模型`);
       
       if (availableModels.length === 0) {
-        console.warn('❌ 用户没有可用的模型');
+        devError('❌ 用户没有可用的模型');
         return null;
       }
 
@@ -46,11 +47,11 @@ class ModelConfigAdapter {
       const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
       const defaultModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
       
-      console.log(`🎯 选择的模型: ${defaultModel.model_id} (${defaultModel.provider}/${defaultModel.model})`);
-      console.log(`🔑 模型是否有API密钥: ${defaultModel.has_api_key}`);
+      devLog(`选择的模型: ${defaultModel.model_id} (${defaultModel.provider}/${defaultModel.model})`);
+      apiLog(`🔑 模型是否有API密钥: ${defaultModel.has_api_key}`);
       
       if (!defaultModel.has_api_key) {
-        console.warn('❌ 选择的模型未配置API密钥');
+        devError('❌ 选择的模型未配置API密钥');
         return null;
       }
 
@@ -61,13 +62,13 @@ class ModelConfigAdapter {
           const realApiKey = await this.getRealApiKey(defaultModel.model_id);
           if (realApiKey) {
             apiKey = realApiKey;
-            console.log(`✅ 成功获取API密钥，长度: ${realApiKey.length}`);
+            apiLog(`成功获取API密钥，长度: ${realApiKey.length}`);
           } else {
-            console.warn('❌ 无法获取模型的真实API密钥');
+            devError('❌ 无法获取模型的真实API密钥');
             return null;
           }
         } catch (error) {
-          console.error('❌ 获取真实API密钥失败:', error);
+          devError('❌ 获取真实API密钥失败:', error);
           return null;
         }
       }
@@ -83,10 +84,10 @@ class ModelConfigAdapter {
         customPrompt: ''
       };
 
-      console.log(`✅ 模型配置构建完成: ${modelConfig.provider}/${modelConfig.model}`);
+      devLog(`模型配置构建完成: ${modelConfig.provider}/${modelConfig.model}`);
       return modelConfig;
     } catch (error) {
-      console.error('❌ 获取用户模型配置失败:', error);
+      devError('❌ 获取用户模型配置失败:', error);
       return null;
     }
   }
@@ -118,7 +119,7 @@ class ModelConfigAdapter {
         performanceLevel: defaultModel.performance_level
       };
     } catch (error) {
-      console.error('获取用户显示模型失败:', error);
+      devError('获取用户显示模型失败:', error);
       return null;
     }
   }
@@ -150,7 +151,7 @@ class ModelConfigAdapter {
         hasApiKey: model.has_api_key
       }));
     } catch (error) {
-      console.error('获取用户可用显示模型失败:', error);
+      devError('获取用户可用显示模型失败:', error);
       return [];
     }
   }
@@ -164,7 +165,7 @@ class ModelConfigAdapter {
       const targetModel = availableModels.find(model => model.model_id === modelId);
       
       if (!targetModel) {
-        console.warn('未找到指定的模型:', modelId);
+        devError('未找到指定的模型:', modelId);
         return null;
       }
 
@@ -181,7 +182,7 @@ class ModelConfigAdapter {
 
       return modelConfig;
     } catch (error) {
-      console.error('根据ID获取模型配置失败:', error);
+      devError('根据ID获取模型配置失败:', error);
       return null;
     }
   }
@@ -202,7 +203,7 @@ class ModelConfigAdapter {
       const matchingConfig = userConfigs.find(config => config.id === recommendedModel.config_id);
       
       if (!matchingConfig || !matchingConfig.system_model) {
-        console.warn('无法找到推荐模型的系统配置');
+        devError('无法找到推荐模型的系统配置');
         return null;
       }
 
@@ -223,7 +224,7 @@ class ModelConfigAdapter {
 
       return modelConfig;
     } catch (error) {
-      console.error('获取推荐模型配置失败:', error);
+      devError('获取推荐模型配置失败:', error);
       return null;
     }
   }
@@ -243,7 +244,7 @@ class ModelConfigAdapter {
       // 获取当前使用的模型配置ID
       const defaultModel = await userModelConfigService.getUserDefaultModel();
       if (!defaultModel) {
-        console.warn('无法记录使用日志：未找到默认模型');
+        devError('无法记录使用日志：未找到默认模型');
         return;
       }
 
@@ -257,7 +258,7 @@ class ModelConfigAdapter {
         errorMessage
       );
     } catch (error) {
-      console.error('记录模型使用日志失败:', error);
+      devError('记录模型使用日志失败:', error);
     }
   }
 
@@ -282,11 +283,11 @@ class ModelConfigAdapter {
    */
   async getRealApiKey(modelId: string): Promise<string | null> {
     try {
-      console.log(`🔑 开始获取模型 ${modelId} 的API密钥...`);
+      devLog(`🔑 开始获取模型 ${modelId} 的API密钥...`);
       
       // 首先尝试从用户模型配置服务获取完整的系统模型信息
       const userConfigs = await userModelConfigService.getUserModelConfigs();
-      console.log(`📋 用户模型配置数量: ${userConfigs.length}`);
+      devLog(`📋 用户模型配置数量: ${userConfigs.length}`);
       
       // 找到对应的用户模型配置
       const userConfig = userConfigs.find(config => 
@@ -294,14 +295,14 @@ class ModelConfigAdapter {
       );
       
       if (userConfig && userConfig.system_model && userConfig.system_model.api_config) {
-        console.log(`✅ 从用户模型配置中找到系统模型: ${userConfig.system_model.provider}/${userConfig.system_model.model}`);
+        devLog(`从用户模型配置中找到系统模型: ${userConfig.system_model.provider}/${userConfig.system_model.model}`);
         
         const apiConfig = userConfig.system_model.api_config;
-        console.log(`🔍 API配置类型: ${typeof apiConfig}`);
+        devLog(`API配置类型: ${typeof apiConfig}`);
         
         // 从api_config中提取API密钥
         if (typeof apiConfig === 'object' && apiConfig.api_key) {
-          console.log(`✅ 从对象配置中获取到API密钥`);
+          apiLog(`✅ 从对象配置中获取到API密钥`);
           return apiConfig.api_key;
         }
 
@@ -310,20 +311,20 @@ class ModelConfigAdapter {
           try {
             const config = JSON.parse(apiConfig);
             if (config.api_key) {
-              console.log(`✅ 从JSON字符串配置中获取到API密钥`);
+              apiLog(`✅ 从JSON字符串配置中获取到API密钥`);
               return config.api_key;
             } else {
-              console.warn(`❌ JSON配置中没有api_key字段`);
+              devError(`❌ JSON配置中没有api_key字段`);
             }
           } catch (parseError) {
-            console.warn('❌ 解析API配置JSON失败:', parseError);
-            console.warn('原始配置内容:', apiConfig);
+            devError('❌ 解析API配置JSON失败:', parseError);
+            devError('原始配置内容:', apiConfig);
           }
         }
       }
       
       // 备用方案：直接从系统模型池查询
-      console.log(`🔄 尝试直接从系统模型池获取 ${modelId} 的API配置...`);
+      devLog(`🔄 尝试直接从系统模型池获取 ${modelId} 的API配置...`);
       
       const { data: systemModel, error } = await supabase
         .from('system_model_pool')
@@ -332,18 +333,18 @@ class ModelConfigAdapter {
         .single();
         
       if (error) {
-        console.error('❌ 查询系统模型池失败:', error);
+        devError('❌ 查询系统模型池失败:', error);
         return null;
       }
       
       if (systemModel && systemModel.api_config) {
-        console.log(`✅ 从系统模型池获取到API配置`);
+        apiLog(`✅ 从系统模型池获取到API配置`);
         
         const apiConfig = systemModel.api_config;
         
         // 从api_config中提取API密钥
         if (typeof apiConfig === 'object' && apiConfig.api_key) {
-          console.log(`✅ 从系统模型池对象配置中获取到API密钥`);
+          apiLog(`✅ 从系统模型池对象配置中获取到API密钥`);
           return apiConfig.api_key;
         }
 
@@ -352,19 +353,19 @@ class ModelConfigAdapter {
           try {
             const config = JSON.parse(apiConfig);
             if (config.api_key) {
-              console.log(`✅ 从系统模型池JSON配置中获取到API密钥`);
+              apiLog(`✅ 从系统模型池JSON配置中获取到API密钥`);
               return config.api_key;
             }
           } catch (parseError) {
-            console.warn('❌ 解析系统模型池API配置JSON失败:', parseError);
+            devError('❌ 解析系统模型池API配置JSON失败:', parseError);
           }
         }
       }
 
-      console.warn(`❌ 无法获取模型 ${modelId} 的API密钥`);
+      devError(`❌ 无法获取模型 ${modelId} 的API密钥`);
       return null;
     } catch (error) {
-      console.error('❌ 获取真实API密钥失败:', error);
+      devError('❌ 获取真实API密钥失败:', error);
       return null;
     }
   }

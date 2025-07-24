@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError, stateLog, perfLog } from '@/utils/logger';
 import { 
   ISummaryManager, 
   ConversationHistory, 
@@ -62,7 +63,7 @@ export class SummaryManager implements ISummaryManager {
         return this.createFallbackSummary(history);
       }
     } catch (error) {
-      console.error('❌ 摘要生成失败:', error);
+      devError('❌ 摘要生成失败:', error);
       // 返回备用摘要
       return this.createFallbackSummary(history);
     }
@@ -80,9 +81,9 @@ export class SummaryManager implements ISummaryManager {
       return oldSummary;
     }
 
-    console.log('🔄 开始合并摘要...');
-    console.log('旧摘要长度:', oldSummary.length);
-    console.log('新摘要长度:', newSummary.length);
+    stateLog('🔄 开始合并摘要...');
+    perfLog('旧摘要长度:', oldSummary.length);
+    perfLog('新摘要长度:', newSummary.length);
 
     try {
       // 尝试解析两个摘要的JSON数据
@@ -98,7 +99,7 @@ export class SummaryManager implements ISummaryManager {
         return this.mergeTextSummaries(oldSummary, newSummary);
       }
     } catch (error) {
-      console.warn('⚠️ 智能合并失败，使用简单合并:', error);
+      devError('⚠️ 智能合并失败，使用简单合并:', error);
       return this.mergeTextSummaries(oldSummary, newSummary);
     }
   }
@@ -166,10 +167,10 @@ export class SummaryManager implements ISummaryManager {
    * 格式化摘要用于显示
    */
   formatSummaryDisplay(summary: string): void {
-    console.log('📋 故事摘要:');
-    console.log('='.repeat(50));
-    console.log(summary);
-    console.log('='.repeat(50));
+    stateLog('📋 故事摘要:');
+    stateLog('='.repeat(50));
+    stateLog(summary);
+    stateLog('='.repeat(50));
   }
 
   // ==================== 设置管理 ====================
@@ -179,7 +180,7 @@ export class SummaryManager implements ISummaryManager {
    */
   setSummaryTriggerInterval(interval: number): void {
     this.summaryTriggerInterval = Math.max(1, interval);
-    console.log(`⚙️ 摘要触发间隔已设置为: ${this.summaryTriggerInterval}`);
+    stateLog(`⚙️ 摘要触发间隔已设置为: ${this.summaryTriggerInterval}`);
   }
 
   /**
@@ -188,7 +189,7 @@ export class SummaryManager implements ISummaryManager {
   updateSummaryIndex(index: number): void {
     this.lastSummaryIndex = index;
     this.summaryCount++;
-    console.log(`📊 摘要索引已更新: ${index} (第${this.summaryCount}次摘要)`);
+    stateLog(`📊 摘要索引已更新: ${index} (第${this.summaryCount}次摘要)`);
   }
 
   /**
@@ -197,7 +198,7 @@ export class SummaryManager implements ISummaryManager {
   resetSummaryState(): void {
     this.lastSummaryIndex = 0;
     this.summaryCount = 0;
-    console.log('🔄 摘要状态已重置');
+    stateLog('🔄 摘要状态已重置');
   }
 
   // ==================== 私有辅助方法 ====================

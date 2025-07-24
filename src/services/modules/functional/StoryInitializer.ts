@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError, stateLog } from '@/utils/logger';
 import { 
   IStoryInitializer, 
   StoryConfig, 
@@ -54,7 +55,7 @@ export class StoryInitializer implements IStoryInitializer {
         throw new Error(`初始故事解析失败: ${errorMessage}`);
       }
     } catch (error) {
-      console.error('❌ 初始故事生成失败:', error);
+      devError('❌ 初始故事生成失败:', error);
       return {
         success: false,
         error: `初始故事生成失败: ${(error as Error).message}`
@@ -138,7 +139,7 @@ export class StoryInitializer implements IStoryInitializer {
         return this.getDefaultOutlines(config);
       }
     } catch (error) {
-      console.error('❌ 大纲生成失败:', error);
+      devError('❌ 大纲生成失败:', error);
       return this.getDefaultOutlines(config);
     }
   }
@@ -150,7 +151,7 @@ export class StoryInitializer implements IStoryInitializer {
    */
   async createInitialCharacters(config: StoryConfig): Promise<Character[]> {
     try {
-      console.log('👥 开始创建初始角色...', config);
+      stateLog('👥 开始创建初始角色...', config);
 
       const prompt = this.buildCharacterPrompt(config);
       const systemPrompt = this.getCharacterSystemPrompt();
@@ -171,13 +172,13 @@ export class StoryInitializer implements IStoryInitializer {
       // 解析角色信息
       const characters = contentParser.parseCharacters(content);
       if (characters && characters.length > 0) {
-        console.log('✅ 初始角色创建成功，共', characters.length, '个角色');
+        stateLog('✅ 初始角色创建成功，共', characters.length, '个角色');
         return characters;
       } else {
         throw new Error('角色解析失败');
       }
     } catch (error) {
-      console.error('❌ 角色创建失败:', error);
+      devError('❌ 角色创建失败:', error);
       return this.getDefaultCharacters(config);
     }
   }
@@ -189,7 +190,7 @@ export class StoryInitializer implements IStoryInitializer {
    */
   async establishSetting(config: StoryConfig): Promise<string> {
     try {
-      console.log('🌍 开始建立故事设定...', config);
+      stateLog('🌍 开始建立故事设定...', config);
 
       const prompt = this.buildSettingPrompt(config);
       const systemPrompt = this.getSettingSystemPrompt();
@@ -206,10 +207,10 @@ export class StoryInitializer implements IStoryInitializer {
       }
 
       const setting = response.choices[0].message.content.trim();
-      console.log('✅ 故事设定建立成功');
+      stateLog('✅ 故事设定建立成功');
       return setting;
     } catch (error) {
-      console.error('❌ 设定建立失败:', error);
+      devError('❌ 设定建立失败:', error);
       return this.getDefaultSetting(config);
     }
   }
@@ -670,7 +671,7 @@ export class StoryInitializer implements IStoryInitializer {
       }
       
     } catch (error) {
-      console.error('❌ 文本提取失败:', error);
+      devError('❌ 文本提取失败:', error);
     }
     
     return outlines.slice(0, 5); // 最多返回5个大纲

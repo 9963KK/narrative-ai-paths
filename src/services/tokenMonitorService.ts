@@ -1,5 +1,6 @@
 import { authService } from './authService';
 import { userStorage } from './userStorage';
+import { devLog, devError, perfLog } from '@/utils/logger';
 
 export interface TokenUsage {
   userId: string;
@@ -57,7 +58,7 @@ export class TokenMonitorService {
     // 保存到全局存储（管理员需要看到所有用户数据）
     localStorage.setItem(TOKEN_USAGE_STORAGE_KEY, JSON.stringify(existingLogs));
     
-    console.log('📊 Token使用已记录:', tokenUsage);
+    perfLog('Token使用已记录:', tokenUsage);
   }
 
   // 获取所有Token使用记录（仅管理员）

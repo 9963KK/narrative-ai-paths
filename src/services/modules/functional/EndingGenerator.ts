@@ -5,6 +5,7 @@
  */
 
 import { aiModelService } from '../core/AIModelService';
+import { devError } from '@/utils/logger';
 import { 
   IEndingGenerator, 
   StoryState 
@@ -209,7 +210,7 @@ export class EndingGenerator implements IEndingGenerator {
             throw new Error('结局质量不符合要求');
           }
         } catch (generateError) {
-          console.warn(`❌ 第${attempts}次尝试失败:`, generateError);
+          devError(`❌ 第${attempts}次尝试失败:`, generateError);
           if (attempts >= maxAttempts) {
             return this.generateFallbackEnding(state, endingType);
           }
@@ -219,7 +220,7 @@ export class EndingGenerator implements IEndingGenerator {
       // 理论上不会执行到这里
       return this.generateFallbackEnding(state, endingType);
     } catch (error) {
-      console.error('❌ 结局生成失败:', error);
+      devError('❌ 结局生成失败:', error);
       return this.generateFallbackEnding(state, endingType);
     }
   }
@@ -392,12 +393,12 @@ ${characters}
   private validateEnding(ending: string, endingType: string): boolean {
     // 基本长度检查
     if (ending.length < 200) {
-      console.warn('⚠️ 结局长度过短');
+      devError('⚠️ 结局长度过短');
       return false;
     }
 
     if (ending.length > 1000) {
-      console.warn('⚠️ 结局长度过长');
+      devError('⚠️ 结局长度过长');
       return false;
     }
 
@@ -413,7 +414,7 @@ ${characters}
     const hasRelevantKeywords = typeKeywords.some(keyword => ending.includes(keyword));
 
     if (!hasRelevantKeywords) {
-      console.warn(`⚠️ 结局缺少${endingType}类型的相关关键词`);
+      devError(`⚠️ 结局缺少${endingType}类型的相关关键词`);
       // 不强制要求，只是警告
     }
 

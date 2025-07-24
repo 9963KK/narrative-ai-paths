@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { storyAI } from '@/services/storyAI';
+import { devLog, devError, stateLog } from '@/utils/logger';
 
 interface StoryState {
   story_id: string;
@@ -163,7 +164,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   
   // 调试：监控savedChoices变化
   useEffect(() => {
-    console.log('🔍 savedChoices状态变化:', {
+    stateLog('savedChoices状态变化:', {
       savedChoices: savedChoices,
       length: savedChoices?.length || 0,
       timestamp: new Date().toISOString()
@@ -279,7 +280,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     
     // 动态调整选择数量  
     const choiceCount = determineLocalChoiceCount(storyData);
-    console.log(`🎯 动态选择数量计算 (类型: ${choiceType}):`, choiceCount);
+    devLog(`动态选择数量计算 (类型: ${choiceType}):`, choiceCount);
     
     const selectedChoices = availableChoices
       .sort(() => Math.random() - 0.5) // 随机排序
@@ -363,7 +364,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     
     // 动态决定选择数量
     const targetChoiceCount = determineLocalChoiceCount(story);
-    console.log(`🎯 本地生成目标选择数量:`, targetChoiceCount);
+    devLog(`本地生成目标选择数量:`, targetChoiceCount);
     
     let choices: Choice[] = [];
     
@@ -565,7 +566,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     
     // 进度条件或章节条件满足时显示直通结局选项
     if ((effectiveProgress >= 80 && effectiveProgress < 95) || (story.chapter >= 15 && story.chapter < 20)) {
-      console.log('✅ 添加直通结局选项');
+      devLog('添加直通结局选项');
       choices.push({
         id: -999, // 特殊ID标识直通结局选项
         text: "寻找故事结局",
@@ -599,7 +600,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           
           const aiChoices = await storyAI.generateChoices(scene, characters, story.setting || '未知世界');
           if (aiChoices && aiChoices.length > 0) {
-            console.log('✅ AI选择生成成功');
+            devLog('AI选择生成成功');
             return aiChoices;
           } else {
             console.warn('⚠️ AI选择生成返回空数组');
@@ -614,7 +615,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       // 回退到基于场景内容的智能生成
       const contextualChoices = generateContextualChoices(scene, characters, story);
       if (contextualChoices && contextualChoices.length > 0) {
-        console.log('✅ 智能回退选择生成成功');
+        devLog('智能回退选择生成成功');
         return contextualChoices;
       } else {
         // 连回退都失败了，这才是真正的问题
@@ -668,24 +669,24 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   // 统一的选项生成函数
   const generateChoicesIfNeeded = async (scene: string, characters: any[], reason: string = '选项生成') => {
     if (!shouldShowChoices()) {
-      console.log(`❌ ${reason}: 不满足生成条件，跳过`);
+      devLog(`${reason}: 不满足生成条件，跳过`);
       return false;
     }
 
     // 检查是否已经在生成中
     if (isGeneratingChoices) {
-      console.log(`⏳ ${reason}: 已在生成中，跳过`);
+      devLog(`${reason}: 已在生成中，跳过`);
       return false;
     }
 
     setIsGeneratingChoices(true);
-    console.log(`🚀 ${reason}: 开始生成选项...`);
+    devLog(`${reason}: 开始生成选项...`);
 
     try {
       const newChoices = await generateAIChoices(scene, characters);
       if (newChoices && newChoices.length > 0) {
         setPendingChoices(newChoices);
-        console.log(`✅ ${reason}: 选项生成完成`, newChoices);
+        devLog(`${reason}: 选项生成完成`, newChoices);
         return true;
       } else {
         console.warn(`⚠️ ${reason}: 选项生成失败`);
@@ -712,7 +713,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       // 检查是否需要生成选项
       const needsChoices = shouldShowChoices();
       
-      console.log('🎯 检查是否需要生成选项:', {
+      devLog('检查是否需要生成选项:', {
         needs_choice: story.needs_choice,
         is_completed: story.is_completed,
         initialStory_is_completed: initialStory.is_completed,
@@ -726,12 +727,12 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       // 智能处理存档选项：首次读档使用存档选项，后续重新生成
       if (needsChoices) {
         if (savedChoices && savedChoices.length > 0) {
-          console.log('🎉 发现存档选项，直接使用（首次读档）:', savedChoices);
+          devLog('发现存档选项，直接使用（首次读档）:', savedChoices);
           // 立即设置存档选项
           setPendingChoices(savedChoices);
           setIsGeneratingChoices(false);
         } else {
-          console.log('📝 没有存档选项或非首次读档，重新生成选项...');
+          devLog('没有存档选项或非首次读档，重新生成选项...');
           // 清空状态并重新生成选项
           setPendingChoices(null);
           setIsGeneratingChoices(false);
@@ -751,10 +752,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           index++;
         } else {
           setIsTyping(false);
-          console.log('✅ 打字机效果完成，检查选项状态...');
+          devLog('打字机效果完成，检查选项状态...');
           
           // 打字完成，触发选项显示检查
-          console.log('✅ 打字机完成，触发选项显示检查');
+          devLog('打字机完成，触发选项显示检查');
           
           clearInterval(interval);
         }
@@ -774,7 +775,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         choices.length === 0 &&
         shouldShowChoices()) {
 
-      console.log('🎉 选项显示条件满足，准备显示选项!');
+      devLog('选项显示条件满足，准备显示选项!');
 
       // 稍微延迟以确保打字机完全结束
       setTimeout(() => {
@@ -791,7 +792,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           onChoicesUpdate?.(pendingChoices);
           setPendingChoices(null);
           setIsGeneratingChoices(false);
-          console.log('✅ 选项已显示，所有状态已清除');
+          devLog('选项已显示，所有状态已清除');
         }
       }, 100); // 增加延迟确保状态稳定
     }
@@ -816,7 +817,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         !localProcessingChoice &&
         choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
-      console.log(`🔄 检测到选项存储变量为空，开始重新生成... (重试次数: ${choiceGenerationRetryCount + 1}/${MAX_RETRY_COUNT})`);
+      stateLog(`检测到选项存储变量为空，开始重新生成... (重试次数: ${choiceGenerationRetryCount + 1}/${MAX_RETRY_COUNT})`);
 
       // 添加延迟，确保状态稳定
       const timeoutId = setTimeout(async () => {
@@ -854,7 +855,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             setChoiceGenerationRetryCount(0);
           }
         } else {
-          console.log('✅ 状态已变化，取消重新生成');
+          devLog('状态已变化，取消重新生成');
         }
       }, 500); // 增加延迟到500ms，确保用户操作完成
 
@@ -870,7 +871,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   // 当外部故事变化时（AI处理完成），重置选择处理状态
   useEffect(() => {
     if (initialStory.current_scene !== story.current_scene && isProcessingChoice) {
-      console.log('🎯 AI处理完成，重置选择处理状态');
+      stateLog('AI处理完成，重置选择处理状态');
       setSelectedChoiceText('');
       setLocalProcessingChoice(false);
     }
@@ -888,7 +889,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     setChoiceGenerationRetryCount(0); // 重置重试计数
     setLocalProcessingChoice(true); // 立即设置本地处理状态，阻止重新生成
 
-    console.log('🔄 选择处理开始:', {
+    stateLog('选择处理开始:', {
       choiceId,
       selectedText: selectedChoice?.text,
       isProcessingChoice: true
@@ -1168,7 +1169,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {/* 移动端顶部状态栏 - 包含操作按钮 */}
             <div className="lg:hidden">
               <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-                <CardContent className="pt-6 pb-6">
+                <CardContent className="py-3 sm:py-4">
                   {/* 第一行：章节和进度信息 */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -1248,8 +1249,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 ? 'flex-shrink-0 shadow-lg processing-choice-card' 
                 : 'flex-1 shadow-xl'
             }`}>
-              <CardContent className="pt-6 pb-6">
-                <div className="prose prose-slate max-w-none">
+              <CardContent className="py-3 sm:py-4">
+                <div className="max-w-none">
                   <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
                     isTyping || isProcessingChoice
                       ? 'opacity-95 content-fit-height' 
@@ -1271,7 +1272,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {/* 选择处理中 - 优化版 */}
             {isProcessingChoice && (
               <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-6 pb-6">
+                <CardContent className="py-3 sm:py-4">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
@@ -1304,7 +1305,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {/* 选择项生成中 - 新增 */}
             {isGeneratingChoices && !isProcessingChoice && !showChoices && (
               <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-6 pb-6">
+                <CardContent className="py-3 sm:py-4">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
@@ -1332,7 +1333,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             {/* 选项已预生成完成，等待打字机结束 */}
             {pendingChoices && pendingChoices.length > 0 && isTyping && !showChoices && (
               <Card className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 backdrop-blur-sm shadow-xl border border-green-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="pt-6 pb-6">
+                <CardContent className="py-3 sm:py-4">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -1602,7 +1603,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
             <div className="lg:hidden">
               {story.characters && story.characters.length > 0 && (
                 <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-                  <CardContent className="pt-6 pb-6">
+                  <CardContent className="py-3 sm:py-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-slate-800">角色信息</h3>
                       <span className="text-xs text-slate-500">{story.characters.length}个角色</span>
@@ -1686,7 +1687,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                   </Button>
                   <Button
                     onClick={() => {
-                      console.log('分享故事功能待实现');
+                      devLog('分享故事功能待实现');
                     }}
                     variant="outline"
                     className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"

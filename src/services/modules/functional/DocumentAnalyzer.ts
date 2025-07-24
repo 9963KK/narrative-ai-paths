@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError, devLog } from '@/utils/logger';
 import { 
   IDocumentAnalyzer, 
   Character,
@@ -26,7 +27,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
     try {
       aiModelService.setModelConfig(config);
     } catch (error) {
-      console.error('📄 DocumentAnalyzer 模型配置设置失败:', error);
+      devError('📄 DocumentAnalyzer 模型配置设置失败:', error);
     }
   }
 
@@ -95,7 +96,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
           }
         } catch (error) {
           lastError = error;
-          console.error(`📄 文档分析尝试${attempt}失败:`, error);
+          devError(`📄 文档分析尝试${attempt}失败:`, error);
           
           if (attempt === 3) {
             // 最后一次尝试失败，抛出错误
@@ -114,7 +115,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
         throw new Error('分析结果解析失败');
       }
     } catch (error) {
-      console.error(`❌ 文档 ${fileName} 分析失败:`, error);
+      devError(`❌ 文档 ${fileName} 分析失败:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : '文档分析失败'
@@ -209,7 +210,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const characters = contentParser.parseCharacters(response.choices[0].message.content);
       return characters || [];
     } catch (error) {
-      console.error('❌ 角色提取失败:', error);
+      devError('❌ 角色提取失败:', error);
       return [];
     }
   }
@@ -237,7 +238,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const settingData = this.parseSettingData(response.choices[0].message.content);
       return settingData;
     } catch (error) {
-      console.error('❌ 设定提取失败:', error);
+      devError('❌ 设定提取失败:', error);
       return this.getFallbackSetting();
     }
   }
@@ -265,7 +266,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const themeData = this.parseThemeData(response.choices[0].message.content);
       return themeData;
     } catch (error) {
-      console.error('❌ 主题提取失败:', error);
+      devError('❌ 主题提取失败:', error);
       return this.getFallbackThemes();
     }
   }
@@ -293,7 +294,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const plotData = this.parsePlotData(response.choices[0].message.content);
       return plotData;
     } catch (error) {
-      console.error('❌ 情节提取失败:', error);
+      devError('❌ 情节提取失败:', error);
       return this.getFallbackPlotElements();
     }
   }
@@ -321,7 +322,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const styleData = this.parseStyleData(response.choices[0].message.content);
       return styleData;
     } catch (error) {
-      console.error('❌ 写作风格提取失败:', error);
+      devError('❌ 写作风格提取失败:', error);
       return this.getFallbackWritingStyle();
     }
   }
@@ -355,7 +356,7 @@ export class DocumentAnalyzer implements IDocumentAnalyzer {
       const seeds = this.parseSeedsData(response.choices[0].message.content);
       return seeds || [];
     } catch (error) {
-      console.error('❌ 故事种子生成失败:', error);
+      devError('❌ 故事种子生成失败:', error);
       return this.getFallbackStorySeeds();
     }
   }
@@ -593,7 +594,7 @@ ${content}
       try {
         parsed = JSON.parse(cleanedResponse);
       } catch (parseError) {
-        console.warn('📄 直接解析失败，尝试修复JSON格式:', parseError);
+        devError('📄 直接解析失败，尝试修复JSON格式:', parseError);
         
         // 尝试修复常见的JSON格式问题
         let fixedJson = cleanedResponse;
@@ -613,8 +614,8 @@ ${content}
           parsed = JSON.parse(fixedJson);
           // JSON修复成功
         } catch (fixError) {
-          console.error('📄 JSON修复也失败:', fixError);
-          console.error('📄 问题JSON内容:', cleanedResponse);
+          devError('📄 JSON修复也失败:', fixError);
+          devError('📄 问题JSON内容:', cleanedResponse);
           
           // 尝试使用更宽松的解析方式
           try {
@@ -622,9 +623,9 @@ ${content}
             parsed = (function() { 
               return eval('(' + cleanedResponse + ')'); 
             })();
-            console.log('📄 使用eval解析成功');
+            devLog('📄 使用eval解析成功');
           } catch (evalError) {
-            console.error('📄 eval解析也失败:', evalError);
+            devError('📄 eval解析也失败:', evalError);
             throw new Error(`JSON解析失败: ${parseError.message}`);
           }
         }
@@ -709,7 +710,7 @@ ${content}
       // JSON解析和验证完成
       return parsed;
     } catch (error) {
-      console.error('📄 JSON解析失败:', error);
+      devError('📄 JSON解析失败:', error);
       throw new Error('AI返回的分析结果格式错误，无法解析');
     }
   }

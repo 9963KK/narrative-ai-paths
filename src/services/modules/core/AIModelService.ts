@@ -6,6 +6,7 @@
 
 import { ModelConfig } from '@/components/model-config/constants';
 import { unifiedAIService, type AIRequest, type ConversationHistory } from '../../unifiedAIService';
+import { devError } from '@/utils/logger';
 import { 
   IAIModelService, 
   AIResponse, 
@@ -106,7 +107,7 @@ export class AIModelService implements IAIModelService {
       }
 
     } catch (error) {
-      console.error('❌ AIModelService 调用失败:', error);
+      devError('❌ AIModelService 调用失败:', error);
       this.state.errorCount++;
       this.updatePerformanceMetrics(startTime, false, error as Error);
       

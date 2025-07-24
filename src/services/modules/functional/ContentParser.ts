@@ -11,6 +11,7 @@ import {
   Character,
   SummaryData 
 } from '../types';
+import { devLog, devError } from '@/utils/logger';
 
 export class ContentParser implements IContentParser {
 
@@ -39,8 +40,8 @@ export class ContentParser implements IContentParser {
       
       // 验证故事内容格式
       if (!this.validateStoryContent(parsed)) {
-        console.warn('⚠️ 故事内容验证失败');
-        console.warn('验证的内容:', parsed);
+        devError('⚠️ 故事内容验证失败');
+        devError('验证的内容:', parsed);
         return {
           success: false,
           error: '故事内容格式验证失败，缺少必需字段'
@@ -63,7 +64,7 @@ export class ContentParser implements IContentParser {
         }
       };
     } catch (error) {
-      console.error('❌ 故事响应解析失败:', error);
+      devError('❌ 故事响应解析失败:', error);
       return {
         success: false,
         error: `解析失败: ${(error as Error).message}`
@@ -76,7 +77,7 @@ export class ContentParser implements IContentParser {
    */
   parseChoices(response: string): Choice[] | null {
     try {
-      console.log('🎯 开始解析选择项...');
+      devLog('🎯 开始解析选择项...');
       const content = this.extractJsonFromResponse(response);
       const parsed = JSON.parse(content);
       
@@ -88,19 +89,19 @@ export class ContentParser implements IContentParser {
       } else if (parsed.choices && Array.isArray(parsed.choices)) {
         choices = parsed.choices;
       } else {
-        console.warn('⚠️ 无法从响应中提取选择项');
+        devError('⚠️ 无法从响应中提取选择项');
         return null;
       }
 
       // 验证和标准化选择项格式
       if (!this.validateChoiceFormat(choices)) {
-        console.warn('⚠️ 选择项格式验证失败');
+        devError('⚠️ 选择项格式验证失败');
         return null;
       }
 
       return this.normalizeChoices(choices);
     } catch (error) {
-      console.error('❌ 选择项解析失败:', error);
+      devError('❌ 选择项解析失败:', error);
       return null;
     }
   }
@@ -110,7 +111,7 @@ export class ContentParser implements IContentParser {
    */
   parseCharacters(response: string): Character[] | null {
     try {
-      console.log('👥 开始解析角色信息...');
+      devLog('👥 开始解析角色信息...');
       const content = this.extractJsonFromResponse(response);
       const parsed = JSON.parse(content);
       
@@ -123,21 +124,21 @@ export class ContentParser implements IContentParser {
       } else if (parsed.new_characters && Array.isArray(parsed.new_characters)) {
         characters = parsed.new_characters;
       } else {
-        console.warn('⚠️ 无法从响应中提取角色信息');
+        devError('⚠️ 无法从响应中提取角色信息');
         return null;
       }
 
       // 验证角色格式
       for (const character of characters) {
         if (!this.validateCharacter(character)) {
-          console.warn('⚠️ 角色格式验证失败:', character);
+          devError('⚠️ 角色格式验证失败:', character);
           return null;
         }
       }
 
       return this.normalizeCharacters(characters);
     } catch (error) {
-      console.error('❌ 角色解析失败:', error);
+      devError('❌ 角色解析失败:', error);
       return null;
     }
   }
@@ -146,12 +147,12 @@ export class ContentParser implements IContentParser {
    * 解析摘要JSON
    */
   parseSummaryJSON(summaryText: string): SummaryData | null {
-    console.log('🔍 开始解析JSON摘要...');
+    devLog('🔍 开始解析JSON摘要...');
     
     try {
       // 尝试直接解析
       const parsed = JSON.parse(summaryText);
-      console.log('✅ 直接解析成功');
+      devLog('✅ 直接解析成功');
       
       // 验证必要字段
       if (parsed && typeof parsed === 'object') {
@@ -168,14 +169,14 @@ export class ContentParser implements IContentParser {
         return result;
       }
     } catch (directError) {
-      console.log('🔧 直接解析失败，尝试修复:', directError.message);
+      devLog('🔧 直接解析失败，尝试修复:', directError.message);
       
       // 尝试修复JSON格式
       const fixedJson = this.fixSummaryJSON(summaryText);
       if (fixedJson) {
         try {
           const parsed = JSON.parse(fixedJson);
-          console.log('✅ 修复后解析成功');
+          devLog('✅ 修复后解析成功');
           return {
             plot_developments: parsed.plot_developments || [],
             character_changes: parsed.character_changes || [],
@@ -186,7 +187,7 @@ export class ContentParser implements IContentParser {
             summary_version: parsed.summary_version || 1
           };
         } catch (fixedError) {
-          console.log('❌ 修复后解析仍然失败:', fixedError.message);
+          devLog('❌ 修复后解析仍然失败:', fixedError.message);
         }
       }
     }
@@ -206,19 +207,19 @@ export class ContentParser implements IContentParser {
 
     // 必需的字段验证
     if (!content.scene || typeof content.scene !== 'string') {
-      console.warn('⚠️ scene 字段缺失或格式错误');
+      devError('⚠️ scene 字段缺失或格式错误');
       return false;
     }
 
     // 选择项验证（故事生成不包含choices，由专门的ChoiceGenerator生成）
     // 不验证choices字段，因为StoryInitializer不负责生成选择项
-    console.log('📝 故事生成不包含choices字段，选择项由ChoiceGenerator专门生成');
+    devLog('📝 故事生成不包含choices字段，选择项由ChoiceGenerator专门生成');
 
     // 角色验证（如果存在）
     if (content.characters && Array.isArray(content.characters)) {
       for (const character of content.characters) {
         if (!this.validateCharacter(character)) {
-          console.warn('⚠️ characters 字段格式错误');
+          devError('⚠️ characters 字段格式错误');
           return false;
         }
       }
@@ -246,28 +247,28 @@ export class ContentParser implements IContentParser {
 
       // 必需字段检查
       if (!choice.text || typeof choice.text !== 'string') {
-        console.warn('⚠️ 选择项缺少text字段');
+        devError('⚠️ 选择项缺少text字段');
         return false;
       }
 
       if (!choice.description || typeof choice.description !== 'string') {
-        console.warn('⚠️ 选择项缺少description字段');
+        devError('⚠️ 选择项缺少description字段');
         return false;
       }
 
       // 可选字段类型检查
       if (choice.id !== undefined && typeof choice.id !== 'number') {
-        console.warn('⚠️ 选择项id字段类型错误');
+        devError('⚠️ 选择项id字段类型错误');
         return false;
       }
 
       if (choice.consequences !== undefined && typeof choice.consequences !== 'string') {
-        console.warn('⚠️ 选择项consequences字段类型错误');
+        devError('⚠️ 选择项consequences字段类型错误');
         return false;
       }
 
       if (choice.difficulty !== undefined && typeof choice.difficulty !== 'number') {
-        console.warn('⚠️ 选择项difficulty字段类型错误');
+        devError('⚠️ 选择项difficulty字段类型错误');
         return false;
       }
     }
@@ -327,7 +328,7 @@ export class ContentParser implements IContentParser {
         
         if (startIndex > 0) {
           fixed = fixed.substring(startIndex);
-          console.log('🔧 移除前缀文字');
+          devLog('🔧 移除前缀文字');
         }
       }
       
@@ -344,7 +345,7 @@ export class ContentParser implements IContentParser {
       
       // 修复 }... 或 ],... 这样的格式
       fixed = fixed.replace(/([}\]])\s*,\s*\.{3,}/g, '$1');
-      console.log('🔧 修复省略号格式');
+      devLog('🔧 修复省略号格式');
       
       // 5. 修复常见的JSON格式问题
       // 修复未引用的属性名
@@ -352,7 +353,7 @@ export class ContentParser implements IContentParser {
       
       // 修复 +数字 格式（如 "tension_change": +2 应该是 "tension_change": 2）
       fixed = fixed.replace(/:\s*\+(\d+)/g, ': $1');
-      console.log('🔧 修复 +数字 格式');
+      devLog('🔧 修复 +数字 格式');
       
       // 6. 修复未完成的JSON结构
       const openBraces = (fixed.match(/{/g) || []).length;
@@ -360,18 +361,18 @@ export class ContentParser implements IContentParser {
       const openBrackets = (fixed.match(/\[/g) || []).length;
       const closeBrackets = (fixed.match(/\]/g) || []).length;
       
-      console.log('🔧 结构检查:', { openBraces, closeBraces, openBrackets, closeBrackets });
+      devLog('🔧 结构检查:', { openBraces, closeBraces, openBrackets, closeBrackets });
       
       // 补充缺失的大括号
       for (let i = 0; i < openBraces - closeBraces; i++) {
         fixed += '}';
-        console.log('🔧 补充大括号}');
+        devLog('🔧 补充大括号}');
       }
       
       // 补充缺失的中括号
       for (let i = 0; i < openBrackets - closeBrackets; i++) {
         fixed += ']';
-        console.log('🔧 补充中括号]');
+        devLog('🔧 补充中括号]');
       }
       
       // 7. 处理不完整的字符串
@@ -386,7 +387,7 @@ export class ContentParser implements IContentParser {
       
       // 如果引号数量是奇数，在适当位置添加闭合引号
       if (quoteCount % 2 === 1) {
-        console.log('🔧 修复未闭合的字符串');
+        devLog('🔧 修复未闭合的字符串');
         // 找到最后一个有意义的字符位置
         let insertIndex = fixed.length;
         for (let i = fixed.length - 1; i >= 0; i--) {
@@ -404,7 +405,7 @@ export class ContentParser implements IContentParser {
         // JSON修复成功
         return fixed;
       } catch (e) {
-        console.log('🔧 基础修复失败，尝试高级修复:', e.message);
+        devLog('🔧 基础修复失败，尝试高级修复:', e.message);
         
         // 9. 高级修复：尝试提取有效的JSON部分
         if (fixed.startsWith('[')) {
@@ -413,10 +414,10 @@ export class ContentParser implements IContentParser {
           if (arrayMatch) {
             try {
               JSON.parse(arrayMatch[0]);
-              console.log('✅ 提取有效数组部分成功');
+              devLog('✅ 提取有效数组部分成功');
               return arrayMatch[0];
             } catch (arrayError) {
-              console.log('🔧 数组部分修复失败');
+              devLog('🔧 数组部分修复失败');
             }
           }
         } else if (fixed.startsWith('{')) {
@@ -425,21 +426,21 @@ export class ContentParser implements IContentParser {
           if (objectMatch) {
             try {
               JSON.parse(objectMatch[0]);
-              console.log('✅ 提取有效对象部分成功');
+              devLog('✅ 提取有效对象部分成功');
               return objectMatch[0];
             } catch (objectError) {
-              console.log('🔧 对象部分修复失败');
+              devLog('🔧 对象部分修复失败');
             }
           }
         }
         
         // 10. 最终回退：如果内容看起来像选择项但格式有问题，尝试重构
         if (jsonString.includes('text') && jsonString.includes('description')) {
-          console.log('🔧 尝试重构选择项格式');
+          devLog('🔧 尝试重构选择项格式');
           try {
             return this.reconstructChoicesFromText(jsonString);
           } catch (reconstructError) {
-            console.log('🔧 重构失败');
+            devLog('🔧 重构失败');
           }
         }
         
@@ -447,7 +448,7 @@ export class ContentParser implements IContentParser {
         throw new Error('无法修复JSON格式');
       }
     } catch (error) {
-      console.warn('❌ JSON修复过程失败:', error);
+      devError('❌ JSON修复过程失败:', error);
       throw new Error('JSON修复失败: ' + error);
     }
   }
@@ -503,7 +504,7 @@ export class ContentParser implements IContentParser {
         content = directArrayMatch[0];
         // 直接提取JSON数组
       } else {
-        console.warn('📄 未找到JSON格式，使用原始内容');
+        devError('📄 未找到JSON格式，使用原始内容');
       }
     }
     
@@ -515,15 +516,15 @@ export class ContentParser implements IContentParser {
       // JSON格式正确，无需修复
       return content;
     } catch (directParseError) {
-      console.log('🔧 JSON格式有问题，尝试修复:', directParseError.message);
+      devLog('🔧 JSON格式有问题，尝试修复:', directParseError.message);
     }
     
     // 尝试修复JSON格式
     try {
       content = this.repairMalformedJSON(content);
-      console.log('✅ JSON修复成功');
+      devLog('✅ JSON修复成功');
     } catch (fixError) {
-      console.error('❌ JSON修复失败:', fixError.message);
+      devError('❌ JSON修复失败:', fixError.message);
       throw new Error('JSON格式修复失败: ' + fixError.message);
     }
     
@@ -537,7 +538,7 @@ export class ContentParser implements IContentParser {
     let cleanContent = '';
     
     try {
-      console.log('🔧 尝试修复摘要JSON格式...');
+      devLog('🔧 尝试修复摘要JSON格式...');
       
       // 移除可能的markdown代码块标记
       cleanContent = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
@@ -551,7 +552,7 @@ export class ContentParser implements IContentParser {
       
       // 如果找不到JSON边界，尝试更宽松的匹配
       if (jsonStart < 0 || jsonEnd <= jsonStart) {
-        console.log('🔧 尝试宽松的JSON边界检测...');
+        devLog('🔧 尝试宽松的JSON边界检测...');
         
         // 尝试匹配任何看起来像JSON的内容
         const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
@@ -561,7 +562,7 @@ export class ContentParser implements IContentParser {
           jsonEnd = cleanContent.length - 1;
         } else {
           // 如果完全找不到JSON，尝试构造一个基本的摘要结构
-          console.log('🔧 构造基本摘要结构...');
+          devLog('🔧 构造基本摘要结构...');
           cleanContent = `{
             "plot_developments": ["${cleanContent.replace(/"/g, '\\"').substring(0, 100)}"],
             "character_changes": [],
@@ -608,17 +609,17 @@ export class ContentParser implements IContentParser {
           // 最后清理
           .trim();
         
-        console.log('🔧 修复后的JSON:', cleanContent.substring(0, 200));
+        devLog('🔧 修复后的JSON:', cleanContent.substring(0, 200));
         
         // 尝试解析，如果成功就返回
         JSON.parse(cleanContent);
-        console.log('✅ 摘要JSON修复成功');
+        devLog('✅ 摘要JSON修复成功');
         return cleanContent;
       } else {
-        console.warn('❌ 找不到有效的JSON边界');
+        devError('❌ 找不到有效的JSON边界');
       }
     } catch (error) {
-      console.warn('❌ 摘要JSON修复失败:', error);
+      devError('❌ 摘要JSON修复失败:', error);
     }
     
     return null;
@@ -628,7 +629,7 @@ export class ContentParser implements IContentParser {
    * 从文本重构选择项
    */
   private reconstructChoicesFromText(content: string): string {
-    console.log('🔧 尝试从文本重构选择项...');
+    devLog('🔧 尝试从文本重构选择项...');
     
     const lines = content.split('\n');
     const choices: any[] = [];
@@ -658,7 +659,7 @@ export class ContentParser implements IContentParser {
     
     if (choices.length > 0) {
       const result = JSON.stringify(choices);
-      console.log('✅ 重构成功，生成了', choices.length, '个选择项');
+      devLog('✅ 重构成功，生成了', choices.length, '个选择项');
       return result;
     }
     

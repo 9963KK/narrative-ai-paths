@@ -1,5 +1,6 @@
 import { ModelConfig } from '@/components/model-config/constants';
 import { userStorage } from './userStorage';
+import { devLog, devError, stateLog } from '@/utils/logger';
 
 // 对话消息接口
 export interface ConversationMessage {
@@ -150,7 +151,7 @@ class ContextManager {
       // 一次性保存到本地存储
       userStorage.setItem(CONTEXTS_STORAGE_KEY, JSON.stringify(existingContexts));
       
-      console.log(`💾 故事上下文已保存: ${savedContext.title} (ID: ${contextId})`);
+      stateLog(`故事上下文已保存: ${savedContext.title} (ID: ${contextId})`);
       return contextId;
       
     } catch (error) {
@@ -342,12 +343,12 @@ class ContextManager {
         // 如果已有手动保存，保持其标题和手动状态
         title = existingContext.title;
         isAutoSave = false;
-        console.log('🔄 更新现有手动存档:', title);
+        stateLog('更新现有手动存档:', title);
       } else {
         // 创建或更新自动保存
         title = this.generateStoryTitle(storyState);
         isAutoSave = true;
-        console.log('🔄 更新自动保存');
+        stateLog('更新自动保存');
       }
       
       return this.saveStoryContext(storyState, conversationHistory, modelConfig, {
@@ -422,7 +423,7 @@ class ContextManager {
         // 迁移逻辑
         if (oldAutoSave && !primarySave) {
           // 将旧自动保存迁移为主存档
-          console.log('🔄 迁移旧自动保存到主存档:', oldAutoSave.title);
+          stateLog('迁移旧自动保存到主存档:', oldAutoSave.title);
           const migratedSave = { ...oldAutoSave, id: primarySaveId };
           savedContexts[primarySaveId] = migratedSave;
           delete savedContexts[oldAutoSaveId];
@@ -447,7 +448,7 @@ class ContextManager {
             new Date(b.saveTime).getTime() - new Date(a.saveTime).getTime()
           )[0];
           
-          console.log('🔄 将最新手动保存升级为主存档:', latestManualSave.title);
+          stateLog('将最新手动保存升级为主存档:', latestManualSave.title);
           const upgradedSave = { ...latestManualSave, id: primarySaveId };
           savedContexts[primarySaveId] = upgradedSave;
           delete savedContexts[latestManualSave.id];

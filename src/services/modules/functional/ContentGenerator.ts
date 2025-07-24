@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError } from '@/utils/logger';
 import { 
   IContentGenerator, 
   StoryState, 
@@ -75,7 +76,7 @@ export class ContentGenerator implements IContentGenerator {
       // 理论上不会执行到这里
       return this.generateFallbackChapter(state, choice);
     } catch (error) {
-      console.error('❌ 章节生成失败:', error);
+      devError('❌ 章节生成失败:', error);
       return this.generateFallbackChapter(state, choice);
     }
   }
@@ -103,7 +104,7 @@ export class ContentGenerator implements IContentGenerator {
       const sceneDescription = response.choices[0].message.content.trim();
       return sceneDescription;
     } catch (error) {
-      console.error('❌ 场景描述生成失败:', error);
+      devError('❌ 场景描述生成失败:', error);
       return this.getFallbackSceneDescription(context);
     }
   }
@@ -133,7 +134,7 @@ export class ContentGenerator implements IContentGenerator {
       // 对话内容生成成功
       return dialogue;
     } catch (error) {
-      console.error('❌ 对话生成失败:', error);
+      devError('❌ 对话生成失败:', error);
       return this.getFallbackDialogue(characters, context);
     }
   }
@@ -163,7 +164,7 @@ export class ContentGenerator implements IContentGenerator {
       const plotAdvancement = response.choices[0].message.content.trim();
       return plotAdvancement;
     } catch (error) {
-      console.error('❌ 情节推进失败:', error);
+      devError('❌ 情节推进失败:', error);
       return `故事继续发展，${state.characters[0]?.name || '主角'}面临着新的挑战和机遇，需要做出重要的决定来推进冒险的进程。`;
     }
   }
@@ -191,7 +192,7 @@ export class ContentGenerator implements IContentGenerator {
       const tensionElement = response.choices[0].message.content.trim();
       return tensionElement;
     } catch (error) {
-      console.error('❌ 紧张感构建失败:', error);
+      devError('❌ 紧张感构建失败:', error);
       return this.getFallbackTensionElement(currentLevel, target);
     }
   }

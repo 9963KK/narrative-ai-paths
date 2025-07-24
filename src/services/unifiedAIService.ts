@@ -7,6 +7,7 @@
 import { ModelConfig } from '@/components/model-config/constants';
 import { configurationManager } from './configurationManager';
 import { creditService } from './creditService';
+import { devLog, devError, apiLog, perfLog } from '@/utils/logger';
 import { tokenMonitor } from './tokenMonitorService';
 import { unifiedAuthService } from './unifiedAuthService';
 
@@ -137,7 +138,7 @@ class UnifiedAIService {
 
       // 7. 记录性能指标
       const responseTime = Date.now() - startTime;
-      console.log(`🤖 AI请求完成: ${responseTime}ms, 成功率: ${(this.successCount / this.requestCount * 100).toFixed(1)}%`);
+      apiLog(`AI请求完成: ${responseTime}ms, 成功率: ${(this.successCount / this.requestCount * 100).toFixed(1)}%`);
 
       return response;
 
@@ -480,7 +481,7 @@ class UnifiedAIService {
           }
         });
         window.dispatchEvent(creditUpdateEvent);
-        console.log('💰 积分扣除成功，已触发UI更新事件');
+        devLog('积分扣除成功，已触发UI更新事件');
       } else {
         console.warn('⚠️ 积分扣除失败，但AI请求已完成');
       }
@@ -498,7 +499,7 @@ class UnifiedAIService {
         });
       }
 
-      console.log(`💰 积分扣除: ${creditCalculation.required_credits.toFixed(2)} 积分 (${usage.totalTokens} tokens)`);
+      perfLog(`积分扣除: ${creditCalculation.required_credits.toFixed(2)} 积分 (${usage.totalTokens} tokens)`);
     } catch (error) {
       console.error('❌ 积分扣除或日志记录失败:', error);
     }

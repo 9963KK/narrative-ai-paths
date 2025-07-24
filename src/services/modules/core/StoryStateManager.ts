@@ -5,6 +5,7 @@
  */
 
 import { userStorage } from '../../userStorage';
+import { devError, stateLog } from '@/utils/logger';
 import { 
   IStoryStateManager, 
   StoryState, 
@@ -76,7 +77,7 @@ export class StoryStateManager implements IStoryStateManager {
 
       await userStorage.saveStoryState(userId, stateData);
     } catch (error) {
-      console.error('保存故事状态失败:', error);
+      devError('保存故事状态失败:', error);
       throw new Error(`保存故事状态失败: ${(error as Error).message}`);
     }
   }
@@ -89,7 +90,7 @@ export class StoryStateManager implements IStoryStateManager {
       const stateData = await userStorage.loadStoryState(userId);
       
       if (!stateData || !stateData.storyState) {
-        console.log(`📭 用户 ${userId} 没有保存的故事状态`);
+        stateLog(`📭 用户 ${userId} 没有保存的故事状态`);
         return null;
       }
 
@@ -97,7 +98,7 @@ export class StoryStateManager implements IStoryStateManager {
       
       // 验证加载的状态
       if (!this.validateState(loadedState)) {
-        console.warn('加载的故事状态验证失败，将忽略');
+        devError('加载的故事状态验证失败，将忽略');
         return null;
       }
 
@@ -105,7 +106,7 @@ export class StoryStateManager implements IStoryStateManager {
       
       return { ...loadedState };
     } catch (error) {
-      console.error('加载故事状态失败:', error);
+      devError('加载故事状态失败:', error);
       throw new Error(`加载故事状态失败: ${(error as Error).message}`);
     }
   }
@@ -119,44 +120,44 @@ export class StoryStateManager implements IStoryStateManager {
     try {
       // 必需字段检查
       if (!state.story_id || typeof state.story_id !== 'string') {
-        console.error('故事ID无效');
+        devError('故事ID无效');
         return false;
       }
 
       if (!state.current_scene || typeof state.current_scene !== 'string') {
-        console.error('当前场景无效');
+        devError('当前场景无效');
         return false;
       }
 
       if (!Array.isArray(state.characters)) {
-        console.error('角色列表无效');
+        devError('角色列表无效');
         return false;
       }
 
       if (!state.setting || typeof state.setting !== 'string') {
-        console.error('故事设定无效');
+        devError('故事设定无效');
         return false;
       }
 
       if (typeof state.chapter !== 'number' || state.chapter < 0) {
-        console.error('章节数无效');
+        devError('章节数无效');
         return false;
       }
 
       if (!Array.isArray(state.choices_made)) {
-        console.error('选择历史无效');
+        devError('选择历史无效');
         return false;
       }
 
       // mood 字段在有值时验证类型
       if (state.mood !== undefined && typeof state.mood !== 'string') {
-        console.error('故事氛围类型无效');
+        devError('故事氛围类型无效');
         return false;
       }
 
       // tension_level 字段在有值时验证范围
       if (state.tension_level !== undefined && (typeof state.tension_level !== 'number' || state.tension_level < 0 || state.tension_level > 100)) {
-        console.error('紧张度无效（应为0-100）');
+        devError('紧张度无效（应为0-100）');
         return false;
       }
 
@@ -179,7 +180,7 @@ export class StoryStateManager implements IStoryStateManager {
       // 可选字段验证
       if (state.story_progress !== undefined) {
         if (typeof state.story_progress !== 'number' || state.story_progress < 0 || state.story_progress > 100) {
-          console.error('故事进度无效（应为0-100）');
+          devError('故事进度无效（应为0-100）');
           return false;
         }
       }
@@ -187,14 +188,14 @@ export class StoryStateManager implements IStoryStateManager {
       if (state.completion_type !== undefined) {
         const validTypes = ['success', 'failure', 'neutral', 'cliffhanger'];
         if (!validTypes.includes(state.completion_type)) {
-          console.error('完成类型无效');
+          devError('完成类型无效');
           return false;
         }
       }
 
       return true;
     } catch (error) {
-      console.error('状态验证过程中出错:', error);
+      devError('状态验证过程中出错:', error);
       return false;
     }
   }
@@ -204,7 +205,7 @@ export class StoryStateManager implements IStoryStateManager {
    */
   resetState(): void {
     this.currentState = null;
-    console.log('🔄 故事状态已重置');
+    stateLog('🔄 故事状态已重置');
   }
 
   // ==================== 状态查询 ====================
@@ -287,13 +288,13 @@ export class StoryStateManager implements IStoryStateManager {
     // 检查角色是否已存在
     const existingChar = this.getCharacterByName(character.name);
     if (existingChar) {
-      console.warn(`角色 ${character.name} 已存在，将更新信息`);
+      devError(`角色 ${character.name} 已存在，将更新信息`);
       this.updateCharacter(character.name, character);
       return;
     }
 
     this.currentState.characters.push({ ...character });
-    console.log(`✨ 新角色已添加: ${character.name}`);
+    stateLog(`✨ 新角色已添加: ${character.name}`);
   }
 
   /**
@@ -316,7 +317,7 @@ export class StoryStateManager implements IStoryStateManager {
     }
 
     this.currentState.characters[charIndex] = updatedCharacter;
-    console.log(`🔄 角色 ${characterName} 信息已更新`);
+    stateLog(`🔄 角色 ${characterName} 信息已更新`);
   }
 
   /**
@@ -328,7 +329,7 @@ export class StoryStateManager implements IStoryStateManager {
     }
 
     this.currentState.choices_made.push(choice);
-    console.log(`📝 选择已记录: ${choice}`);
+    stateLog(`📝 选择已记录: ${choice}`);
   }
 
   /**
@@ -341,7 +342,7 @@ export class StoryStateManager implements IStoryStateManager {
 
     const goalIndex = this.currentState.story_goals.findIndex(goal => goal.id === goalId);
     if (goalIndex === -1) {
-      console.warn(`目标 ${goalId} 不存在`);
+      devError(`目标 ${goalId} 不存在`);
       return;
     }
 
@@ -352,7 +353,7 @@ export class StoryStateManager implements IStoryStateManager {
     }
 
     this.currentState.story_goals[goalIndex] = updatedGoal;
-    console.log(`🎯 目标 ${goalId} 已更新: ${updatedGoal.status}`);
+    stateLog(`🎯 目标 ${goalId} 已更新: ${updatedGoal.status}`);
   }
 
   // ==================== 私有辅助方法 ====================

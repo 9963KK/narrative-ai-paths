@@ -6,6 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
+import { devError } from '@/utils/logger';
 import { 
   IChoiceGenerator, 
   StoryState, 
@@ -66,7 +67,7 @@ export class ChoiceGenerator implements IChoiceGenerator {
             throw new Error('选择项解析失败');
           }
         } catch (parseError) {
-          console.warn(`❌ 第${attempts}次尝试失败:`, parseError);
+          devError(`❌ 第${attempts}次尝试失败:`, parseError);
           if (attempts >= maxAttempts) {
             return this.generateFallbackChoices(state, context);
           }
@@ -76,7 +77,7 @@ export class ChoiceGenerator implements IChoiceGenerator {
       // 理论上不会执行到这里
       return this.generateFallbackChoices(state, context);
     } catch (error) {
-      console.error('❌ 选择项生成失败:', error);
+      devError('❌ 选择项生成失败:', error);
       return this.generateFallbackChoices(state, context);
     }
   }
@@ -172,7 +173,7 @@ export class ChoiceGenerator implements IChoiceGenerator {
       const consequences = response.choices[0].message.content.trim();
       return consequences;
     } catch (error) {
-      console.error('❌ 后果预测失败:', error);
+      devError('❌ 后果预测失败:', error);
       return this.getFallbackConsequences(choice, state);
     }
   }
@@ -309,7 +310,7 @@ ${context}
     for (const choice of choices) {
       // 基本验证
       if (!choice.text || !choice.description) {
-        console.warn('⚠️ 选择项缺少必要字段，跳过:', choice);
+        devError('⚠️ 选择项缺少必要字段，跳过:', choice);
         continue;
       }
 
