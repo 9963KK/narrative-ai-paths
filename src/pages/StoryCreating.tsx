@@ -54,9 +54,10 @@ const StoryCreating: React.FC = () => {
 
     // 2. 并行启动AI调用
     const startAIGeneration = async () => {
+      const startTime = performance.now();
       try {
         const { config, modelConfig, isAdvanced } = JSON.parse(pendingConfigStr);
-        console.log('🤖 后台开始AI故事生成...');
+        console.log('🤖 后台开始AI故事生成...', `[${new Date().toLocaleTimeString()}]`);
         
         // 确保用户有可用模型
         await modelConfigAdapter.ensureUserHasModels();
@@ -72,7 +73,11 @@ const StoryCreating: React.FC = () => {
         storyAI.clearConversationHistory();
         
         // 调用AI生成初始故事
+        console.log('📡 开始调用storyAI.generateInitialStory...', `[${new Date().toLocaleTimeString()}]`);
+        const aiCallStart = performance.now();
         const response = await storyAI.generateInitialStory(config, isAdvanced);
+        const aiCallEnd = performance.now();
+        console.log('📡 storyAI.generateInitialStory完成', `[${new Date().toLocaleTimeString()}]`, `耗时: ${((aiCallEnd - aiCallStart) / 1000).toFixed(2)}秒`);
         
         if (!response.success) {
           throw new Error(response.error || '故事生成失败');
@@ -105,8 +110,11 @@ const StoryCreating: React.FC = () => {
           summaryState: storyAI.getSummaryState()
         });
         
+        const endTime = performance.now();
+        const totalTime = (endTime - startTime) / 1000; // 转换为秒
+        
         setAiCompleted(true);
-        console.log('✅ AI故事生成完成');
+        console.log('✅ AI故事生成完成', `[${new Date().toLocaleTimeString()}]`, `耗时: ${totalTime.toFixed(2)}秒`);
         
       } catch (error) {
         console.error('❌ AI故事生成失败:', error);
@@ -126,12 +134,21 @@ const StoryCreating: React.FC = () => {
   useEffect(() => {
     const isAnimationComplete = progress >= 100;
     
+    if (isAnimationComplete) {
+      console.log('🎬 动画已完成100%', `[${new Date().toLocaleTimeString()}]`, 
+        `AI状态: ${aiCompleted ? '✅完成' : '⏳进行中'}`, 
+        `数据状态: ${aiStoryData ? '✅有数据' : '❌无数据'}`);
+    }
+    
     if (isAnimationComplete && aiCompleted && aiStoryData && !aiError) {
+      console.log('🚀 准备显示故事管理器...', `[${new Date().toLocaleTimeString()}]`);
       setTimeout(() => {
         setShowStoryManager(true);
         localStorage.removeItem('pendingStoryConfig');
+        console.log('✨ 故事管理器已显示', `[${new Date().toLocaleTimeString()}]`);
       }, 500);
     } else if (isAnimationComplete && aiError) {
+      console.log('❌ 显示错误页面...', `[${new Date().toLocaleTimeString()}]`);
       setTimeout(() => {
         setShowStoryManager(true);
       }, 500);
