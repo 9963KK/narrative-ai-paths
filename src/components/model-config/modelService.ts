@@ -73,7 +73,40 @@ class ModelService {
     }
   }
 
-  // 获取OpenAI模型列表
+  // 获取OpenAI兼容服务的模型列表
+  private async fetchOpenAICompatibleModels(apiKey: string, baseUrl: string): Promise<ModelInfo[]> {
+    if (!baseUrl) {
+      throw new Error('OpenAI兼容服务需要提供Base URL');
+    }
+
+    // 确保baseUrl以/v1结尾
+    const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
+    const url = `${normalizedBaseUrl}/models`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI兼容API错误: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // 不进行模型过滤，返回服务商提供的所有模型
+    if (!data.data || !Array.isArray(data.data)) {
+      throw new Error('API返回数据格式错误，缺少models数组');
+    }
+
+    return data.data.map((model: any) => ({
+      id: model.id,
+      name: model.name || model.id,
+      description: model.description || `${model.id} - OpenAI兼容模型`
+    }));
+  }
   private async fetchOpenAIModels(apiKey: string, baseUrl?: string): Promise<ModelInfo[]> {
     const url = `${baseUrl || 'https://api.openai.com/v1'}/models`;
     
@@ -413,6 +446,12 @@ class ModelService {
       switch (provider) {
         case 'openai':
           models = await this.fetchOpenAIModels(apiKey, baseUrl);
+          break;
+        case 'openai-compatible':
+          if (!baseUrl) {
+            return { data: [], error: 'OpenAI兼容服务必须提供Base URL' };
+          }
+          models = await this.fetchOpenAICompatibleModels(apiKey, baseUrl);
           break;
         case 'openrouter':
           models = await this.fetchOpenRouterModels(apiKey);

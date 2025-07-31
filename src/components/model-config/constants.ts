@@ -1,6 +1,7 @@
 
 export const providers = [
   { value: 'openai', label: 'OpenAI' },
+  { value: 'openai-compatible', label: 'OpenAI兼容' },
   { value: 'anthropic', label: 'Anthropic (Claude)' },
   { value: 'google', label: 'Google (Gemini)' },
   { value: 'openrouter', label: 'OpenRouter' },

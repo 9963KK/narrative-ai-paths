@@ -336,7 +336,7 @@ class UnifiedAIService {
 
     // 如果需要JSON输出，添加相应配置
     if (request.forceJsonOutput) {
-      if (provider === 'openai') {
+      if (provider === 'openai' || provider === 'openai-compatible') {
         requestBody.response_format = { type: 'json_object' };
       }
     }
@@ -349,6 +349,7 @@ class UnifiedAIService {
     // 根据不同提供商设置认证头
     switch (provider) {
       case 'openai':
+      case 'openai-compatible':
       case 'deepseek':
       case 'moonshot':
         headers['Authorization'] = `Bearer ${apiKey}`;
@@ -389,11 +390,14 @@ class UnifiedAIService {
    */
   private getAPIEndpoint(provider: string, baseUrl?: string): string {
     if (baseUrl) {
-      return `${baseUrl}/chat/completions`;
+      // 对于有自定义baseUrl的情况，统一处理
+      const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
+      return `${normalizedBaseUrl}/chat/completions`;
     }
 
     switch (provider) {
       case 'openai':
+      case 'openai-compatible':
         return 'https://api.openai.com/v1/chat/completions';
       case 'anthropic':
         return 'https://api.anthropic.com/v1/messages';
