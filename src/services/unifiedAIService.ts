@@ -104,17 +104,27 @@ class UnifiedAIService {
       // 3. 预估token使用量
       const estimatedUsage = this.estimateTokenUsage(request, modelConfig);
 
-      // 4. 积分检查（如果启用）
+      // 4. 积分检查（如果启用）- 优化版本，避免重复计算
+      let creditCalculation: any = null;
       if (this.config.enableCreditCheck) {
-        const creditCheckResult = await this.checkCredits(
-          currentUser.id,
-          modelConfig,
+        // 预先计算费用，避免后续重复计算
+        creditCalculation = await creditService.calculateRequiredCredits(
+          modelConfig.provider,
+          modelConfig.model,
           estimatedUsage.inputTokens,
           estimatedUsage.outputTokens
         );
 
-        if (!creditCheckResult.sufficient) {
-          return this.createErrorResponse(creditCheckResult.message);
+        const hasSufficientCredits = await creditService.checkSufficientCredits(
+          currentUser.id,
+          creditCalculation.required_credits
+        );
+
+        if (!hasSufficientCredits) {
+          const userCredits = await creditService.getUserCredits(currentUser.id);
+          return this.createErrorResponse(
+            `积分余额不足。需要 ${creditCalculation.required_credits.toFixed(2)} 积分，当前余额：${userCredits?.balance?.toFixed(2) || 0} 积分`
+          );
         }
       }
 
@@ -125,13 +135,14 @@ class UnifiedAIService {
       if (response.success) {
         this.successCount++;
         
-        // 扣除积分并记录使用情况
-        if (this.config.enableCreditCheck && response.usage) {
-          await this.deductCreditsAndLog(
+        // 扣除积分并记录使用情况 - 复用预计算的费用
+        if (this.config.enableCreditCheck && response.usage && creditCalculation) {
+          await this.deductCreditsAndLogOptimized(
             currentUser.id,
             modelConfig,
             response.usage,
-            request.requestType || 'other'
+            request.requestType || 'other',
+            creditCalculation // 传递预计算的费用，避免重复查询
           );
         }
       }
@@ -440,7 +451,74 @@ class UnifiedAIService {
   }
 
   /**
-   * 扣除积分并记录日志
+   * 扣除积分并记录日志 - 优化版本（复用预计算费用）
+   */
+  private async deductCreditsAndLogOptimized(
+    userId: string,
+    modelConfig: ModelConfig,
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    requestType: string,
+    creditCalculation: any // 复用之前计算的费用，避免重复查询
+  ): Promise<void> {
+    try {
+      // 基于实际使用量重新计算准确费用（通常与预估接近）
+      const actualCreditCalculation = await creditService.calculateRequiredCredits(
+        modelConfig.provider,
+        modelConfig.model,
+        usage.promptTokens,
+        usage.completionTokens
+      );
+
+      // 扣除积分
+      const deductSuccess = await creditService.deductCredits(
+        userId,
+        actualCreditCalculation.required_credits,
+        modelConfig.provider,
+        modelConfig.model,
+        usage.totalTokens,
+        actualCreditCalculation.estimated_cost_usd,
+        `AI${requestType === 'other' ? '服务' : requestType}消费`
+      );
+
+      if (deductSuccess) {
+        // 积分扣除成功，触发全局积分更新事件
+        const creditUpdateEvent = new CustomEvent('creditUpdated', {
+          detail: {
+            userId,
+            deductedAmount: actualCreditCalculation.required_credits,
+            provider: modelConfig.provider,
+            model: modelConfig.model,
+            tokensUsed: usage.totalTokens,
+            timestamp: new Date().toISOString()
+          }
+        });
+        window.dispatchEvent(creditUpdateEvent);
+        devLog('积分扣除成功，已触发UI更新事件');
+      } else {
+        console.warn('⚠️ 积分扣除失败，但AI请求已完成');
+      }
+
+      // 记录token使用统计
+      if (this.config.enableTokenMonitoring) {
+        tokenMonitor.logTokenUsage({
+          modelProvider: modelConfig.provider,
+          modelName: modelConfig.model,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+          cost: actualCreditCalculation.estimated_cost_usd,
+          requestType: requestType as any
+        });
+      }
+
+      perfLog(`积分扣除: ${actualCreditCalculation.required_credits.toFixed(2)} 积分 (${usage.totalTokens} tokens)`);
+    } catch (error) {
+      console.error('❌ 积分扣除或日志记录失败:', error);
+    }
+  }
+
+  /**
+   * 扣除积分并记录日志 - 保留旧版本以兼容其他调用
    */
   private async deductCreditsAndLog(
     userId: string,
