@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, Sparkles, Wand2, Users, Map, Target, ArrowLeft } from 'lucide-react';
 import StoryManager from '@/components/StoryManager';
+import { storyAI } from '@/services/storyAI';
+import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 
 const StoryCreating: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +15,9 @@ const StoryCreating: React.FC = () => {
   const [showStoryManager, setShowStoryManager] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
+  const [aiStoryData, setAiStoryData] = useState<any>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCompleted, setAiCompleted] = useState(false);
   
   const steps = [
     { id: 'config', label: '读取创作配置', icon: BookOpen },
@@ -32,7 +37,9 @@ const StoryCreating: React.FC = () => {
       return;
     }
 
-    // 模拟创作进度
+    // 并行处理：动画显示 + 后台AI调用
+    
+    // 1. 启动动画显示
     let currentIndex = 0;
     const progressInterval = setInterval(() => {
       if (currentIndex < steps.length) {
@@ -41,15 +48,95 @@ const StoryCreating: React.FC = () => {
         currentIndex++;
       } else {
         clearInterval(progressInterval);
-        // 创作完成，启动故事管理器
-        setTimeout(() => {
-          setShowStoryManager(true);
-        }, 500);
+        // 动画完成，状态变化会由单独的useEffect处理
       }
-    }, 1500); // 每1.5秒一个步骤
+    }, 1500); // 每1.5秒一个步骤，总共9秒
 
-    return () => clearInterval(progressInterval);
+    // 2. 并行启动AI调用
+    const startAIGeneration = async () => {
+      try {
+        const { config, modelConfig, isAdvanced } = JSON.parse(pendingConfigStr);
+        console.log('🤖 后台开始AI故事生成...');
+        
+        // 确保用户有可用模型
+        await modelConfigAdapter.ensureUserHasModels();
+        let configToUse = modelConfig;
+        if (!modelConfig.apiKey) {
+          const userConfig = await modelConfigAdapter.getUserModelConfig();
+          if (userConfig) {
+            configToUse = userConfig;
+          }
+        }
+
+        // 清除对话历史，准备新故事
+        storyAI.clearConversationHistory();
+        
+        // 调用AI生成初始故事
+        const response = await storyAI.generateInitialStory(config, isAdvanced);
+        
+        if (!response.success) {
+          throw new Error(response.error || '故事生成失败');
+        }
+
+        // 创建故事上下文
+        const processedStory = {
+          story_id: `auto_${Date.now()}`,
+          current_scene: response.content.scene || response.content.initial_scene || response.content.story || '',
+          characters: response.content.characters || [],
+          setting: response.content.setting_details || config.setting || '',
+          chapter: 1,
+          chapter_title: response.content.chapter_title || '第一章',
+          choices_made: [],
+          mood: response.content.mood || 'mysterious',
+          tension_level: response.content.tension_level || 5,
+          needs_choice: true,
+          scene_type: 'exploration' as const,
+          is_completed: false,
+          story_progress: 0,
+          main_goal_status: 'in_progress' as const,
+          story_goals: config.story_goals || []
+        };
+
+        // 保存AI生成的数据
+        setAiStoryData({
+          storyState: processedStory,
+          modelConfig: configToUse,
+          conversationHistory: storyAI.getConversationHistory(),
+          summaryState: storyAI.getSummaryState()
+        });
+        
+        setAiCompleted(true);
+        console.log('✅ AI故事生成完成');
+        
+      } catch (error) {
+        console.error('❌ AI故事生成失败:', error);
+        setAiError(error instanceof Error ? error.message : '故事生成失败，请重试');
+      }
+    };
+
+    // 启动AI生成（并行）
+    startAIGeneration();
+
+    return () => {
+      clearInterval(progressInterval);
+    };
   }, [navigate]);
+
+  // 监听AI完成状态和动画进度，决定何时显示故事管理器
+  useEffect(() => {
+    const isAnimationComplete = progress >= 100;
+    
+    if (isAnimationComplete && aiCompleted && aiStoryData && !aiError) {
+      setTimeout(() => {
+        setShowStoryManager(true);
+        localStorage.removeItem('pendingStoryConfig');
+      }, 500);
+    } else if (isAnimationComplete && aiError) {
+      setTimeout(() => {
+        setShowStoryManager(true);
+      }, 500);
+    }
+  }, [progress, aiCompleted, aiStoryData, aiError]);
 
   const handleReturnToHome = () => {
     // 清除待处理的配置
@@ -59,10 +146,42 @@ const StoryCreating: React.FC = () => {
 
   // 如果显示故事管理器，则渲染故事管理器
   if (showStoryManager) {
+    // 如果有AI错误，显示错误页面
+    if (aiError) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-red-50 flex items-center justify-center">
+          <div className="max-w-md mx-auto text-center p-8">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-red-800 mb-4">故事生成失败</h2>
+            <p className="text-red-700 mb-6">{aiError}</p>
+            <div className="flex gap-4 justify-center">
+              <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700">
+                重试
+              </Button>
+              <Button variant="outline" onClick={handleReturnToHome}>
+                返回主页
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
         
         <StoryManager 
+          preloadedContext={aiStoryData ? {
+            id: aiStoryData.storyState.story_id,
+            title: `基于文档分析的故事 - ${new Date().toLocaleDateString()}`,
+            storyState: aiStoryData.storyState,
+            modelConfig: aiStoryData.modelConfig,
+            conversationHistory: aiStoryData.conversationHistory,
+            summaryState: aiStoryData.summaryState,
+            currentChoices: [],
+            lastSaved: new Date().toISOString(),
+            cloudSynced: false
+          } : undefined}
           onReturnToHome={handleReturnToHome}
           onNavigate={navigate}
           userId={user?.id}
@@ -158,8 +277,12 @@ const StoryCreating: React.FC = () => {
                 AI正在基于您上传的文档内容，精心构建一个充满想象力的故事世界。
                 每个角色、每个情节都经过深度思考，为您呈现最精彩的互动体验。
               </p>
-              <div className="mt-4 text-xs text-gray-500">
-                ✨ 预计完成时间：10-15秒
+              <div className="mt-4 text-xs text-gray-500 space-y-1">
+                <div>✨ 预计完成时间：10-15秒</div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${aiCompleted ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                  <span>{aiCompleted ? '✅ AI创作完成' : '🤖 后台AI创作中...'}</span>
+                </div>
               </div>
             </div>
           </div>
