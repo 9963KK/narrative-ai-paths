@@ -198,22 +198,40 @@ class ModelDiscoveryService {
   }
 
   /**
-   * 检测OpenAI模型的实际提供商
+   * 检测OpenAI模型的实际提供商 
    */
   private detectOpenAIProvider(baseUrl: string, modelId: string): string {
     const url = baseUrl.toLowerCase();
     
+    // 优先根据URL检测
     if (url.includes('deepseek')) return 'deepseek';
     if (url.includes('moonshot')) return 'moonshot';
     if (url.includes('zhipu')) return 'zhipu';
     if (url.includes('openrouter')) return 'openrouter';
     if (url.includes('openai.com')) return 'openai';
     
-    // 根据模型名称推断
-    if (modelId.includes('deepseek')) return 'deepseek';
-    if (modelId.includes('moonshot')) return 'moonshot';
-    if (modelId.includes('glm')) return 'zhipu';
-    if (modelId.includes('gpt')) return 'openai';
+    // 根据模型名称推断提供商
+    const modelName = modelId.toLowerCase();
+    if (modelName.includes('deepseek')) return 'deepseek';
+    if (modelName.includes('moonshot')) return 'moonshot';
+    if (modelName.includes('glm') || modelName.includes('zhipu')) return 'zhipu';
+    if (modelName.includes('gpt')) return 'openai';
+    if (modelName.includes('qwen')) return 'alibaba';
+    if (modelName.includes('claude')) return 'anthropic';
+    
+    // 根据模型ID格式推断（如 "org/model-name" 格式）
+    if (modelId.includes('/')) {
+      const [org] = modelId.split('/');
+      switch (org.toLowerCase()) {
+        case 'openai': return 'openai';
+        case 'anthropic': return 'anthropic';
+        case 'deepseek': return 'deepseek';
+        case 'moonshot': return 'moonshot';
+        case 'zhipu': return 'zhipu';
+        case 'qwen': return 'alibaba';
+        default: return org; // 使用组织名作为提供商
+      }
+    }
     
     return 'openai-compatible';
   }

@@ -261,7 +261,7 @@ export const ModelManagementTab: React.FC = () => {
       const systemModels = modelsToAdd.map(model => ({
         provider: model.provider,
         model: model.name,
-        internalName: `${model.provider}-${model.name}`,
+        internalName: model.name.replace(/[^\w\-\.]/g, '-'), // 清理模型名称作为内部标识，避免重复前缀
         description: model.description,
         capabilityTags: ['creative', 'general'], // 默认标签
         performanceLevel: modelLevelAssignments[model.id] || 'advanced', // 使用管理员选择的等级
