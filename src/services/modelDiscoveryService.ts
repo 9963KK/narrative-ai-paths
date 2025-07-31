@@ -67,14 +67,35 @@ class ModelDiscoveryService {
       // 过滤和转换模型数据
       const models: DiscoveredModel[] = data.data
         .filter(model => this.isValidOpenAIModel(model))
-        .map(model => ({
-          id: model.id,
-          name: model.id,
-          displayName: this.getOpenAIModelDisplayName(model.id),
-          provider: this.detectOpenAIProvider(baseUrl, model.id),
-          description: this.getOpenAIModelDescription(model.id),
-          isRecommended: this.isRecommendedOpenAIModel(model.id)
-        }))
+        .map(model => {
+          // 确保模型名称是纯净的，没有provider前缀
+          let cleanModelName = model.id;
+          
+          // 检查并移除可能的provider前缀（预防性措施）
+          const providerPrefixes = ['openai-compatible-', 'openai-', 'anthropic-', 'deepseek-', 'moonshot-', 'zhipu-'];
+          for (const prefix of providerPrefixes) {
+            if (cleanModelName.startsWith(prefix)) {
+              console.warn(`🚨 modelDiscovery: 检测到模型ID包含provider前缀: ${cleanModelName}, 移除前缀: ${prefix}`);
+              cleanModelName = cleanModelName.substring(prefix.length);
+              break;
+            }
+          }
+
+          const discoveredModel = {
+            id: model.id,
+            name: cleanModelName, // 使用清理后的模型名称
+            displayName: this.getOpenAIModelDisplayName(cleanModelName),
+            provider: this.detectOpenAIProvider(baseUrl, model.id),
+            description: this.getOpenAIModelDescription(cleanModelName),
+            isRecommended: this.isRecommendedOpenAIModel(cleanModelName)
+          };
+
+          if (cleanModelName !== model.id) {
+            console.log(`📝 modelDiscovery: 模型名称清理: 原始="${model.id}" -> 清理后="${cleanModelName}"`);
+          }
+
+          return discoveredModel;
+        })
         .sort((a, b) => {
           // 推荐模型排在前面
           if (a.isRecommended && !b.isRecommended) return -1;

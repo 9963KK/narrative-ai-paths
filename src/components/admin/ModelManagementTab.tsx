@@ -258,20 +258,38 @@ export const ModelManagementTab: React.FC = () => {
       );
 
       // 转换发现的模型为系统模型格式
-      const systemModels = modelsToAdd.map(model => ({
-        provider: model.provider,
-        model: model.name,
-        internalName: model.name.replace(/[^\w\-\.]/g, '-'), // 清理模型名称作为内部标识，避免重复前缀
-        description: model.description,
-        capabilityTags: ['creative', 'general'], // 默认标签
-        performanceLevel: modelLevelAssignments[model.id] || 'advanced', // 使用管理员选择的等级
-        costPer1kTokens: 0.002, // 默认成本，管理员可后续调整
-        apiConfig: {
-          api_key: discoveryData.apiKey,
-          base_url: discoveryData.baseUrl
-        },
-        isActive: true
-      }));
+      const systemModels = modelsToAdd.map(model => {
+        // 确保模型名称是纯净的，没有provider前缀
+        let cleanModelName = model.name;
+        
+        // 检查并移除可能的provider前缀
+        const providerPrefixes = ['openai-compatible-', 'openai-', 'anthropic-', 'deepseek-', 'moonshot-', 'zhipu-'];
+        for (const prefix of providerPrefixes) {
+          if (cleanModelName.startsWith(prefix)) {
+            console.warn(`⚠️ 检测到模型名称包含provider前缀: ${cleanModelName}, 移除前缀: ${prefix}`);
+            cleanModelName = cleanModelName.substring(prefix.length);
+            break;
+          }
+        }
+
+        const modelData = {
+          provider: model.provider,
+          model: cleanModelName, // 使用清理后的模型名称
+          internalName: cleanModelName.replace(/[^\w\-\.]/g, '-'), // 清理模型名称作为内部标识
+          description: model.description,
+          capabilityTags: ['creative', 'general'], // 默认标签
+          performanceLevel: modelLevelAssignments[model.id] || 'advanced', // 使用管理员选择的等级
+          costPer1kTokens: 0.002, // 默认成本，管理员可后续调整
+          apiConfig: {
+            api_key: discoveryData.apiKey,
+            base_url: discoveryData.baseUrl
+          },
+          isActive: true
+        };
+
+        console.log(`📝 模型转换: 原始名称="${model.name}" -> 清理后名称="${cleanModelName}" (provider: ${model.provider})`);
+        return modelData;
+      });
 
       console.log('准备添加模型:', systemModels);
 
