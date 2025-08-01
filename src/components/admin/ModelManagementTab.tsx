@@ -83,7 +83,7 @@ export const ModelManagementTab: React.FC = () => {
     modelPoolId: '',
     displayName: '',
     description: '',
-    isDefault: false,
+    isDefault: true, // 默认设为默认模型
     priority: 1,
     notes: ''
   });
@@ -192,7 +192,7 @@ export const ModelManagementTab: React.FC = () => {
           modelPoolId: '',
           displayName: '',
           description: '',
-          isDefault: false,
+          isDefault: true, // 重置时也默认为true
           priority: 1,
           notes: ''
         });

@@ -309,44 +309,44 @@ ON CONFLICT DO NOTHING;
 CREATE OR REPLACE FUNCTION assign_default_models_to_user(target_user_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
-    deepseek_model_id UUID;
+    default_model_id UUID;
     model_count INTEGER;
 BEGIN
     -- 检查用户是否已有模型配置
-    SELECT COUNT(*) INTO model_count 
-    FROM user_model_configs 
+    SELECT COUNT(*) INTO model_count
+    FROM user_model_configs
     WHERE user_id = target_user_id AND is_enabled = true;
-    
+
     IF model_count > 0 THEN
         RETURN false; -- 用户已有配置，不重复分配
     END IF;
-    
-    -- 获取DeepSeek模型ID（默认模型）
-    SELECT id INTO deepseek_model_id 
-    FROM system_model_pool 
-    WHERE provider = 'deepseek' 
-    AND model = 'deepseek-chat'
-    AND is_active = true
+
+    -- 获取成本最低的可用模型作为默认模型
+    SELECT id INTO default_model_id
+    FROM system_model_pool
+    WHERE is_active = true
+    AND performance_level IN ('basic', 'standard')
+    AND (api_config->>'api_key') IS NOT NULL
+    AND (api_config->>'api_key') != ''
+    ORDER BY cost_per_1k_tokens ASC, created_at ASC
     LIMIT 1;
-    
-    IF deepseek_model_id IS NULL THEN
-        RETURN false; -- 没有可用的DeepSeek模型
+
+    IF default_model_id IS NULL THEN
+        RETURN false; -- 没有可用的模型
     END IF;
     
-    -- 为用户分配DeepSeek模型
+    -- 为用户分配默认模型
     INSERT INTO user_model_configs (
-        user_id, 
-        model_pool_id, 
-        display_name, 
-        description, 
-        is_enabled, 
-        priority, 
+        user_id,
+        model_pool_id,
+        description,
+        is_enabled,
+        priority,
         is_default
     ) VALUES (
         target_user_id,
-        deepseek_model_id,
-        'deepseek-chat',
-        '高性价比的AI模型，逻辑推理能力强',
+        default_model_id,
+        '您的专属AI创作伙伴，帮助您轻松创造精彩故事',
         true,
         1,
         true

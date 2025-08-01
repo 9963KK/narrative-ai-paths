@@ -98,12 +98,23 @@ class UserModelConfigService {
   }
 
   /**
-   * 获取用户默认模型（基于等级的第一个模型）
+   * 获取用户默认模型（优先使用is_default标记的模型）
    */
   async getUserDefaultModel(userId?: string): Promise<ModelByLevel | null> {
     try {
       const availableModels = await this.getUserAvailableModels(userId);
-      return availableModels.length > 0 ? availableModels[0] : null;
+      if (availableModels.length === 0) {
+        return null;
+      }
+
+      // 优先返回标记为默认的模型
+      const defaultModel = availableModels.find(model => model.is_default);
+      if (defaultModel) {
+        return defaultModel;
+      }
+
+      // 如果没有标记为默认的模型，返回第一个可用模型
+      return availableModels[0];
     } catch (error) {
       console.error('获取用户默认模型服务错误:', error);
       return null;
@@ -484,6 +495,8 @@ class UserModelConfigService {
     try {
       const hasModels = await this.hasAvailableModels(userId);
       if (hasModels) {
+        // 检查是否有默认模型，如果没有则设置第一个为默认
+        await this.ensureUserHasDefaultModel(userId);
         return true;
       }
 
@@ -491,6 +504,48 @@ class UserModelConfigService {
       return await this.assignDefaultModelsToUser(userId);
     } catch (error) {
       console.error('确保用户有可用模型服务错误:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 确保用户有默认模型（如果没有则设置第一个为默认）
+   */
+  async ensureUserHasDefaultModel(userId?: string): Promise<boolean> {
+    try {
+      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
+      if (!currentUserId || !this.isValidUUID(currentUserId)) {
+        console.warn('无效的用户ID，无法确保默认模型');
+        return false;
+      }
+
+      // 检查是否已有默认模型
+      const configs = await this.getUserModelConfigs(currentUserId);
+      const hasDefaultModel = configs.some(config => config.is_default);
+
+      if (hasDefaultModel) {
+        return true; // 已有默认模型
+      }
+
+      // 如果没有默认模型，设置第一个为默认
+      if (configs.length > 0) {
+        const { error } = await supabase
+          .from('user_model_configs')
+          .update({ is_default: true })
+          .eq('id', configs[0].id);
+
+        if (error) {
+          console.error('设置默认模型失败:', error);
+          return false;
+        }
+
+        console.log('✅ 已为用户设置默认模型');
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('确保用户有默认模型服务错误:', error);
       return false;
     }
   }
