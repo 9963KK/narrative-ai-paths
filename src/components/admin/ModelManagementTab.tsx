@@ -259,23 +259,10 @@ export const ModelManagementTab: React.FC = () => {
 
       // 转换发现的模型为系统模型格式
       const systemModels = modelsToAdd.map(model => {
-        // 确保模型名称是纯净的，没有provider前缀
-        let cleanModelName = model.name;
-        
-        // 检查并移除可能的provider前缀
-        const providerPrefixes = ['openai-compatible-', 'openai-', 'anthropic-', 'deepseek-', 'moonshot-', 'zhipu-'];
-        for (const prefix of providerPrefixes) {
-          if (cleanModelName.startsWith(prefix)) {
-            console.warn(`⚠️ 检测到模型名称包含provider前缀: ${cleanModelName}, 移除前缀: ${prefix}`);
-            cleanModelName = cleanModelName.substring(prefix.length);
-            break;
-          }
-        }
-
         const modelData = {
           provider: model.provider,
-          model: cleanModelName, // 使用清理后的模型名称
-          internalName: cleanModelName.replace(/[^\w\-\.]/g, '-'), // 清理模型名称作为内部标识
+          model: model.name, // 直接使用API返回的原始模型ID，不做任何修改
+          internalName: model.name.replace(/[^\w\-\.\/]/g, '-'), // 允许保留斜杠，用于provider/model格式
           description: model.description,
           capabilityTags: ['creative', 'general'], // 默认标签
           performanceLevel: modelLevelAssignments[model.id] || 'advanced', // 使用管理员选择的等级
@@ -287,7 +274,7 @@ export const ModelManagementTab: React.FC = () => {
           isActive: true
         };
 
-        console.log(`📝 模型转换: 原始名称="${model.name}" -> 清理后名称="${cleanModelName}" (provider: ${model.provider})`);
+        console.log(`📝 模型转换: ID="${model.id}" -> 存储模型名="${model.name}" (provider: ${model.provider})`);
         return modelData;
       });
 
