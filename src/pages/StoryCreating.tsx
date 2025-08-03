@@ -60,12 +60,19 @@ const StoryCreating: React.FC = () => {
         console.log('🤖 后台开始AI故事生成...', `[${new Date().toLocaleTimeString()}]`);
         
         // 确保用户有可用模型
-        await modelConfigAdapter.ensureUserHasModels();
+        const hasModels = await modelConfigAdapter.ensureUserHasModels();
+        if (!hasModels) {
+          throw new Error('用户没有可用的AI模型，请联系管理员分配模型权限');
+        }
+
         let configToUse = modelConfig;
         if (!modelConfig.apiKey) {
-          const userConfig = await modelConfigAdapter.getUserModelConfig();
+          const userConfig = await modelConfigAdapter.getUserModelConfig(true); // 获取包含API密钥的配置
           if (userConfig) {
             configToUse = userConfig;
+            console.log('🔧 使用用户配置的模型:', userConfig.provider, userConfig.model);
+          } else {
+            throw new Error('无法获取有效的模型配置，请检查模型设置');
           }
         }
 

@@ -250,6 +250,34 @@ class ModelConfigAdapter {
   }
 
   /**
+   * 确保用户有可用模型（如果没有则尝试分配默认模型）
+   */
+  async ensureUserHasModels(): Promise<boolean> {
+    try {
+      devLog('🔍 检查用户是否有可用模型...');
+
+      // 首先检查是否已有可用模型
+      const hasModels = await this.hasAvailableModels();
+      if (hasModels) {
+        devLog('✅ 用户已有可用模型');
+        return true;
+      }
+
+      devLog('⚠️ 用户没有可用模型，尝试分配默认模型...');
+
+      // 如果没有模型，尝试分配默认模型
+      // 这里可以调用后端API来分配默认模型
+      // 暂时返回false，让调用方处理
+      devError('❌ 用户没有可用模型，需要管理员分配');
+      return false;
+
+    } catch (error) {
+      devError('确保用户有可用模型失败:', error);
+      return false;
+    }
+  }
+
+  /**
    * 获取模型的真实API密钥
    * @param modelId 模型ID
    * @returns 真实的API密钥或null

@@ -191,16 +191,50 @@ class ConfigurationManager {
 
   /**
    * 从会话存储获取配置
+   * 优先检查tempApiKeyStore的配置，然后检查自己的缓存
    */
   private getFromSessionCache(userId: string): ConfigResult {
     try {
+      // 首先检查tempApiKeyStore的配置（用户主动切换的模型）
+      const tempConfigStr = sessionStorage.getItem('temp_model_config');
+      if (tempConfigStr) {
+        try {
+          const tempConfig = JSON.parse(tempConfigStr);
+
+          // 检查是否过期（24小时）
+          const now = Date.now();
+          const stored = tempConfig.timestamp || 0;
+          const maxAge = 24 * 60 * 60 * 1000; // 24小时
+
+          if (now - stored <= maxAge && tempConfig.apiKey) {
+            console.log('🎯 使用用户切换的模型配置:', tempConfig.provider, tempConfig.model);
+            return {
+              success: true,
+              config: {
+                provider: tempConfig.provider,
+                model: tempConfig.model,
+                apiKey: tempConfig.apiKey,
+                baseUrl: tempConfig.baseUrl,
+                temperature: tempConfig.temperature || 0.8,
+                maxTokens: tempConfig.maxTokens || 2000,
+                customPrompt: ''
+              },
+              source: 'session'
+            };
+          }
+        } catch (e) {
+          console.warn('⚠️ tempApiKeyStore配置解析失败:', e);
+        }
+      }
+
+      // 回退到原有的缓存逻辑
       const cachedStr = sessionStorage.getItem(this.SESSION_CONFIG_KEY);
       if (!cachedStr) {
         return { success: false, source: 'session' };
       }
 
       const cached: CachedConfig = JSON.parse(cachedStr);
-      
+
       // 验证用户ID匹配
       if (cached.userId !== userId) {
         sessionStorage.removeItem(this.SESSION_CONFIG_KEY);
