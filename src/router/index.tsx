@@ -21,6 +21,7 @@ import AuthCallbackTest from "../pages/AuthCallbackTest";
 import DatabaseTest from "../pages/DatabaseTest";
 import DebugApiKey from "../pages/DebugApiKey";
 import CreditTest from "../pages/CreditTest";
+import ModelConfigTest from "../pages/ModelConfigTest";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -61,6 +62,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <CreditTest />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "debug/model-config",
+        element: (
+          <ProtectedRoute>
+            <ModelConfigTest />
           </ProtectedRoute>
         ),
       },
