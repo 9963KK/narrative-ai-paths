@@ -392,24 +392,38 @@ class UnifiedAIService {
     if (baseUrl) {
       // 对于有自定义baseUrl的情况，统一处理
       const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
-      return `${normalizedBaseUrl}/chat/completions`;
+      const endpoint = `${normalizedBaseUrl}/chat/completions`;
+      console.log(`🌐 使用自定义端点: ${endpoint} (provider: ${provider})`);
+      return endpoint;
     }
 
+    let defaultEndpoint: string;
     switch (provider) {
       case 'openai':
+        defaultEndpoint = 'https://api.openai.com/v1/chat/completions';
+        break;
       case 'openai-compatible':
-        return 'https://api.openai.com/v1/chat/completions';
+        defaultEndpoint = 'https://api.openai.com/v1/chat/completions';
+        console.warn(`⚠️ OpenAI兼容服务 "${provider}" 未配置自定义baseUrl，使用默认OpenAI端点`);
+        break;
       case 'anthropic':
-        return 'https://api.anthropic.com/v1/messages';
+        defaultEndpoint = 'https://api.anthropic.com/v1/messages';
+        break;
       case 'deepseek':
-        return 'https://api.deepseek.com/v1/chat/completions';
+        defaultEndpoint = 'https://api.deepseek.com/v1/chat/completions';
+        break;
       case 'moonshot':
-        return 'https://api.moonshot.cn/v1/chat/completions';
+        defaultEndpoint = 'https://api.moonshot.cn/v1/chat/completions';
+        break;
       case 'zhipu':
-        return 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+        defaultEndpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+        break;
       default:
         throw new Error(`不支持的AI提供商: ${provider}`);
     }
+    
+    console.log(`🌐 使用默认端点: ${defaultEndpoint} (provider: ${provider})`);
+    return defaultEndpoint;
   }
 
   /**

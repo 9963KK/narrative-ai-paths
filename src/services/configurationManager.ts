@@ -314,12 +314,42 @@ class ConfigurationManager {
         };
       }
 
+      // 获取baseUrl - 优先使用api_config中的base_url
+      let baseUrl = '';
+      
+      // 尝试从api_config中提取base_url
+      if (selectedModel.api_config) {
+        let config: any;
+        
+        if (typeof selectedModel.api_config === 'object' && selectedModel.api_config !== null) {
+          config = selectedModel.api_config;
+        } else if (typeof selectedModel.api_config === 'string') {
+          try {
+            config = JSON.parse(selectedModel.api_config);
+          } catch (error) {
+            console.warn('⚠️ api_config JSON解析失败，使用默认baseUrl');
+          }
+        }
+        
+        // 尝试提取base_url
+        if (config && (config.base_url || config.baseUrl)) {
+          baseUrl = config.base_url || config.baseUrl;
+          console.log(`📡 使用自定义baseUrl: ${baseUrl} (模型: ${selectedModel.provider}/${selectedModel.model})`);
+        }
+      }
+      
+      // 如果没有自定义baseUrl，使用provider默认URL
+      if (!baseUrl) {
+        baseUrl = this.getBaseUrlForProvider(selectedModel.provider);
+        console.log(`📡 使用默认baseUrl: ${baseUrl} (provider: ${selectedModel.provider})`);
+      }
+
       // 构建ModelConfig
       const modelConfig: ModelConfig = {
         provider: selectedModel.provider,
         model: selectedModel.model,
         apiKey: apiKey,
-        baseUrl: this.getBaseUrlForProvider(selectedModel.provider),
+        baseUrl: baseUrl,
         temperature: 0.8,
         maxTokens: 2000,
         customPrompt: ''
@@ -408,8 +438,14 @@ class ConfigurationManager {
       'moonshot': 'https://api.moonshot.cn/v1',
       'zhipu': 'https://open.bigmodel.cn/api/paas/v4',
       'openrouter': 'https://openrouter.ai/api/v1',
-      'volcengine': 'https://ark.cn-beijing.volces.com/api/v3'
+      'volcengine': 'https://ark.cn-beijing.volces.com/api/v3',
+      'openai-compatible': 'https://api.openai.com/v1' // 为OpenAI兼容服务提供默认值，但应优先使用api_config中的base_url
     };
+
+    // 对于openai-compatible类型，警告用户应使用自定义baseUrl
+    if (provider === 'openai-compatible') {
+      console.warn('⚠️ OpenAI兼容服务应配置自定义baseUrl，当前使用默认OpenAI端点');
+    }
 
     return defaultBaseUrls[provider] || 'https://api.openai.com/v1';
   }
