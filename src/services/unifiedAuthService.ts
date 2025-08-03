@@ -1,6 +1,7 @@
 import { supabaseService, type User, type UserProfile, type OAuthProvider, supabase } from '@/lib/supabase';
 import { creditService } from './creditService';
 import { tempApiKeyStore } from './tempApiKeyStore';
+import { userModelPersistence } from './userModelPersistence';
 import { authLog, devWarn, devError } from '../utils/logger';
 
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
@@ -265,7 +266,10 @@ export class UnifiedAuthService {
       
       // 清除临时存储的API密钥
       tempApiKeyStore.onUserLogout();
-      
+
+      // 清除用户模型持久化数据
+      userModelPersistence.clearAllUserModelData();
+
       // 清除配置管理器缓存
       import('./configurationManager').then(({ configurationManager }) => {
         configurationManager.onUserLogout();

@@ -16,6 +16,7 @@ import { SimpleModelSelector } from '@/components/SimpleModelSelector';
 import { SimpleModelSettings, ModelSettings, DEFAULT_SETTINGS } from '@/components/SimpleModelSettings';
 import { userLevelService, type ModelByLevel, type UserLevel } from '@/services/userLevelService';
 import { ModelAccessValidator } from '@/services/modelAccessValidator';
+import { userModelPersistence } from '@/services/userModelPersistence';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface UserLevelModelConfigProps {
@@ -66,14 +67,19 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
           }
         }
 
-        // 加载选中的模型
-        const savedModel = localStorage.getItem('selectedUserModel');
-        if (savedModel) {
-          try {
-            const parsed = JSON.parse(savedModel);
-            setSelectedModel(parsed);
-          } catch (error) {
-            console.error('加载选中模型失败:', error);
+        // 加载选中的模型 - 优先使用新的持久化服务
+        if (user?.id) {
+          const userSelection = userModelPersistence.getUserModelSelection(user.id);
+          if (userSelection) {
+            // 需要从可用模型中找到完整的模型信息
+            const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+            const selectedModel = availableModels.find(model => model.model_id === userSelection.modelId);
+            if (selectedModel) {
+              setSelectedModel(selectedModel);
+              console.log('✅ 使用localStorage中保存的用户模型选择:', selectedModel.model);
+            } else {
+              console.log('⚠️ 用户之前选择的模型不再可用');
+            }
           }
         }
       } catch (error) {
@@ -114,13 +120,18 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
 
     setSelectedModel(model);
 
+    // 保存用户选择到localStorage
+    if (user?.id) {
+      userModelPersistence.saveUserModelSelection(user.id, model);
+    }
+
     // 更新临时存储的模型配置
     try {
       const { tempApiKeyStore } = await import('@/services/tempApiKeyStore');
       const updateSuccess = await tempApiKeyStore.updateSelectedModelConfig(model.model_id);
 
       if (updateSuccess) {
-        console.log('✅ 模型配置已同步更新到临时存储');
+        console.log('✅ 模型配置已同步更新到临时存储和localStorage');
 
         // 强制刷新unifiedAIService配置，确保立即生效
         try {

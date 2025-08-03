@@ -4,6 +4,7 @@
  */
 
 import { ModelConfig } from '@/components/model-config/constants';
+import { userModelPersistence } from './userModelPersistence';
 import { devLog, devWarn } from '@/utils/logger';
 
 const TEMP_API_KEY_STORAGE_PREFIX = 'temp_api_key_';
@@ -106,28 +107,58 @@ export class TempApiKeyStore {
   async fetchAndStoreUserApiKeys(userId: string): Promise<boolean> {
     try {
       console.log('🔑 正在获取用户API密钥...');
-      
+
+      // 步骤1: 优先检查localStorage中是否有用户之前选择的模型配置
+      const savedConfig = userModelPersistence.getUserModelConfig(userId);
+      if (savedConfig && savedConfig.apiKey) {
+        console.log('✅ 使用localStorage中保存的用户模型配置:', {
+          provider: savedConfig.provider,
+          model: savedConfig.model,
+          performance_level: savedConfig.performance_level
+        });
+        await this.storeUserModelConfig(savedConfig);
+        return true;
+      }
+
+      // 步骤2: 检查用户是否有模型选择偏好
+      const userSelection = userModelPersistence.getUserModelSelection(userId);
+
       // 直接从数据库查询，避免循环依赖
       const { userLevelService } = await import('./userLevelService');
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
-      
+
       if (availableModels.length === 0) {
         console.warn('⚠️ 用户没有可用的模型');
         return false;
       }
 
-      // 选择第一个有API密钥的模型
-      const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
-      const defaultModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
-      
-      if (!defaultModel.has_api_key) {
+      // 步骤3: 根据用户选择或默认选择模型
+      let selectedModel;
+      if (userSelection) {
+        // 尝试找到用户之前选择的模型
+        selectedModel = availableModels.find(model => model.model_id === userSelection.modelId);
+        if (selectedModel) {
+          console.log('🎯 使用用户之前选择的模型:', selectedModel.model);
+        } else {
+          console.log('⚠️ 用户之前选择的模型不再可用，使用默认模型');
+        }
+      }
+
+      // 如果没有找到用户选择的模型，使用第一个有API密钥的模型
+      if (!selectedModel) {
+        const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
+        selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
+        console.log('📋 使用默认模型:', selectedModel.model);
+      }
+
+      if (!selectedModel.has_api_key) {
         console.warn('⚠️ 选择的模型未配置API密钥');
         return false;
       }
 
       // 获取真实的API密钥和baseUrl
       const { modelConfigAdapter } = await import('./modelConfigAdapter');
-      const realApiKey = await modelConfigAdapter.getRealApiKey(defaultModel.model_id);
+      const realApiKey = await modelConfigAdapter.getRealApiKey(selectedModel.model_id);
 
       if (!realApiKey) {
         console.warn('⚠️ 无法获取模型的真实API密钥');
@@ -135,23 +166,28 @@ export class TempApiKeyStore {
       }
 
       // 获取真实的baseUrl配置
-      const realBaseUrl = await this.getRealBaseUrl(defaultModel.model_id);
+      const realBaseUrl = await this.getRealBaseUrl(selectedModel.model_id);
       if (!realBaseUrl) {
         console.warn('⚠️ 无法获取模型的真实baseUrl，使用默认值');
       }
 
       // 构建ModelConfig并存储
       const modelConfig = {
-        provider: defaultModel.provider,
-        model: defaultModel.model,
+        provider: selectedModel.provider,
+        model: selectedModel.model,
         apiKey: realApiKey,
-        baseUrl: realBaseUrl || this.getBaseUrlForProvider(defaultModel.provider),
+        baseUrl: realBaseUrl || this.getBaseUrlForProvider(selectedModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
-        customPrompt: ''
+        customPrompt: '',
+        performance_level: selectedModel.performance_level
       };
 
       await this.storeUserModelConfig(modelConfig);
+
+      // 同时保存到localStorage持久化存储
+      userModelPersistence.saveUserModelConfig(userId, modelConfig);
+
       console.log('✅ 用户API密钥获取并存储成功');
       return true;
     } catch (error) {
@@ -288,12 +324,21 @@ export class TempApiKeyStore {
 
       await this.storeUserModelConfig(modelConfig);
 
+      // 同时保存用户选择和配置到localStorage
+      const { unifiedAuthService } = await import('./unifiedAuthService');
+      const userId = unifiedAuthService.getCurrentUserId();
+      if (userId) {
+        userModelPersistence.saveUserModelSelection(userId, selectedModel);
+        userModelPersistence.saveUserModelConfig(userId, modelConfig);
+      }
+
       // 清除相关缓存，确保新配置生效
       await this.clearRelatedCaches();
 
-      console.log('✅ 用户模型配置更新成功:', {
+      console.log('✅ 用户模型配置更新成功并持久化到localStorage:', {
         provider: selectedModel.provider,
-        model: selectedModel.model
+        model: selectedModel.model,
+        performance_level: selectedModel.performance_level
       });
 
       return true;
