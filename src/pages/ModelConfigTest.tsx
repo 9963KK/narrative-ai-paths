@@ -25,6 +25,25 @@ export default function ModelConfigTest() {
     return config;
   };
 
+  // 手动初始化临时存储（用于测试）
+  const initializeTempStorage = async () => {
+    setIsLoading(true);
+    try {
+      // 模拟登录时的API密钥获取过程
+      const success = await tempApiKeyStore.fetchAndStoreUserApiKeys('current_user');
+      if (success) {
+        setTestResult('✅ 临时存储初始化成功');
+        getCurrentConfig();
+      } else {
+        setTestResult('❌ 临时存储初始化失败');
+      }
+    } catch (error) {
+      setTestResult(`❌ 初始化异常: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 获取适配器返回的配置
   const getAdapterConfig = async () => {
     try {
@@ -121,12 +140,20 @@ export default function ModelConfigTest() {
           <div>
             <div className="flex items-center gap-3 mb-3">
               <h3 className="text-lg font-medium">3. 临时存储配置</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={getCurrentConfig}
               >
                 刷新
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={initializeTempStorage}
+                disabled={isLoading}
+              >
+                {isLoading ? '初始化中...' : '初始化存储'}
               </Button>
             </div>
             
