@@ -78,18 +78,72 @@ export class ContentParser implements IContentParser {
   parseChoices(response: string): Choice[] | null {
     try {
       devLog('🎯 开始解析选择项...');
+      devLog('📄 原始AI响应:', response);
       const content = this.extractJsonFromResponse(response);
+      devLog('📄 提取的JSON内容:', content);
       const parsed = JSON.parse(content);
-      
+      devLog('📄 解析后的数据结构:', parsed);
+      devLog('📄 数据类型:', typeof parsed);
+      devLog('📄 是否为数组:', Array.isArray(parsed));
+      if (parsed && typeof parsed === 'object') {
+        devLog('📄 对象的键:', Object.keys(parsed));
+      }
+
       let choices: Choice[] = [];
-      
+
       // 处理不同的响应格式
       if (Array.isArray(parsed)) {
+        devLog('✅ 检测到数组格式');
         choices = parsed;
       } else if (parsed.choices && Array.isArray(parsed.choices)) {
+        devLog('✅ 检测到对象.choices格式');
         choices = parsed.choices;
+      } else if (parsed && typeof parsed === 'object') {
+        // 尝试从对象中提取选择项数据
+        devLog('🔍 尝试从对象中提取选择项...');
+
+        // 检查常见的键名
+        const possibleKeys = ['choices', 'options', 'selections', 'items', 'data'];
+        let found = false;
+
+        for (const key of possibleKeys) {
+          if (parsed[key] && Array.isArray(parsed[key])) {
+            devLog(`✅ 在键 "${key}" 中找到选择项数组`);
+            choices = parsed[key];
+            found = true;
+            break;
+          }
+        }
+
+        // 如果没有找到数组，检查是否对象本身包含选择项字段
+        if (!found) {
+          // 检查对象是否直接包含选择项的必要字段
+          if (parsed.text && parsed.description) {
+            devLog('✅ 检测到单个选择项对象，转换为数组');
+            choices = [parsed];
+            found = true;
+          } else {
+            // 尝试从对象的值中找到数组
+            const values = Object.values(parsed);
+            for (const value of values) {
+              if (Array.isArray(value) && value.length > 0 && value[0].text) {
+                devLog('✅ 在对象值中找到选择项数组');
+                choices = value;
+                found = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!found) {
+          devError('⚠️ 无法从响应中提取选择项');
+          devError('📄 解析后的数据:', parsed);
+          return null;
+        }
       } else {
         devError('⚠️ 无法从响应中提取选择项');
+        devError('📄 解析后的数据:', parsed);
         return null;
       }
 

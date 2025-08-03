@@ -366,7 +366,7 @@ class UnifiedAIService {
     }
 
     // 发送请求
-    const url = this.getAPIEndpoint(provider, baseUrl);
+    const url = this.getAPIEndpoint(baseUrl);
     const response = await fetch(url, {
       method: 'POST',
       headers,
@@ -388,42 +388,17 @@ class UnifiedAIService {
   /**
    * 获取API端点
    */
-  private getAPIEndpoint(provider: string, baseUrl?: string): string {
-    if (baseUrl) {
-      // 对于有自定义baseUrl的情况，统一处理
-      const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
-      const endpoint = `${normalizedBaseUrl}/chat/completions`;
-      console.log(`🌐 使用自定义端点: ${endpoint} (provider: ${provider})`);
-      return endpoint;
+  private getAPIEndpoint(baseUrl: string): string {
+    if (!baseUrl) {
+      throw new Error('缺少API端点配置，请在后台管理中设置模型的baseUrl');
     }
 
-    let defaultEndpoint: string;
-    switch (provider) {
-      case 'openai':
-        defaultEndpoint = 'https://api.openai.com/v1/chat/completions';
-        break;
-      case 'openai-compatible':
-        defaultEndpoint = 'https://api.openai.com/v1/chat/completions';
-        console.warn(`⚠️ OpenAI兼容服务 "${provider}" 未配置自定义baseUrl，使用默认OpenAI端点`);
-        break;
-      case 'anthropic':
-        defaultEndpoint = 'https://api.anthropic.com/v1/messages';
-        break;
-      case 'deepseek':
-        defaultEndpoint = 'https://api.deepseek.com/v1/chat/completions';
-        break;
-      case 'moonshot':
-        defaultEndpoint = 'https://api.moonshot.cn/v1/chat/completions';
-        break;
-      case 'zhipu':
-        defaultEndpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-        break;
-      default:
-        throw new Error(`不支持的AI提供商: ${provider}`);
-    }
+    // 统一使用OpenAI格式的端点，所有模型都通过/chat/completions调用
+    const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
+    const endpoint = `${normalizedBaseUrl}/chat/completions`;
     
-    console.log(`🌐 使用默认端点: ${defaultEndpoint} (provider: ${provider})`);
-    return defaultEndpoint;
+    console.log(`🌐 请求端点: ${endpoint}`);
+    return endpoint;
   }
 
   /**

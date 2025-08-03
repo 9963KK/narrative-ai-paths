@@ -26,7 +26,8 @@ import {
   Globe,
   Key,
   Download,
-  AlertTriangle
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 import { userModelConfigService, type SystemModelPool } from '@/services/userModelConfigService';
 import { cloudAuthService } from '@/services/cloudAuthService';
@@ -40,6 +41,30 @@ export const ModelManagementTab: React.FC = () => {
   const [systemModels, setSystemModels] = useState<SystemModelPool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedModelForView, setSelectedModelForView] = useState<SystemModelPool | null>(null);
+
+  // URL验证函数
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      return ['http:', 'https:'].includes(urlObj.protocol);
+    } catch {
+      return false;
+    }
+  };
+
+  // API密钥验证函数
+  const isValidApiKey = (apiKey: string): boolean => {
+    const trimmed = apiKey.trim();
+    // 检查是否为空或者是邮箱格式
+    if (!trimmed || trimmed.includes('@')) {
+      return false;
+    }
+    // 检查最小长度（通常API密钥都比较长）
+    if (trimmed.length < 10) {
+      return false;
+    }
+    return true;
+  };
 
   // 模型发现相关状态
   const [showModelDiscovery, setShowModelDiscovery] = useState(false);
@@ -94,6 +119,18 @@ export const ModelManagementTab: React.FC = () => {
       return;
     }
 
+    // 验证URL格式
+    if (!isValidUrl(discoveryData.baseUrl)) {
+      alert('Base URL格式不正确，请输入有效的URL格式，如：https://api.example.com/v1');
+      return;
+    }
+
+    // 验证API密钥格式
+    if (!isValidApiKey(discoveryData.apiKey)) {
+      alert('API密钥格式不正确，不能为空、不能是邮箱格式，且长度至少10位');
+      return;
+    }
+
     setIsDiscovering(true);
     try {
       const models = await modelDiscoveryService.discoverModels(
@@ -124,9 +161,15 @@ export const ModelManagementTab: React.FC = () => {
       return;
     }
 
-    // 验证API密钥是否存在
-    if (!discoveryData.apiKey || discoveryData.apiKey.trim() === '') {
-      alert('API密钥不能为空，只有配置了API密钥的模型才能添加到模型池');
+    // 验证Base URL格式
+    if (!isValidUrl(discoveryData.baseUrl)) {
+      alert('Base URL格式不正确，请重新输入有效的URL格式');
+      return;
+    }
+
+    // 验证API密钥格式
+    if (!isValidApiKey(discoveryData.apiKey)) {
+      alert('API密钥格式不正确，请重新输入有效的API密钥');
       return;
     }
 
@@ -654,31 +697,44 @@ export const ModelManagementTab: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="base-url">Base URL</Label>
+                    <Label htmlFor="base-url">Base URL <span className="text-red-500">*</span></Label>
                     <Input
                       id="base-url"
                       value={discoveryData.baseUrl}
                       onChange={(e) => setDiscoveryData(prev => ({ ...prev, baseUrl: e.target.value }))}
                       placeholder="https://api.example.com/v1"
+                      className={discoveryData.baseUrl && !isValidUrl(discoveryData.baseUrl) ? 'border-red-500' : ''}
                     />
+                    {discoveryData.baseUrl && !isValidUrl(discoveryData.baseUrl) && (
+                      <p className="text-red-500 text-xs mt-1">
+                        请输入有效的URL格式，如：https://api.example.com/v1
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="api-key">API 密钥</Label>
+                    <Label htmlFor="api-key">API 密钥 <span className="text-red-500">*</span></Label>
                     <Input
                       id="api-key"
                       type="password"
                       value={discoveryData.apiKey}
                       onChange={(e) => setDiscoveryData(prev => ({ ...prev, apiKey: e.target.value }))}
                       placeholder="sk-..."
+                      className={discoveryData.apiKey && !isValidApiKey(discoveryData.apiKey) ? 'border-red-500' : ''}
                     />
+                    {discoveryData.apiKey && !isValidApiKey(discoveryData.apiKey) && (
+                      <p className="text-red-500 text-xs mt-1">
+                        API密钥格式不正确，不能为空、不能是邮箱格式，且长度至少10位
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <Button
                     onClick={handleDiscoverModels}
-                    disabled={isDiscovering || !discoveryData.baseUrl || !discoveryData.apiKey}
+                    disabled={isDiscovering || !discoveryData.baseUrl || !discoveryData.apiKey || 
+                             !isValidUrl(discoveryData.baseUrl) || !isValidApiKey(discoveryData.apiKey)}
                     className="flex items-center gap-2"
                   >
                     {isDiscovering ? (

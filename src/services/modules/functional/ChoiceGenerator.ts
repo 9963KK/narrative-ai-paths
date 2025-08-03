@@ -219,16 +219,18 @@ ${context}
 - consequences: 可能的后果（描述风险和机会，30-50字）
 - difficulty: 难度等级（1-5）
 
-示例格式：
-[
-  {
-    "id": 1,
-    "text": "正面交锋",
-    "description": "直接面对眼前的威胁，使用你的技能和勇气解决问题",
-    "consequences": "可能会获得重要信息或资源，但也面临受伤或失败的风险",
-    "difficulty": 4
-  }
-]`;
+请严格按照以下JSON格式返回：
+{
+  "choices": [
+    {
+      "id": 1,
+      "text": "正面交锋",
+      "description": "直接面对眼前的威胁，使用你的技能和勇气解决问题",
+      "consequences": "可能会获得重要信息或资源，但也面临受伤或失败的风险",
+      "difficulty": 4
+    }
+  ]
+}`;
   }
 
   /**

@@ -314,10 +314,10 @@ class ConfigurationManager {
         };
       }
 
-      // 获取baseUrl - 优先使用api_config中的base_url
+      // 从api_config中提取配置信息 - 纯数据库驱动，无默认值回退
       let baseUrl = '';
+      let configApiKey = '';
       
-      // 尝试从api_config中提取base_url
       if (selectedModel.api_config) {
         let config: any;
         
@@ -327,28 +327,74 @@ class ConfigurationManager {
           try {
             config = JSON.parse(selectedModel.api_config);
           } catch (error) {
-            console.warn('⚠️ api_config JSON解析失败，使用默认baseUrl');
+            return {
+              success: false,
+              error: `模型 ${selectedModel.model} 的API配置格式错误，请在后台管理中重新配置`,
+              source: 'database'
+            };
           }
         }
         
-        // 尝试提取base_url
-        if (config && (config.base_url || config.baseUrl)) {
-          baseUrl = config.base_url || config.baseUrl;
-          console.log(`📡 使用自定义baseUrl: ${baseUrl} (模型: ${selectedModel.provider}/${selectedModel.model})`);
+        // 提取配置信息
+        if (config) {
+          baseUrl = config.base_url || config.baseUrl || '';
+          configApiKey = config.api_key || config.apiKey || '';
         }
       }
+
+      // 严格验证必需的配置字段
+      const finalApiKey = configApiKey || apiKey;
       
-      // 如果没有自定义baseUrl，使用provider默认URL
       if (!baseUrl) {
-        baseUrl = this.getBaseUrlForProvider(selectedModel.provider);
-        console.log(`📡 使用默认baseUrl: ${baseUrl} (provider: ${selectedModel.provider})`);
+        return {
+          success: false,
+          error: `模型 ${selectedModel.model} 缺少API端点配置。请在后台管理中设置有效的baseUrl (如: https://api.example.com/v1)`,
+          source: 'database'
+        };
       }
 
-      // 构建ModelConfig
+      // 验证baseUrl格式
+      try {
+        const urlObj = new URL(baseUrl);
+        if (!['http:', 'https:'].includes(urlObj.protocol)) {
+          return {
+            success: false,
+            error: `模型 ${selectedModel.model} 的baseUrl格式无效: "${baseUrl}"。请确保使用http://或https://开头的有效URL`,
+            source: 'database'
+          };
+        }
+      } catch (urlError) {
+        return {
+          success: false,
+          error: `模型 ${selectedModel.model} 的baseUrl格式无效: "${baseUrl}"。请在后台管理中设置有效的URL格式`,
+          source: 'database'
+        };
+      }
+      
+      if (!finalApiKey) {
+        return {
+          success: false,
+          error: `模型 ${selectedModel.model} 缺少API密钥配置。请在后台管理中设置有效的apiKey`,
+          source: 'database'
+        };
+      }
+
+      // 验证API密钥格式
+      if (finalApiKey.includes('@') || finalApiKey.length < 10) {
+        return {
+          success: false,
+          error: `模型 ${selectedModel.model} 的API密钥格式无效。API密钥不能是邮箱格式，且长度至少10位`,
+          source: 'database'
+        };
+      }
+
+      console.log(`📡 使用配置: ${baseUrl} (模型: ${selectedModel.provider}/${selectedModel.model})`);
+
+      // 构建ModelConfig - 直接使用数据库配置
       const modelConfig: ModelConfig = {
         provider: selectedModel.provider,
         model: selectedModel.model,
-        apiKey: apiKey,
+        apiKey: finalApiKey,
         baseUrl: baseUrl,
         temperature: 0.8,
         maxTokens: 2000,
@@ -427,28 +473,6 @@ class ConfigurationManager {
     }
   }
 
-  /**
-   * 根据提供商获取基础URL
-   */
-  private getBaseUrlForProvider(provider: string): string {
-    const defaultBaseUrls: Record<string, string> = {
-      'openai': 'https://api.openai.com/v1',
-      'anthropic': 'https://api.anthropic.com/v1',
-      'deepseek': 'https://api.deepseek.com/v1',
-      'moonshot': 'https://api.moonshot.cn/v1',
-      'zhipu': 'https://open.bigmodel.cn/api/paas/v4',
-      'openrouter': 'https://openrouter.ai/api/v1',
-      'volcengine': 'https://ark.cn-beijing.volces.com/api/v3',
-      'openai-compatible': 'https://api.openai.com/v1' // 为OpenAI兼容服务提供默认值，但应优先使用api_config中的base_url
-    };
-
-    // 对于openai-compatible类型，警告用户应使用自定义baseUrl
-    if (provider === 'openai-compatible') {
-      console.warn('⚠️ OpenAI兼容服务应配置自定义baseUrl，当前使用默认OpenAI端点');
-    }
-
-    return defaultBaseUrls[provider] || 'https://api.openai.com/v1';
-  }
 
   /**
    * 清理特定用户的缓存

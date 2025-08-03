@@ -837,3 +837,189 @@ Cannot start service: Host version "0.21.5" does not match binary version "0.25.
 ### v2.1.3 (2025-07-02)  
 - 初始模块化架构设计
 - 核心模块和部分功能模块实现
+
+### 设置页面导航栏重复问题修复 (2025-08-03)
+
+#### 问题描述
+设置页面 (`/settings`) 显示两个相同的"织梦师 VIP"导航栏，影响用户体验。
+
+#### 根本原因分析
+- **AppLayout.tsx** 在第26行为大部分路由自动渲染 `<UserHeader />`
+- **Settings.tsx** 在第80行又手动添加了 `<UserHeader />`
+- 设置页面 (`/settings`) 不在 `ROUTES_WITHOUT_HEADER` 排除列表中
+- 导致导航栏被渲染两次
+
+#### 调用流程分析
+```
+用户访问 /settings
+→ AppLayout.tsx (第26行): 渲染第一个 UserHeader
+→ Settings.tsx (第80行): 渲染第二个 UserHeader
+→ 结果：两个相同的"织梦师 VIP"导航栏
+```
+
+#### 具体修复
+
+**1. 移除 Settings.tsx 中的重复 UserHeader**：
+```typescript
+// 修复前
+import { UserHeader } from '@/components/auth/UserHeader';
+
+return (
+  <div className="min-h-screen...">
+    <UserHeader />
+    <div className="container...">
+
+// 修复后
+// 移除 UserHeader 导入和渲染，让 AppLayout 统一管理
+return (
+  <div className="min-h-screen...">
+    <div className="container...">
+```
+
+**2. 保持架构统一性**：
+- 所有页面的 UserHeader 都由 AppLayout 统一管理
+- 遵循 DRY 原则，避免重复代码
+- 简化维护，未来只需在一个地方修改 UserHeader 逻辑
+
+#### 影响范围
+- **Settings.tsx**: 移除重复的 UserHeader 渲染
+- **用户体验**: 设置页面只显示一个导航栏
+- **架构设计**: 保持统一的 UserHeader 管理方式
+
+#### 验证结果
+- ✅ 构建成功，无编译错误
+- ✅ Settings.tsx 不再手动渲染 UserHeader
+- ✅ AppLayout 统一管理所有页面的 UserHeader
+- ✅ 预期修复设置页面导航栏重复问题
+
+### 后台模型管理输入验证修复，解决"邮箱地址作为Base URL"错误 (2025-08-03)
+
+#### 问题描述
+AI请求失败，错误URL显示为邮箱地址：
+```
+http://localhost:8080/app/admin@ainovel.com/v1/chat/completions
+```
+
+#### 根本原因分析
+通过数据库分析发现：
+- 模型ID `4aa5c831-f819-4e6a-9b4c-5ada50d73859` 的 `api_config.base_url` 字段值为 `"admin@ainovel.com"`
+- 后台管理界面 `ModelManagementTab.tsx` 缺少输入验证
+- 管理员在添加模型时错误地输入了邮箱地址作为Base URL
+
+#### 具体修复
+
+**1. 数据库清理**：
+```sql
+-- 删除无效模型记录
+DELETE FROM system_model_pool 
+WHERE id = '4aa5c831-f819-4e6a-9b4c-5ada50d73859' 
+AND api_config->>'base_url' = 'admin@ainovel.com';
+```
+
+**2. 新增输入验证函数**：
+```typescript
+// URL验证函数
+const isValidUrl = (url: string): boolean => {
+  try {
+    const urlObj = new URL(url);
+    return ['http:', 'https:'].includes(urlObj.protocol);
+  } catch {
+    return false;
+  }
+};
+
+// API密钥验证函数
+const isValidApiKey = (apiKey: string): boolean => {
+  const trimmed = apiKey.trim();
+  if (!trimmed || trimmed.includes('@') || trimmed.length < 10) {
+    return false;
+  }
+  return true;
+};
+```
+
+**3. 增强表单验证**：
+```typescript
+// Base URL字段增加实时验证
+<Input
+  className={discoveryData.baseUrl && !isValidUrl(discoveryData.baseUrl) ? 'border-red-500' : ''}
+/>
+{discoveryData.baseUrl && !isValidUrl(discoveryData.baseUrl) && (
+  <p className="text-red-500 text-xs mt-1">
+    请输入有效的URL格式，如：https://api.example.com/v1
+  </p>
+)}
+
+// API密钥字段增加格式验证
+<Input
+  className={discoveryData.apiKey && !isValidApiKey(discoveryData.apiKey) ? 'border-red-500' : ''}
+/>
+```
+
+**4. 按钮状态控制**：
+```typescript
+// 发现模型按钮只有在输入有效时才启用
+<Button
+  disabled={isDiscovering || !discoveryData.baseUrl || !discoveryData.apiKey || 
+           !isValidUrl(discoveryData.baseUrl) || !isValidApiKey(discoveryData.apiKey)}
+>
+```
+
+**5. 提交前验证**：
+```typescript
+// 模型发现前验证
+if (!isValidUrl(discoveryData.baseUrl)) {
+  alert('Base URL格式不正确，请输入有效的URL格式，如：https://api.example.com/v1');
+  return;
+}
+
+if (!isValidApiKey(discoveryData.apiKey)) {
+  alert('API密钥格式不正确，不能为空、不能是邮箱格式，且长度至少10位');
+  return;
+}
+```
+
+**6. 增强配置管理器验证**：
+```typescript
+// configurationManager.ts 中增加更严格的验证
+// 验证baseUrl格式
+try {
+  const urlObj = new URL(baseUrl);
+  if (!['http:', 'https:'].includes(urlObj.protocol)) {
+    return {
+      success: false,
+      error: `模型 ${selectedModel.model} 的baseUrl格式无效: "${baseUrl}"。请确保使用http://或https://开头的有效URL`,
+      source: 'database'
+    };
+  }
+} catch (urlError) {
+  return {
+    success: false,
+    error: `模型 ${selectedModel.model} 的baseUrl格式无效: "${baseUrl}"。请在后台管理中设置有效的URL格式`,
+    source: 'database'
+  };
+}
+
+// 验证API密钥格式
+if (finalApiKey.includes('@') || finalApiKey.length < 10) {
+  return {
+    success: false,
+    error: `模型 ${selectedModel.model} 的API密钥格式无效。API密钥不能是邮箱格式，且长度至少10位`,
+    source: 'database'
+  };
+}
+```
+
+#### 影响范围
+- **后台管理界面**: 防止无效数据录入
+- **配置管理系统**: 提供更清晰的错误提示
+- **用户体验**: 避免AI请求失败
+- **数据质量**: 确保系统模型池数据的有效性
+
+#### 验证结果
+- ✅ 无效数据库记录已清理
+- ✅ 后台管理界面增加完整输入验证
+- ✅ 实时验证和错误提示正常工作
+- ✅ 防止邮箱地址等无效数据被保存
+- ✅ 构建成功，无编译错误
+- ✅ 预期彻底解决邮箱地址作为Base URL的问题
