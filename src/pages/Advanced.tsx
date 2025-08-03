@@ -84,9 +84,13 @@ const Advanced: React.FC = () => {
   useEffect(() => {
     const loadUserConfig = async () => {
       try {
-        // 确保用户有可用模型
-        await modelConfigAdapter.ensureUserHasModels();
-        
+        // 检查用户是否有可用模型（基于等级）
+        const hasModels = await modelConfigAdapter.hasAvailableModels();
+        if (!hasModels) {
+          console.warn('用户没有可用的模型');
+          return;
+        }
+
         // 获取用户模型配置
         const userConfig = await modelConfigAdapter.getUserModelConfig();
         if (userConfig) {

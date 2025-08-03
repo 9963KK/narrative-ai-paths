@@ -198,25 +198,12 @@ class ModelConfigAdapter {
         return null;
       }
 
-      // 获取对应的系统模型详情以构建ModelConfig
-      const userConfigs = await userModelConfigService.getUserModelConfigs();
-      const matchingConfig = userConfigs.find(config => config.id === recommendedModel.config_id);
-      
-      if (!matchingConfig || !matchingConfig.system_model) {
-        devError('无法找到推荐模型的系统配置');
-        return null;
-      }
-
-      const systemModel = matchingConfig.system_model;
-      
-      // 获取API配置（包含密钥）
-      const apiConfig = systemModel.api_config || {};
-      
+      // 构建ModelConfig格式（基于等级的模型直接包含所有信息）
       const modelConfig: ModelConfig = {
-        provider: systemModel.provider,
-        model: systemModel.model,
-        apiKey: apiConfig.api_key || '', // 从系统模型配置中获取API密钥
-        baseUrl: apiConfig.base_url || this.getBaseUrlForProvider(systemModel.provider),
+        provider: recommendedModel.provider,
+        model: recommendedModel.model,
+        apiKey: '***hidden***', // 安全起见，不在客户端暴露API密钥
+        baseUrl: this.getBaseUrlForProvider(recommendedModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
         customPrompt: ''
@@ -230,7 +217,7 @@ class ModelConfigAdapter {
   }
 
   /**
-   * 记录模型使用情况
+   * 记录模型使用情况（简化版本，基于等级的模型访问不需要复杂的使用日志）
    */
   async logModelUsage(
     sessionId: string,
@@ -241,39 +228,25 @@ class ModelConfigAdapter {
     errorMessage?: string
   ): Promise<void> {
     try {
-      // 获取当前使用的模型配置ID
-      const defaultModel = await userModelConfigService.getUserDefaultModel();
-      if (!defaultModel) {
-        devError('无法记录使用日志：未找到默认模型');
-        return;
-      }
-
-      await userModelConfigService.logModelUsage(
-        defaultModel.config_id,
-        sessionId,
-        usageType,
-        tokensUsed,
-        creditsConsumed,
-        success,
-        errorMessage
-      );
+      // 基于等级的模型访问暂时不记录详细使用日志
+      // 可以在这里添加简单的统计逻辑
+      devLog(`模型使用记录: ${usageType}, tokens: ${tokensUsed}, success: ${success}`);
     } catch (error) {
       devError('记录模型使用日志失败:', error);
     }
   }
 
   /**
-   * 检查用户是否有可用模型
+   * 检查用户是否有可用模型（基于用户等级）
    */
   async hasAvailableModels(): Promise<boolean> {
-    return await userModelConfigService.hasAvailableModels();
-  }
-
-  /**
-   * 确保用户有可用模型（自动分配）
-   */
-  async ensureUserHasModels(): Promise<boolean> {
-    return await userModelConfigService.ensureUserHasModels();
+    try {
+      const models = await userLevelService.getUserAvailableModelsByLevel();
+      return models.length > 0;
+    } catch (error) {
+      devError('检查用户可用模型失败:', error);
+      return false;
+    }
   }
 
   /**
@@ -284,48 +257,10 @@ class ModelConfigAdapter {
   async getRealApiKey(modelId: string): Promise<string | null> {
     try {
       devLog(`🔑 开始获取模型 ${modelId} 的API密钥...`);
-      
-      // 首先尝试从用户模型配置服务获取完整的系统模型信息
-      const userConfigs = await userModelConfigService.getUserModelConfigs();
-      devLog(`📋 用户模型配置数量: ${userConfigs.length}`);
-      
-      // 找到对应的用户模型配置
-      const userConfig = userConfigs.find(config => 
-        config.system_model && config.system_model.id === modelId
-      );
-      
-      if (userConfig && userConfig.system_model && userConfig.system_model.api_config) {
-        devLog(`从用户模型配置中找到系统模型: ${userConfig.system_model.provider}/${userConfig.system_model.model}`);
-        
-        const apiConfig = userConfig.system_model.api_config;
-        devLog(`API配置类型: ${typeof apiConfig}`);
-        
-        // 从api_config中提取API密钥
-        if (typeof apiConfig === 'object' && apiConfig.api_key) {
-          apiLog(`✅ 从对象配置中获取到API密钥`);
-          return apiConfig.api_key;
-        }
 
-        // 如果api_config是字符串，尝试解析JSON
-        if (typeof apiConfig === 'string') {
-          try {
-            const config = JSON.parse(apiConfig);
-            if (config.api_key) {
-              apiLog(`✅ 从JSON字符串配置中获取到API密钥`);
-              return config.api_key;
-            } else {
-              devError(`❌ JSON配置中没有api_key字段`);
-            }
-          } catch (parseError) {
-            devError('❌ 解析API配置JSON失败:', parseError);
-            devError('原始配置内容:', apiConfig);
-          }
-        }
-      }
-      
-      // 备用方案：直接从系统模型池查询
-      devLog(`🔄 尝试直接从系统模型池获取 ${modelId} 的API配置...`);
-      
+      // 直接从系统模型池查询（基于等级的访问不需要用户配置）
+      devLog(`🔄 从系统模型池获取 ${modelId} 的API配置...`);
+
       const { data: systemModel, error } = await supabase
         .from('system_model_pool')
         .select('api_config')

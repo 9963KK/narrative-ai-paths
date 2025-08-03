@@ -94,12 +94,16 @@ class StoryAI {
    */
   async setupUserModelConfig(usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation'): Promise<boolean> {
     try {
-      // 确保用户有可用模型
-      await modelConfigAdapter.ensureUserHasModels();
-      
+      // 检查用户是否有可用模型（基于等级）
+      const hasModels = await modelConfigAdapter.hasAvailableModels();
+      if (!hasModels) {
+        console.warn('⚠️ 用户没有可用的模型');
+        return false;
+      }
+
       // 获取推荐的模型配置
       const recommendedConfig = await modelConfigAdapter.getRecommendedModel(usageType);
-      
+
       if (recommendedConfig) {
         this.setModelConfig(recommendedConfig);
         console.log('🎯 已自动设置推荐的用户模型配置');
