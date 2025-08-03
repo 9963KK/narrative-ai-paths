@@ -274,11 +274,11 @@ export class CreditService {
 
     localStorage.setItem(CREDIT_STORAGE_KEY, JSON.stringify(localCredits));
 
-    // 记录交易
+    // 记录交易（消费记录amount为负数）
     await this.addTransaction({
       user_id: userId,
       transaction_type: 'spend',
-      amount,
+      amount: -amount,  // 消费记录存储为负数
       balance_before: balanceBefore,
       balance_after: balanceAfter,
       description,
@@ -370,7 +370,8 @@ export class CreditService {
     localCredits[targetUserId] = {
       ...userCredit,
       balance: balanceAfter,
-      total_earned: userCredit.total_earned + amount,
+      total_earned: amount > 0 ? userCredit.total_earned + amount : userCredit.total_earned,
+      total_spent: amount < 0 ? userCredit.total_spent + Math.abs(amount) : userCredit.total_spent,
       updated_at: new Date().toISOString()
     };
 
@@ -379,11 +380,11 @@ export class CreditService {
     // 记录交易
     await this.addTransaction({
       user_id: targetUserId,
-      transaction_type: 'admin_add',
-      amount,
+      transaction_type: amount > 0 ? 'admin_add' : 'admin_deduct',
+      amount,  // 保持原始值（正数为添加，负数为扣除）
       balance_before: balanceBefore,
       balance_after: balanceAfter,
-      description: '管理员充值积分',
+      description: amount > 0 ? '管理员充值积分' : '管理员扣除积分',
       admin_id: adminUserId,
       admin_note: note
     });

@@ -300,7 +300,7 @@ BEGIN
         updated_at = NOW()
     WHERE user_id = user_uuid;
     
-    -- 记录交易
+    -- 记录交易（消费记录amount为负数）
     INSERT INTO credit_transactions (
         user_id,
         transaction_type,
@@ -315,7 +315,7 @@ BEGIN
     ) VALUES (
         user_uuid,
         'spend',
-        credit_amount,
+        -credit_amount,  -- 消费记录存储为负数
         current_balance,
         new_balance,
         description_text,
@@ -361,13 +361,20 @@ BEGIN
     new_balance := current_balance + credit_amount;
     
     -- 更新用户积分
-    UPDATE user_credits 
-    SET 
+    UPDATE user_credits
+    SET
         balance = new_balance,
-        total_earned = total_earned + credit_amount,
+        total_earned = CASE
+            WHEN credit_amount > 0 THEN total_earned + credit_amount
+            ELSE total_earned
+        END,
+        total_spent = CASE
+            WHEN credit_amount < 0 THEN total_spent + ABS(credit_amount)
+            ELSE total_spent
+        END,
         updated_at = NOW()
     WHERE user_id = target_user_uuid;
-    
+
     -- 记录交易
     INSERT INTO credit_transactions (
         user_id,
@@ -380,11 +387,17 @@ BEGIN
         admin_note
     ) VALUES (
         target_user_uuid,
-        'admin_add',
-        credit_amount,
+        CASE
+            WHEN credit_amount > 0 THEN 'admin_add'
+            ELSE 'admin_deduct'
+        END,
+        credit_amount,  -- 保持原始值（正数为添加，负数为扣除）
         current_balance,
         new_balance,
-        '管理员充值积分',
+        CASE
+            WHEN credit_amount > 0 THEN '管理员充值积分'
+            ELSE '管理员扣除积分'
+        END,
         admin_user_uuid,
         admin_note_text
     );
