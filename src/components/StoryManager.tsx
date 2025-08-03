@@ -1309,7 +1309,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
           <p className="text-gray-600 mb-4">正在生成角色、场景和剧情...</p>
           {currentModelConfig && (
             <div className="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-full inline-block mb-2">
-              {currentModelConfig.provider} - {currentModelConfig.model}
+              {currentModelConfig.provider === 'zhipu' || currentModelConfig.provider === 'openai' ? '高级模型正在加载' : '基础模型正在加载'}
             </div>
           )}
           {aiError && (

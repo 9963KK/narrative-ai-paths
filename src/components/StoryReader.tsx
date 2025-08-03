@@ -1294,7 +1294,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-150"></div>
                       <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-300"></div>
                       <span className="ml-3 text-xs text-slate-500">
-                        {modelConfig?.apiKey ? `${modelConfig.provider}正在思考中...` : '内容生成中...'}
+                        {modelConfig?.apiKey ?
+                          (modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型正在思考中...' : '基础模型正在思考中...')
+                          : '内容生成中...'}
                       </span>
                     </div>
                   </div>
@@ -1322,7 +1324,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-150"></div>
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300"></div>
                       <span className="ml-3 text-xs text-slate-500">
-                        {modelConfig?.apiKey ? `${modelConfig.provider}正在生成中...` : '选项生成中...'}
+                        {modelConfig?.apiKey ?
+                          (modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型正在生成中...' : '基础模型正在生成中...')
+                          : '选项生成中...'}
                       </span>
                     </div>
                   </div>
@@ -1962,7 +1966,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 <CardContent className="pt-4">
                   {modelConfig && (
                     <p className="text-xs text-slate-500 text-center">
-                      AI模型: {modelConfig.provider} - {modelConfig.model}
+                      AI模型: {modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型' : '基础模型'}
                     </p>
                   )}
                   {aiError && (
