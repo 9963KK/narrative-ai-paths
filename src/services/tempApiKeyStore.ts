@@ -123,13 +123,19 @@ export class TempApiKeyStore {
         return false;
       }
 
-      // 获取真实的API密钥
+      // 获取真实的API密钥和baseUrl
       const { modelConfigAdapter } = await import('./modelConfigAdapter');
       const realApiKey = await modelConfigAdapter.getRealApiKey(defaultModel.model_id);
-      
+
       if (!realApiKey) {
         console.warn('⚠️ 无法获取模型的真实API密钥');
         return false;
+      }
+
+      // 获取真实的baseUrl配置
+      const realBaseUrl = await this.getRealBaseUrl(defaultModel.model_id);
+      if (!realBaseUrl) {
+        console.warn('⚠️ 无法获取模型的真实baseUrl，使用默认值');
       }
 
       // 构建ModelConfig并存储
@@ -137,7 +143,7 @@ export class TempApiKeyStore {
         provider: defaultModel.provider,
         model: defaultModel.model,
         apiKey: realApiKey,
-        baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
+        baseUrl: realBaseUrl || this.getBaseUrlForProvider(defaultModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
         customPrompt: ''
@@ -153,7 +159,64 @@ export class TempApiKeyStore {
   }
 
   /**
-   * 根据提供商获取基础URL
+   * 获取模型的真实baseUrl配置
+   * @param modelId 模型ID
+   * @returns 真实的baseUrl或null
+   */
+  async getRealBaseUrl(modelId: string): Promise<string | null> {
+    try {
+      console.log(`🌐 开始获取模型 ${modelId} 的baseUrl...`);
+
+      // 从系统模型池查询baseUrl配置
+      const { supabase } = await import('@/lib/supabase');
+      const { data: systemModel, error } = await supabase
+        .from('system_model_pool')
+        .select('api_config')
+        .eq('id', modelId)
+        .single();
+
+      if (error) {
+        console.error('❌ 查询系统模型池失败:', error);
+        return null;
+      }
+
+      if (systemModel && systemModel.api_config) {
+        console.log(`✅ 从系统模型池获取到API配置`);
+
+        const apiConfig = systemModel.api_config;
+
+        // 从api_config中提取baseUrl
+        if (typeof apiConfig === 'object' && (apiConfig.base_url || apiConfig.baseUrl)) {
+          const baseUrl = apiConfig.base_url || apiConfig.baseUrl;
+          console.log(`✅ 从系统模型池对象配置中获取到baseUrl: ${baseUrl}`);
+          return baseUrl;
+        }
+
+        // 如果api_config是字符串，尝试解析JSON
+        if (typeof apiConfig === 'string') {
+          try {
+            const config = JSON.parse(apiConfig);
+            if (config.base_url || config.baseUrl) {
+              const baseUrl = config.base_url || config.baseUrl;
+              console.log(`✅ 从系统模型池JSON配置中获取到baseUrl: ${baseUrl}`);
+              return baseUrl;
+            }
+          } catch (parseError) {
+            console.error('❌ 解析系统模型池API配置JSON失败:', parseError);
+          }
+        }
+      }
+
+      console.error(`❌ 无法获取模型 ${modelId} 的baseUrl`);
+      return null;
+    } catch (error) {
+      console.error('❌ 获取真实baseUrl失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 根据提供商获取基础URL（回退方案）
    */
   private getBaseUrlForProvider(provider: string): string {
     const defaultBaseUrls: Record<string, string> = {
@@ -193,7 +256,7 @@ export class TempApiKeyStore {
         return false;
       }
 
-      // 获取真实的API密钥
+      // 获取真实的API密钥和baseUrl
       const { modelConfigAdapter } = await import('./modelConfigAdapter');
       const realApiKey = await modelConfigAdapter.getRealApiKey(selectedModel.model_id);
 
@@ -202,12 +265,19 @@ export class TempApiKeyStore {
         return false;
       }
 
+      // 获取真实的baseUrl配置
+      const realBaseUrl = await this.getRealBaseUrl(selectedModel.model_id);
+      if (!realBaseUrl) {
+        console.error('❌ 无法获取模型的真实baseUrl:', modelId);
+        return false;
+      }
+
       // 构建新的ModelConfig并更新存储
       const modelConfig = {
         provider: selectedModel.provider,
         model: selectedModel.model,
         apiKey: realApiKey,
-        baseUrl: this.getBaseUrlForProvider(selectedModel.provider),
+        baseUrl: realBaseUrl,
         temperature: 0.8,
         maxTokens: 2000,
         customPrompt: ''

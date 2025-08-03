@@ -23,6 +23,7 @@ import DebugApiKey from "../pages/DebugApiKey";
 import CreditTest from "../pages/CreditTest";
 import ModelConfigTest from "../pages/ModelConfigTest";
 import ConfigDebugger from "../components/ConfigDebugger";
+import ModelConfigTestNew from "../components/ModelConfigTest";
 
 // 创建路由配置
 export const router = createBrowserRouter([
@@ -79,6 +80,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ConfigDebugger />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "debug/config-test",
+        element: (
+          <ProtectedRoute>
+            <ModelConfigTestNew />
           </ProtectedRoute>
         ),
       },
