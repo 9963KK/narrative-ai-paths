@@ -19,64 +19,7 @@ export interface SystemModelPool {
   updated_at: string;
 }
 
-export interface UserModelConfig {
-  id: string;
-  user_id: string;
-  model_pool_id: string;
-  description: string;
-  is_enabled: boolean;
-  priority: number;
-  is_default: boolean;
-  assigned_by: string;
-  assigned_at: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-  // 关联的系统模型信息
-  system_model?: SystemModelPool;
-}
 
-export interface UserModelUsageLog {
-  id: string;
-  user_id: string;
-  model_config_id: string;
-  session_id: string;
-  usage_type: 'story_generation' | 'choice_generation' | 'analysis' | 'other';
-  tokens_used: number;
-  credits_consumed: number;
-  success: boolean;
-  error_message?: string;
-  created_at: string;
-}
-
-export interface ModelPresetGroup {
-  id: string;
-  name: string;
-  description: string;
-  target_user_type: 'new_user' | 'standard_user' | 'vip_user' | 'enterprise_user';
-  is_active: boolean;
-  auto_assign: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AvailableModel {
-  config_id: string;
-  model_name: string;
-  description: string;
-  capability_tags: string[];
-  performance_level: string;
-  priority: number;
-  is_default: boolean;
-  provider: string;
-}
-
-export interface DefaultModel {
-  provider: string;
-  model: string;
-  config_id: string;
-}
 
 // 用户模型配置服务类
 class UserModelConfigService {
@@ -121,129 +64,11 @@ class UserModelConfigService {
     }
   }
 
-  /**
-   * 为用户分配默认模型配置
-   */
-  async assignDefaultModelsToUser(userId?: string): Promise<boolean> {
-    try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法分配默认模型');
-        return false;
-      }
 
-      const { data, error } = await supabase.rpc('assign_default_models_to_user', {
-        target_user_id: currentUserId
-      });
 
-      if (error) {
-        console.error('为用户分配默认模型失败:', error);
-        return false;
-      }
 
-      return data === true;
-    } catch (error) {
-      console.error('分配默认模型服务错误:', error);
-      return false;
-    }
-  }
 
-  /**
-   * 记录模型使用日志
-   */
-  async logModelUsage(
-    modelConfigId: string,
-    sessionId: string,
-    usageType: 'story_generation' | 'choice_generation' | 'analysis' | 'other',
-    tokensUsed: number,
-    creditsConsumed: number,
-    success: boolean = true,
-    errorMessage?: string,
-    userId?: string
-  ): Promise<boolean> {
-    try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法记录使用日志');
-        return false;
-      }
 
-      const { data, error } = await supabase.rpc('log_model_usage', {
-        target_user_id: currentUserId,
-        model_config_id: modelConfigId,
-        session_id: sessionId,
-        usage_type: usageType,
-        tokens_used: tokensUsed,
-        credits_consumed: creditsConsumed,
-        success: success,
-        error_message: errorMessage
-      });
-
-      if (error) {
-        console.error('记录模型使用日志失败:', error);
-        return false;
-      }
-
-      return data === true;
-    } catch (error) {
-      console.error('记录模型使用日志服务错误:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 获取用户模型配置详情
-   */
-  async getUserModelConfigs(userId?: string): Promise<UserModelConfig[]> {
-    try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法获取模型配置详情');
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from('user_model_configs')
-        .select(`
-          id,
-          user_id,
-          model_pool_id,
-          description,
-          is_enabled,
-          priority,
-          is_default,
-          assigned_by,
-          assigned_at,
-          notes,
-          created_at,
-          updated_at,
-          system_model:system_model_pool(
-            id,
-            provider,
-            model,
-            internal_name,
-            description,
-            capability_tags,
-            performance_level,
-            is_active,
-            cost_per_1k_tokens
-          )
-        `)
-        .eq('user_id', currentUserId)
-        .eq('is_enabled', true)
-        .order('priority', { ascending: true });
-
-      if (error) {
-        console.error('获取用户模型配置详情失败:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('获取用户模型配置详情服务错误:', error);
-      return [];
-    }
-  }
 
   /**
    * 获取系统模型池
@@ -275,197 +100,44 @@ class UserModelConfigService {
     }
   }
 
-  /**
-   * 为用户分配模型（管理员功能）
-   */
-  async assignModelToUser(
-    targetUserId: string,
-    modelPoolId: string,
-    description: string,
-    isDefault: boolean = false,
-    priority: number = 1,
-    notes?: string
-  ): Promise<boolean> {
-    try {
-      const isAdmin = await unifiedAuthService.isAdmin();
-      if (!isAdmin) {
-        console.warn('非管理员用户，无法分配模型');
-        return false;
-      }
 
-      const adminId = unifiedAuthService.getCurrentUserId();
-      if (!adminId || !this.isValidUUID(adminId)) {
-        console.warn('无效的管理员ID');
-        return false;
-      }
 
-      // 如果设置为默认模型，先取消其他默认模型
-      if (isDefault) {
-        await supabase
-          .from('user_model_configs')
-          .update({ is_default: false })
-          .eq('user_id', targetUserId);
-      }
 
-      const { error } = await supabase
-        .from('user_model_configs')
-        .insert({
-          user_id: targetUserId,
-          model_pool_id: modelPoolId,
-          description: description,
-          is_enabled: true,
-          priority: priority,
-          is_default: isDefault,
-          assigned_by: adminId,
-          notes: notes || ''
-        });
 
-      if (error) {
-        console.error('为用户分配模型失败:', error);
-        return false;
-      }
 
-      return true;
-    } catch (error) {
-      console.error('为用户分配模型服务错误:', error);
-      return false;
-    }
-  }
 
   /**
-   * 批量为用户分配模型（管理员功能）
-   */
-  async batchAssignModelsToUsers(
-    userIds: string[],
-    modelPoolId: string,
-    description: string,
-    isDefault: boolean = false,
-    priority: number = 1,
-    notes?: string
-  ): Promise<{ success: number; failed: number; errors: string[] }> {
-    const result = {
-      success: 0,
-      failed: 0,
-      errors: [] as string[]
-    };
-
-    try {
-      const isAdmin = await unifiedAuthService.isAdmin();
-      if (!isAdmin) {
-        result.errors.push('非管理员用户，无法批量分配模型');
-        return result;
-      }
-
-      const adminId = unifiedAuthService.getCurrentUserId();
-      if (!adminId || !this.isValidUUID(adminId)) {
-        result.errors.push('无效的管理员ID');
-        return result;
-      }
-
-      for (const userId of userIds) {
-        if (!this.isValidUUID(userId)) {
-          result.failed++;
-          result.errors.push(`无效的用户ID: ${userId}`);
-          continue;
-        }
-
-        const success = await this.assignModelToUser(
-          userId,
-          modelPoolId,
-          description,
-          isDefault,
-          priority,
-          notes
-        );
-
-        if (success) {
-          result.success++;
-        } else {
-          result.failed++;
-          result.errors.push(`为用户 ${userId} 分配模型失败`);
-        }
-      }
-
-      return result;
-    } catch (error) {
-      console.error('批量分配模型服务错误:', error);
-      result.errors.push(`批量分配服务错误: ${error}`);
-      return result;
-    }
-  }
-
-  /**
-   * 获取用户使用日志（管理员功能）
-   */
-  async getUserUsageLogs(
-    userId: string,
-    limit: number = 100,
-    offset: number = 0
-  ): Promise<UserModelUsageLog[]> {
-    try {
-      const isAdmin = await unifiedAuthService.isAdmin();
-      if (!isAdmin) {
-        console.warn('非管理员用户，无法访问使用日志');
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from('user_model_usage_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) {
-        console.error('获取用户使用日志失败:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('获取用户使用日志服务错误:', error);
-      return [];
-    }
-  }
-
-  /**
-   * 智能推荐模型（根据用户需求和使用历史）
+   * 智能推荐模型（根据用户等级和成本）
    */
   async getRecommendedModel(
     usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation',
     userId?: string
-  ): Promise<AvailableModel | null> {
+  ): Promise<ModelByLevel | null> {
     try {
       const availableModels = await this.getUserAvailableModels(userId);
       if (availableModels.length === 0) {
         return null;
       }
 
-      // 优先返回默认模型
-      const defaultModel = availableModels.find(model => model.is_default);
-      if (defaultModel) {
-        return defaultModel;
-      }
-
-      // 按优先级和性能等级推荐
+      // 按性能等级和成本排序推荐
       const sortedModels = availableModels.sort((a, b) => {
-        // 优先级越小越优先
-        if (a.priority !== b.priority) {
-          return a.priority - b.priority;
-        }
-        
-        // 性能等级权重：premium > advanced > standard > basic
+        // 性能等级权重：premium > advanced > basic
         const performanceWeight = {
-          'premium': 4,
-          'advanced': 3,
-          'standard': 2,
+          'premium': 3,
+          'advanced': 2,
           'basic': 1
         };
-        
+
         const aWeight = performanceWeight[a.performance_level as keyof typeof performanceWeight] || 1;
         const bWeight = performanceWeight[b.performance_level as keyof typeof performanceWeight] || 1;
-        
-        return bWeight - aWeight;
+
+        // 优先选择性能等级高的
+        if (aWeight !== bWeight) {
+          return bWeight - aWeight;
+        }
+
+        // 性能等级相同时，选择成本低的
+        return a.cost_per_1k_tokens - b.cost_per_1k_tokens;
       });
 
       return sortedModels[0] || null;
@@ -488,67 +160,7 @@ class UserModelConfigService {
     }
   }
 
-  /**
-   * 确保用户有可用模型（自动分配默认模型）
-   */
-  async ensureUserHasModels(userId?: string): Promise<boolean> {
-    try {
-      const hasModels = await this.hasAvailableModels(userId);
-      if (hasModels) {
-        // 检查是否有默认模型，如果没有则设置第一个为默认
-        await this.ensureUserHasDefaultModel(userId);
-        return true;
-      }
 
-      // 为用户分配默认模型
-      return await this.assignDefaultModelsToUser(userId);
-    } catch (error) {
-      console.error('确保用户有可用模型服务错误:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 确保用户有默认模型（如果没有则设置第一个为默认）
-   */
-  async ensureUserHasDefaultModel(userId?: string): Promise<boolean> {
-    try {
-      const currentUserId = userId || unifiedAuthService.getCurrentUserId();
-      if (!currentUserId || !this.isValidUUID(currentUserId)) {
-        console.warn('无效的用户ID，无法确保默认模型');
-        return false;
-      }
-
-      // 检查是否已有默认模型
-      const configs = await this.getUserModelConfigs(currentUserId);
-      const hasDefaultModel = configs.some(config => config.is_default);
-
-      if (hasDefaultModel) {
-        return true; // 已有默认模型
-      }
-
-      // 如果没有默认模型，设置第一个为默认
-      if (configs.length > 0) {
-        const { error } = await supabase
-          .from('user_model_configs')
-          .update({ is_default: true })
-          .eq('id', configs[0].id);
-
-        if (error) {
-          console.error('设置默认模型失败:', error);
-          return false;
-        }
-
-        console.log('✅ 已为用户设置默认模型');
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('确保用户有默认模型服务错误:', error);
-      return false;
-    }
-  }
 
   /**
    * 添加系统模型到模型池（管理员功能）
