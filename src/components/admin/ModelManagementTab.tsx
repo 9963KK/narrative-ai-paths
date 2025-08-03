@@ -9,20 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
+import {
   Settings,
-  UserPlus,
-  Users,
-  Shield,
   Plus,
-  Search,
   Edit,
   Trash2,
   Eye,
   EyeOff,
   Cpu,
   Star,
-  CheckCircle,
   XCircle,
   RefreshCw,
   Zap,
@@ -33,38 +28,18 @@ import {
   Download,
   AlertTriangle
 } from 'lucide-react';
-import { userModelConfigService, type SystemModelPool, type UserModelConfig, type AvailableModel } from '@/services/userModelConfigService';
+import { userModelConfigService, type SystemModelPool } from '@/services/userModelConfigService';
 import { cloudAuthService } from '@/services/cloudAuthService';
 import { modelDiscoveryService, type DiscoveredModel } from '@/services/modelDiscoveryService';
 import { supabase } from '@/lib/supabase';
 
-interface User {
-  id: string;
-  email: string;
-  role: string;
-  created_at: string;
-}
 
-interface ModelAssignmentData {
-  modelPoolId: string;
-  displayName: string;
-  description: string;
-  isDefault: boolean;
-  priority: number;
-  notes: string;
-}
 
 export const ModelManagementTab: React.FC = () => {
   // 状态管理
   const [systemModels, setSystemModels] = useState<SystemModelPool[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [showAssignForm, setShowAssignForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedModelForView, setSelectedModelForView] = useState<SystemModelPool | null>(null);
-  const [userModelsMap, setUserModelsMap] = useState<Record<string, UserModelConfig[]>>({});
 
   // 模型发现相关状态
   const [showModelDiscovery, setShowModelDiscovery] = useState(false);
@@ -78,15 +53,7 @@ export const ModelManagementTab: React.FC = () => {
   const [selectedDiscoveredModels, setSelectedDiscoveredModels] = useState<string[]>([]);
   const [modelLevelAssignments, setModelLevelAssignments] = useState<Record<string, 'basic' | 'advanced' | 'premium'>>({});
 
-  // 表单数据
-  const [assignmentData, setAssignmentData] = useState<ModelAssignmentData>({
-    modelPoolId: '',
-    displayName: '',
-    description: '',
-    isDefault: true, // 默认设为默认模型
-    priority: 1,
-    notes: ''
-  });
+
 
   // 编辑模型相关状态
   const [showEditForm, setShowEditForm] = useState(false);
@@ -105,27 +72,8 @@ export const ModelManagementTab: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [models, users] = await Promise.all([
-        userModelConfigService.getSystemModelPool(),
-        cloudAuthService.getAllUsers()
-      ]);
-      
+      const models = await userModelConfigService.getSystemModelPool();
       setSystemModels(models);
-      setAllUsers(users || []);
-      
-      // 为每个用户加载模型配置
-      const userModelsData: Record<string, UserModelConfig[]> = {};
-      for (const user of users || []) {
-        try {
-          const userConfigs = await userModelConfigService.getUserModelConfigs(user.id);
-          userModelsData[user.id] = userConfigs;
-        } catch (error) {
-          console.error(`加载用户 ${user.id} 的模型配置失败:`, error);
-          userModelsData[user.id] = [];
-        }
-      }
-      setUserModelsMap(userModelsData);
-      
     } catch (error) {
       console.error('加载模型管理数据失败:', error);
     } finally {
@@ -137,77 +85,7 @@ export const ModelManagementTab: React.FC = () => {
     loadData();
   }, []);
 
-  // 筛选用户
-  const filteredUsers = allUsers.filter(user => 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  // 处理用户选择
-  const handleUserSelect = (userId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedUsers(prev => [...prev, userId]);
-    } else {
-      setSelectedUsers(prev => prev.filter(id => id !== userId));
-    }
-  };
-
-  // 处理全选
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedUsers(filteredUsers.map(user => user.id));
-    } else {
-      setSelectedUsers([]);
-    }
-  };
-
-  // 分配模型给用户
-  const handleAssignModel = async () => {
-    if (selectedUsers.length === 0 || !assignmentData.modelPoolId) {
-      alert('请选择用户和模型');
-      return;
-    }
-
-    setIsAssigning(true);
-    try {
-      const result = await userModelConfigService.batchAssignModelsToUsers(
-        selectedUsers,
-        assignmentData.modelPoolId,
-        assignmentData.description,
-        assignmentData.isDefault,
-        assignmentData.priority,
-        assignmentData.notes
-      );
-
-      if (result.success > 0) {
-        alert(`成功为 ${result.success} 个用户分配模型，失败 ${result.failed} 个`);
-        if (result.errors.length > 0) {
-          console.error('分配错误:', result.errors);
-        }
-        
-        // 重新加载数据
-        await loadData();
-        
-        // 重置表单
-        setAssignmentData({
-          modelPoolId: '',
-          displayName: '',
-          description: '',
-          isDefault: true, // 重置时也默认为true
-          priority: 1,
-          notes: ''
-        });
-        setSelectedUsers([]);
-        setShowAssignForm(false);
-      } else {
-        alert('模型分配失败，请检查控制台错误信息');
-      }
-    } catch (error) {
-      console.error('分配模型失败:', error);
-      alert('模型分配失败');
-    } finally {
-      setIsAssigning(false);
-    }
-  };
 
   // 模型发现处理函数
   const handleDiscoverModels = async () => {
@@ -453,15 +331,7 @@ export const ModelManagementTab: React.FC = () => {
     }
   };
 
-  // 获取用户已分配的模型数量
-  const getUserModelCount = (userId: string) => {
-    return userModelsMap[userId]?.length || 0;
-  };
 
-  // 检查用户是否有默认模型
-  const getUserHasDefaultModel = (userId: string) => {
-    return userModelsMap[userId]?.some(config => config.is_default) || false;
-  };
 
   if (isLoading) {
     return (
@@ -584,214 +454,7 @@ export const ModelManagementTab: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 用户模型分配 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              用户模型分配
-            </CardTitle>
-            <Button
-              onClick={() => setShowAssignForm(!showAssignForm)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              批量分配模型
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* 批量分配表单 */}
-          {showAssignForm && (
-            <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-              <h3 className="text-lg font-medium mb-4">批量分配模型</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="model-select">选择模型</Label>
-                  <Select 
-                    value={assignmentData.modelPoolId} 
-                    onValueChange={(value) => {
-                      const selectedModel = systemModels.find(m => m.id === value);
-                      setAssignmentData(prev => ({
-                        ...prev,
-                        modelPoolId: value,
-                        displayName: selectedModel?.model || '',
-                        description: selectedModel?.description || ''
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择要分配的模型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systemModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          <div className="flex items-center gap-2">
-                            <Badge className={getPerformanceColor(model.performance_level)}>
-                              {model.performance_level}
-                            </Badge>
-                            <span>{model.model}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div>
-                  <Label htmlFor="display-name">模型编号</Label>
-                  <Input
-                    id="display-name"
-                    value={assignmentData.displayName}
-                    onChange={(e) => setAssignmentData(prev => ({ ...prev, displayName: e.target.value }))}
-                    placeholder="模型编号"
-                    disabled
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <Label htmlFor="description">模型描述</Label>
-                  <Textarea
-                    id="description"
-                    value={assignmentData.description}
-                    onChange={(e) => setAssignmentData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="向用户展示的模型能力描述"
-                    rows={2}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="priority">优先级</Label>
-                  <Select 
-                    value={assignmentData.priority.toString()} 
-                    onValueChange={(value) => setAssignmentData(prev => ({ ...prev, priority: parseInt(value) }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 (最高)</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="5">5 (最低)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is-default"
-                    checked={assignmentData.isDefault}
-                    onCheckedChange={(checked) => setAssignmentData(prev => ({ ...prev, isDefault: !!checked }))}
-                  />
-                  <Label htmlFor="is-default">设为默认模型</Label>
-                </div>
-
-                <div className="col-span-2">
-                  <Label htmlFor="notes">管理员备注</Label>
-                  <Textarea
-                    id="notes"
-                    value={assignmentData.notes}
-                    onChange={(e) => setAssignmentData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="内部备注信息"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="col-span-2 flex gap-2 pt-2">
-                  <Button
-                    onClick={handleAssignModel}
-                    disabled={isAssigning || selectedUsers.length === 0 || !assignmentData.modelPoolId}
-                    className="flex items-center gap-2"
-                  >
-                    {isAssigning ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <UserPlus className="h-4 w-4" />
-                    )}
-                    分配给 {selectedUsers.length} 个用户
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowAssignForm(false)}>
-                    取消
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 用户搜索 */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="搜索用户邮箱..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-          </div>
-
-          {/* 用户列表 */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead>用户邮箱</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>已分配模型</TableHead>
-                <TableHead>默认模型</TableHead>
-                <TableHead>注册时间</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedUsers.includes(user.id)}
-                      onCheckedChange={(checked) => handleUserSelect(user.id, !!checked)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                      {user.role === 'admin' ? '管理员' : '用户'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{getUserModelCount(user.id)} 个模型</span>
-                      {getUserModelCount(user.id) === 0 && (
-                        <Badge variant="outline" className="text-orange-600">
-                          未配置
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getUserHasDefaultModel(user.id) ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
 
       {/* 模型详情查看弹窗 */}
       {selectedModelForView && (
