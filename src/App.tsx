@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CreditProvider } from "@/contexts/CreditContext";
 import { setupHashCleaner } from "@/utils/urlUtils";
 import { authLog } from "@/utils/logger";
-import LogLevelControl from "@/components/debug/LogLevelControl";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +31,6 @@ const App: React.FC<AppProps> = ({ children }) => {
             <Toaster />
             <Sonner />
             {children}
-            <LogLevelControl />
           </TooltipProvider>
         </CreditProvider>
       </AuthProvider>
