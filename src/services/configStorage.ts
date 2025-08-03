@@ -1,5 +1,6 @@
 import { ModelConfig } from '@/components/model-config/constants';
 import { userStorage } from './userStorage';
+import { devLog, devError, devWarn } from '../utils/logger';
 
 const CONFIG_STORAGE_KEY = 'narrative-ai-model-config';
 const MULTI_CONFIG_STORAGE_KEY = 'narrative-ai-multi-configs';
@@ -23,7 +24,7 @@ const decryptApiKey = (encryptedKey: string): string => {
     ).join('');
     return atob(shifted);
   } catch (error) {
-    console.warn('解密API密钥失败:', error);
+    devWarn('解密API密钥失败:', error);
     return '';
   }
 };
@@ -38,9 +39,9 @@ export const saveModelConfig = (config: ModelConfig): void => {
     };
     
     userStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(configToSave));
-    console.log('✅ 模型配置已保存到本地存储');
+    devLog('模型配置已保存到本地存储');
   } catch (error) {
-    console.error('❌ 保存配置失败:', error);
+    devError('保存配置失败:', error);
   }
 };
 

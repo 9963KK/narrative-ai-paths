@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CreditProvider } from "@/contexts/CreditContext";
 import { setupHashCleaner } from "@/utils/urlUtils";
+import { authLog } from "@/utils/logger";
+import LogLevelControl from "@/components/debug/LogLevelControl";
 
 const queryClient = new QueryClient();
 
@@ -16,9 +18,9 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ children }) => {
   // 设置全局hash清理器
   useEffect(() => {
-    console.log('🚀 设置全局OAuth hash清理器');
+    authLog('设置全局OAuth hash清理器');
     const cleanup = setupHashCleaner();
-    
+
     return cleanup;
   }, []);
 
@@ -30,6 +32,7 @@ const App: React.FC<AppProps> = ({ children }) => {
             <Toaster />
             <Sonner />
             {children}
+            <LogLevelControl />
           </TooltipProvider>
         </CreditProvider>
       </AuthProvider>

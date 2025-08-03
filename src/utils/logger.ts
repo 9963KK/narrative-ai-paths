@@ -3,11 +3,62 @@
  * 开发环境显示所有日志，生产环境只显示错误和警告
  */
 
+// 日志级别配置
+const LOG_LEVELS = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3
+} as const;
+
+// 当前日志级别 - 可以通过环境变量控制
+const getCurrentLogLevel = (): number => {
+  // 检查localStorage中的设置
+  if (typeof window !== 'undefined') {
+    const storedLevel = localStorage.getItem('app_log_level');
+    if (storedLevel && storedLevel in LOG_LEVELS) {
+      return LOG_LEVELS[storedLevel as keyof typeof LOG_LEVELS];
+    }
+  }
+
+  // 默认级别：开发环境显示所有，生产环境只显示错误和警告
+  return import.meta.env.DEV ? LOG_LEVELS.DEBUG : LOG_LEVELS.WARN;
+};
+
+const currentLogLevel = getCurrentLogLevel();
+
+/**
+ * 设置日志级别
+ * @param level 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'SILENT'
+ */
+export const setLogLevel = (level: keyof typeof LOG_LEVELS | 'SILENT') => {
+  if (typeof window !== 'undefined') {
+    if (level === 'SILENT') {
+      localStorage.setItem('app_log_level', 'SILENT');
+    } else {
+      localStorage.setItem('app_log_level', level);
+    }
+    console.log(`📝 日志级别已设置为: ${level}`);
+    console.log('🔄 请刷新页面以应用新的日志级别');
+  }
+};
+
+/**
+ * 检查是否应该输出日志
+ */
+const shouldLog = (level: number): boolean => {
+  if (typeof window !== 'undefined') {
+    const storedLevel = localStorage.getItem('app_log_level');
+    if (storedLevel === 'SILENT') return false;
+  }
+  return level <= currentLogLevel;
+};
+
 /**
  * 开发环境日志 - 只在开发环境显示
  */
 export const devLog = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
     console.log(message, ...args);
   }
 };
@@ -16,7 +67,7 @@ export const devLog = (message: string, ...args: any[]) => {
  * 开发环境信息日志
  */
 export const devInfo = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.INFO)) {
     console.info(message, ...args);
   }
 };
@@ -25,13 +76,8 @@ export const devInfo = (message: string, ...args: any[]) => {
  * 开发环境警告 - 生产环境也会显示
  */
 export const devWarn = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.WARN)) {
     console.warn(message, ...args);
-  } else {
-    // 生产环境只显示重要警告
-    if (message.includes('❌') || message.includes('⚠️') || message.includes('错误') || message.includes('失败')) {
-      console.warn(message, ...args);
-    }
   }
 };
 
@@ -39,14 +85,16 @@ export const devWarn = (message: string, ...args: any[]) => {
  * 错误日志 - 始终显示
  */
 export const devError = (message: string, ...args: any[]) => {
-  console.error(message, ...args);
+  if (shouldLog(LOG_LEVELS.ERROR)) {
+    console.error(message, ...args);
+  }
 };
 
 /**
  * 性能监控日志 - 只在开发环境显示
  */
 export const perfLog = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
     console.log(`🔍 [PERF] ${message}`, ...args);
   }
 };
@@ -55,7 +103,7 @@ export const perfLog = (message: string, ...args: any[]) => {
  * API调用日志 - 只在开发环境显示
  */
 export const apiLog = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
     console.log(`🌐 [API] ${message}`, ...args);
   }
 };
@@ -64,7 +112,43 @@ export const apiLog = (message: string, ...args: any[]) => {
  * 状态变化日志 - 只在开发环境显示
  */
 export const stateLog = (message: string, ...args: any[]) => {
-  if (import.meta.env.DEV) {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
     console.log(`🔄 [STATE] ${message}`, ...args);
   }
 };
+
+/**
+ * 认证相关日志
+ */
+export const authLog = (message: string, ...args: any[]) => {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
+    console.log(`🔐 [AUTH] ${message}`, ...args);
+  }
+};
+
+/**
+ * 数据库相关日志
+ */
+export const dbLog = (message: string, ...args: any[]) => {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
+    console.log(`💾 [DB] ${message}`, ...args);
+  }
+};
+
+/**
+ * 路由相关日志
+ */
+export const routeLog = (message: string, ...args: any[]) => {
+  if (shouldLog(LOG_LEVELS.DEBUG)) {
+    console.log(`🛣️ [ROUTE] ${message}`, ...args);
+  }
+};
+
+// 导出日志级别控制函数到全局
+if (typeof window !== 'undefined') {
+  (window as any).setLogLevel = setLogLevel;
+  (window as any).getLogLevel = () => {
+    const stored = localStorage.getItem('app_log_level');
+    return stored || (import.meta.env.DEV ? 'DEBUG' : 'WARN');
+  };
+}

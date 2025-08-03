@@ -506,7 +506,7 @@ class UnifiedAIService {
 
       perfLog(`积分扣除: ${actualCreditCalculation.required_credits.toFixed(2)} 积分 (${usage.totalTokens} tokens)`);
     } catch (error) {
-      console.error('❌ 积分扣除或日志记录失败:', error);
+      devError('积分扣除或日志记录失败:', error);
     }
   }
 
@@ -554,7 +554,7 @@ class UnifiedAIService {
         window.dispatchEvent(creditUpdateEvent);
         devLog('积分扣除成功，已触发UI更新事件');
       } else {
-        console.warn('⚠️ 积分扣除失败，但AI请求已完成');
+        devWarn('积分扣除失败，但AI请求已完成');
       }
 
       // 记录token使用统计

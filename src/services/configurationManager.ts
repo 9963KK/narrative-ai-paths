@@ -493,10 +493,10 @@ class ConfigurationManager {
         }
       }
     } catch (error) {
-      console.warn('⚠️ 清理会话缓存失败:', error);
+      devWarn('清理会话缓存失败:', error);
     }
-    
-    console.log('🧹 用户缓存已清理');
+
+    devLog('用户缓存已清理');
   }
 
   /**
@@ -507,9 +507,9 @@ class ConfigurationManager {
     try {
       sessionStorage.removeItem(this.SESSION_CONFIG_KEY);
     } catch (error) {
-      console.warn('⚠️ 清理会话存储失败:', error);
+      devWarn('清理会话存储失败:', error);
     }
-    console.log('🧹 所有缓存已清理');
+    devLog('所有缓存已清理');
   }
 
   /**

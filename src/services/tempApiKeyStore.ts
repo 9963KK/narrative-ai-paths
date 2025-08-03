@@ -243,9 +243,9 @@ export class TempApiKeyStore {
       const { configurationManager } = await import('./configurationManager');
       configurationManager.clearCache();
 
-      console.log('🧹 相关缓存已清除');
+      devLog('相关缓存已清除');
     } catch (error) {
-      console.warn('⚠️ 清除缓存时出现警告:', error);
+      devWarn('清除缓存时出现警告:', error);
     }
   }
 

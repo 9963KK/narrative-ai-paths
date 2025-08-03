@@ -1,5 +1,6 @@
 // 使用Supabase作为云端存储解决方案
 import { supabaseService, type User, type UserProfile } from '@/lib/supabase';
+import { authLog, devWarn } from '../utils/logger';
 
 // 重新导出Supabase的类型，保持接口兼容
 export type { User, UserProfile as AuthUser };
@@ -20,14 +21,14 @@ export class CloudAuthService {
       this.supabaseAvailable = isConnected;
       
       if (this.supabaseAvailable) {
-        console.log('✅ Supabase服务可用，使用云端存储');
+        authLog('Supabase服务可用，使用云端存储');
       } else {
-        console.warn('⚠️ Supabase服务不可用，使用本地存储作为后备方案');
+        devWarn('Supabase服务不可用，使用本地存储作为后备方案');
       }
-      
+
       return this.supabaseAvailable;
     } catch (error) {
-      console.warn('⚠️ 检查Supabase状态失败:', error);
+      devWarn('检查Supabase状态失败:', error);
       this.supabaseAvailable = false;
       return false;
     }

@@ -1,6 +1,7 @@
 import { supabaseService, type User, type UserProfile, type OAuthProvider, supabase } from '@/lib/supabase';
 import { creditService } from './creditService';
 import { tempApiKeyStore } from './tempApiKeyStore';
+import { authLog, devWarn, devError } from '../utils/logger';
 
 const CURRENT_USER_KEY = 'narrative_ai_current_user';
 const USERS_STORAGE_KEY = 'narrative_ai_users';
@@ -31,14 +32,14 @@ export class UnifiedAuthService {
       this.supabaseConnected = isConnected;
       
       if (!isConnected) {
-        console.warn('⚠️ Supabase连接失败，将使用本地存储作为备选方案');
+        devWarn('Supabase连接失败，将使用本地存储作为备选方案');
       } else {
-        console.log('✅ Supabase连接成功');
+        authLog('Supabase连接成功');
       }
-      
+
       return isConnected;
     } catch (error) {
-      console.error('❌ Supabase连接失败:', error);
+      devError('Supabase连接失败:', error);
       this.supabaseConnected = false;
       return false;
     }
