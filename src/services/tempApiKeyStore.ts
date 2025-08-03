@@ -60,7 +60,8 @@ export class TempApiKeyStore {
         baseUrl: config.baseUrl,
         temperature: config.temperature || 0.8,
         maxTokens: config.maxTokens || 2000,
-        customPrompt: ''
+        customPrompt: '',
+        performance_level: config.performance_level
       };
     } catch (error) {
       console.error('❌ 获取临时模型配置失败:', error);
@@ -281,7 +282,8 @@ export class TempApiKeyStore {
         baseUrl: realBaseUrl,
         temperature: 0.8,
         maxTokens: 2000,
-        customPrompt: ''
+        customPrompt: '',
+        performance_level: selectedModel.performance_level // 添加性能等级信息
       };
 
       await this.storeUserModelConfig(modelConfig);

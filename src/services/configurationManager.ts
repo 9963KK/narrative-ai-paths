@@ -217,7 +217,8 @@ class ConfigurationManager {
                 baseUrl: tempConfig.baseUrl,
                 temperature: tempConfig.temperature || 0.8,
                 maxTokens: tempConfig.maxTokens || 2000,
-                customPrompt: ''
+                customPrompt: '',
+                performance_level: tempConfig.performance_level
               },
               source: 'session'
             };
@@ -458,7 +459,8 @@ class ConfigurationManager {
         baseUrl: baseUrl,
         temperature: 0.8,
         maxTokens: 2000,
-        customPrompt: ''
+        customPrompt: '',
+        performance_level: selectedModel.performance_level
       };
 
       return {

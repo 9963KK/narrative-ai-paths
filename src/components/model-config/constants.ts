@@ -76,4 +76,5 @@ export interface ModelConfig {
   temperature: number;
   maxTokens: number;
   customPrompt?: string;
+  performance_level?: string; // 模型性能等级：basic, advanced, premium
 }

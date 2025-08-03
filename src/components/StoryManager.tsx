@@ -4,6 +4,20 @@ import StoryReader from './StoryReader';
 import SaveManager from './SaveManager';
 import DebugSaveManager from './DebugSaveManager';
 import { ModelConfig } from './model-config/constants';
+
+// 辅助函数：根据性能等级获取模型描述
+const getModelLevelDescription = (performanceLevel?: string): string => {
+  switch (performanceLevel) {
+    case 'basic':
+      return '基础模型正在加载';
+    case 'advanced':
+      return '高级模型正在加载';
+    case 'premium':
+      return '顶级模型正在加载';
+    default:
+      return '基础模型正在加载'; // 默认为基础模型
+  }
+};
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
 import { 
@@ -1309,7 +1323,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
           <p className="text-gray-600 mb-4">正在生成角色、场景和剧情...</p>
           {currentModelConfig && (
             <div className="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded-full inline-block mb-2">
-              {currentModelConfig.provider === 'zhipu' || currentModelConfig.provider === 'openai' ? '高级模型正在加载' : '基础模型正在加载'}
+              {getModelLevelDescription(currentModelConfig.performance_level)}
             </div>
           )}
           {aiError && (

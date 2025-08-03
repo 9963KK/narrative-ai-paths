@@ -10,6 +10,33 @@ import { toast } from '@/hooks/use-toast';
 import { storyAI } from '@/services/storyAI';
 import { devLog, devError, stateLog } from '@/utils/logger';
 
+// 辅助函数：根据性能等级获取模型描述
+const getModelLevelDescription = (performanceLevel?: string, action: string = '正在思考中'): string => {
+  switch (performanceLevel) {
+    case 'basic':
+      return `基础模型${action}...`;
+    case 'advanced':
+      return `高级模型${action}...`;
+    case 'premium':
+      return `顶级模型${action}...`;
+    default:
+      return `基础模型${action}...`; // 默认为基础模型
+  }
+};
+
+const getModelLevelName = (performanceLevel?: string): string => {
+  switch (performanceLevel) {
+    case 'basic':
+      return '基础模型';
+    case 'advanced':
+      return '高级模型';
+    case 'premium':
+      return '顶级模型';
+    default:
+      return '基础模型'; // 默认为基础模型
+  }
+};
+
 interface StoryState {
   story_id: string;
   current_scene: string;
@@ -1295,7 +1322,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-300"></div>
                       <span className="ml-3 text-xs text-slate-500">
                         {modelConfig?.apiKey ?
-                          (modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型正在思考中...' : '基础模型正在思考中...')
+                          getModelLevelDescription(modelConfig.performance_level, '正在思考中')
                           : '内容生成中...'}
                       </span>
                     </div>
@@ -1325,7 +1352,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300"></div>
                       <span className="ml-3 text-xs text-slate-500">
                         {modelConfig?.apiKey ?
-                          (modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型正在生成中...' : '基础模型正在生成中...')
+                          getModelLevelDescription(modelConfig.performance_level, '正在生成中')
                           : '选项生成中...'}
                       </span>
                     </div>
@@ -1966,7 +1993,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 <CardContent className="pt-4">
                   {modelConfig && (
                     <p className="text-xs text-slate-500 text-center">
-                      AI模型: {modelConfig.provider === 'zhipu' || modelConfig.provider === 'openai' ? '高级模型' : '基础模型'}
+                      AI模型: {getModelLevelName(modelConfig.performance_level)}
                     </p>
                   )}
                   {aiError && (
