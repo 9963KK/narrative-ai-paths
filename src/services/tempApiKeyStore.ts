@@ -170,6 +170,86 @@ export class TempApiKeyStore {
   }
 
   /**
+   * 更新用户选择的模型配置
+   * @param modelId 新选择的模型ID
+   */
+  async updateSelectedModelConfig(modelId: string): Promise<boolean> {
+    try {
+      console.log('🔄 更新用户选择的模型配置:', modelId);
+
+      // 获取用户可用的模型列表
+      const { userLevelService } = await import('./userLevelService');
+      const availableModels = await userLevelService.getUserAvailableModelsByLevel();
+
+      // 找到选择的模型
+      const selectedModel = availableModels.find(model => model.model_id === modelId);
+      if (!selectedModel) {
+        console.error('❌ 找不到选择的模型:', modelId);
+        return false;
+      }
+
+      if (!selectedModel.has_api_key) {
+        console.error('❌ 选择的模型未配置API密钥:', modelId);
+        return false;
+      }
+
+      // 获取真实的API密钥
+      const { modelConfigAdapter } = await import('./modelConfigAdapter');
+      const realApiKey = await modelConfigAdapter.getRealApiKey(selectedModel.model_id);
+
+      if (!realApiKey) {
+        console.error('❌ 无法获取模型的真实API密钥:', modelId);
+        return false;
+      }
+
+      // 构建新的ModelConfig并更新存储
+      const modelConfig = {
+        provider: selectedModel.provider,
+        model: selectedModel.model,
+        apiKey: realApiKey,
+        baseUrl: this.getBaseUrlForProvider(selectedModel.provider),
+        temperature: 0.8,
+        maxTokens: 2000,
+        customPrompt: ''
+      };
+
+      await this.storeUserModelConfig(modelConfig);
+
+      // 清除相关缓存，确保新配置生效
+      await this.clearRelatedCaches();
+
+      console.log('✅ 用户模型配置更新成功:', {
+        provider: selectedModel.provider,
+        model: selectedModel.model
+      });
+
+      return true;
+    } catch (error) {
+      console.error('❌ 更新用户模型配置失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 清除相关缓存，确保新配置生效
+   */
+  private async clearRelatedCaches(): Promise<void> {
+    try {
+      // 清除UnifiedAIService缓存
+      const { unifiedAIService } = await import('./unifiedAIService');
+      unifiedAIService.clearSessionCache();
+
+      // 清除ConfigurationManager缓存
+      const { configurationManager } = await import('./configurationManager');
+      configurationManager.clearCache();
+
+      console.log('🧹 相关缓存已清除');
+    } catch (error) {
+      console.warn('⚠️ 清除缓存时出现警告:', error);
+    }
+  }
+
+  /**
    * 在用户登出时清除临时存储
    */
   onUserLogout(): void {

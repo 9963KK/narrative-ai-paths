@@ -453,6 +453,13 @@ class ConfigurationManager {
   }
 
   /**
+   * 清除缓存（别名方法，用于配置变更时）
+   */
+  clearCache(): void {
+    this.clearAllCaches();
+  }
+
+  /**
    * 用户登出时的清理方法
    */
   onUserLogout(): void {

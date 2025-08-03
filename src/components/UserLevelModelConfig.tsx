@@ -113,7 +113,21 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
     }
 
     setSelectedModel(model);
-    
+
+    // 更新临时存储的模型配置
+    try {
+      const { tempApiKeyStore } = await import('@/services/tempApiKeyStore');
+      const updateSuccess = await tempApiKeyStore.updateSelectedModelConfig(model.model_id);
+
+      if (updateSuccess) {
+        console.log('✅ 模型配置已同步更新到临时存储');
+      } else {
+        console.warn('⚠️ 模型配置更新到临时存储失败，但UI已更新');
+      }
+    } catch (error) {
+      console.error('❌ 更新临时存储配置时出错:', error);
+    }
+
     // 触发外部配置变更回调
     if (onConfigChange) {
       onConfigChange({
