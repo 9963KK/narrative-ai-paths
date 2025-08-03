@@ -121,6 +121,15 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
 
       if (updateSuccess) {
         console.log('✅ 模型配置已同步更新到临时存储');
+
+        // 强制刷新unifiedAIService配置，确保立即生效
+        try {
+          const { unifiedAIService } = await import('@/services/unifiedAIService');
+          await unifiedAIService.refreshConfig();
+          console.log('🔄 AI服务配置已强制刷新');
+        } catch (refreshError) {
+          console.warn('⚠️ 刷新AI服务配置失败:', refreshError);
+        }
       } else {
         console.warn('⚠️ 模型配置更新到临时存储失败，但UI已更新');
       }

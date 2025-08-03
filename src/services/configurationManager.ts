@@ -278,9 +278,35 @@ class ConfigurationManager {
         };
       }
 
-      // 选择最合适的模型（优先选择有API密钥的）
-      const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
-      const selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
+      // 🔥 关键修复：检查用户是否在sessionStorage中选择了特定模型
+      let selectedModel = null;
+
+      // 首先尝试从sessionStorage获取用户选择的模型ID
+      try {
+        const tempConfigStr = sessionStorage.getItem('temp_model_config');
+        if (tempConfigStr) {
+          const tempConfig = JSON.parse(tempConfigStr);
+          if (tempConfig.provider && tempConfig.model) {
+            // 根据provider和model找到对应的模型
+            selectedModel = availableModels.find(model =>
+              model.provider === tempConfig.provider &&
+              model.model === tempConfig.model
+            );
+            if (selectedModel) {
+              console.log('🎯 使用用户在sessionStorage中选择的模型:', selectedModel.provider, selectedModel.model);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ 解析sessionStorage中的模型选择失败:', e);
+      }
+
+      // 如果没有找到用户选择的模型，回退到默认逻辑
+      if (!selectedModel) {
+        const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
+        selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
+        console.log('📋 使用默认模型:', selectedModel?.provider, selectedModel?.model);
+      }
       
       if (!selectedModel) {
         return {
