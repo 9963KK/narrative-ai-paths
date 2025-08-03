@@ -81,7 +81,8 @@ class ModelConfigAdapter {
         baseUrl: this.getBaseUrlForProvider(defaultModel.provider),
         temperature: 0.8,
         maxTokens: 2000,
-        customPrompt: ''
+        customPrompt: '',
+        performance_level: defaultModel.performance_level // 添加性能等级字段
       };
 
       devLog(`模型配置构建完成: ${modelConfig.provider}/${modelConfig.model}`);
