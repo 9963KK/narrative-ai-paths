@@ -325,25 +325,21 @@ export const ModelManagementTab: React.FC = () => {
       description: model.description || '',
       costPer1kTokens: model.cost_per_1k_tokens || 0,
       isActive: model.is_active ?? true,
-      apiKey: (model.api_config?.api_key) || '',
+      apiKey: (model.api_config?.api_key) || '', // 保留原值，但在UI中显示为掩码
       baseUrl: (model.api_config?.base_url) || '',
       performanceLevel: (model.performance_level as 'basic' | 'advanced' | 'premium') || 'advanced'
     });
     setShowEditForm(true);
   };
 
+
+
   // 保存编辑的模型
   const handleSaveEditModel = async () => {
     if (!editingModel) return;
 
-    // 验证API密钥不能为空
-    if (!editFormData.apiKey || editFormData.apiKey.trim() === '') {
-      alert('API密钥不能为空，只有配置了API密钥的模型才能保留在模型池中');
-      return;
-    }
-
     try {
-      // 更新模型信息，包括API配置和性能等级
+      // 更新模型信息，但不更新API配置（API密钥和Base URL保持不变）
       const { error } = await supabase
         .from('system_model_pool')
         .update({
@@ -351,11 +347,8 @@ export const ModelManagementTab: React.FC = () => {
           cost_per_1k_tokens: editFormData.costPer1kTokens,
           is_active: editFormData.isActive,
           performance_level: editFormData.performanceLevel,
-          api_config: {
-            api_key: editFormData.apiKey.trim(),
-            base_url: editFormData.baseUrl.trim()
-          },
           updated_at: new Date().toISOString()
+          // 注意：不更新 api_config，保持原有的API密钥和Base URL
         })
         .eq('id', editingModel.id);
 
@@ -364,10 +357,10 @@ export const ModelManagementTab: React.FC = () => {
       }
 
       alert('模型更新成功！');
-      
+
       // 重新加载数据
       await loadData();
-      
+
       // 重置编辑表单
       setShowEditForm(false);
       setEditingModel(null);
@@ -898,28 +891,7 @@ export const ModelManagementTab: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="edit-api-key">API密钥 <span className="text-red-500">*</span></Label>
-                  <Input
-                    id="edit-api-key"
-                    type="password"
-                    value={editFormData.apiKey}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="API密钥（必填）"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-base-url">Base URL</Label>
-                  <Input
-                    id="edit-base-url"
-                    type="url"
-                    value={editFormData.baseUrl}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, baseUrl: e.target.value }))}
-                    placeholder="API基础URL"
-                  />
-                </div>
+                {/* API密钥和Base URL在编辑模式下不显示，因为它们不应该被修改 */}
 
                 <div>
                   <Label htmlFor="edit-performance-level">性能等级 <span className="text-red-500">*</span></Label>
@@ -971,9 +943,8 @@ export const ModelManagementTab: React.FC = () => {
                   <Button variant="outline" onClick={() => setShowEditForm(false)}>
                     取消
                   </Button>
-                  <Button 
-                    onClick={handleSaveEditModel} 
-                    disabled={!editFormData.displayName.trim() || !editFormData.apiKey.trim()}
+                  <Button
+                    onClick={handleSaveEditModel}
                   >
                     保存修改
                   </Button>
