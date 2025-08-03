@@ -568,6 +568,15 @@ export class UnifiedAuthService {
         };
 
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(authUser));
+
+        // OAuth登录成功后立即获取并存储API密钥
+        try {
+          console.log('🔑 OAuth登录成功，正在获取用户API密钥...');
+          await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
+        } catch (error) {
+          console.warn('⚠️ OAuth登录后获取API密钥失败，但不影响登录:', error);
+        }
+
         return authUser;
       }
 
