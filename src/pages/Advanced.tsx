@@ -96,7 +96,6 @@ const Advanced: React.FC = () => {
         if (userConfig) {
           setModelConfig(userConfig);
           setHasValidConfig(true);
-          console.log('📂 已加载用户模型配置');
         } else {
           setHasValidConfig(false);
           console.warn('用户没有可用的模型配置');

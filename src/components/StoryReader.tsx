@@ -117,13 +117,67 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
 
   // 解析性格特征为标签数组
-  const parseTraitsToTags = (traits: string): string[] => {
-    if (!traits) return [];
-    return traits
-      .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
-      .map(trait => trait.trim()) // 去除空格
-      .filter(trait => trait.length > 0); // 过滤空字符串
-  };
+const parseTraitsToTags = (traits: string): string[] => {
+  if (!traits) return [];
+  return traits
+    .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
+    .map(trait => trait.trim()) // 去除空格
+    .filter(trait => trait.length > 0); // 过滤空字符串
+};
+
+const isPlaceholderName = (name?: string | null): boolean => {
+  if (!name) return true;
+  const trimmed = name.trim();
+  return trimmed.length === 0 || trimmed === '未知角色';
+};
+
+const isPlaceholderRole = (role?: string | null): boolean => {
+  if (!role) return true;
+  const trimmed = role.trim();
+  return trimmed.length === 0 || trimmed === '神秘角色';
+};
+
+const getDisplayName = (character: any, index: number): string => {
+  if (character?.display_name) return character.display_name;
+
+  if (!isPlaceholderName(character?.name)) {
+    return character.name.trim();
+  }
+
+  if (!isPlaceholderRole(character?.role)) {
+    return character.role.trim();
+  }
+
+  // 使用 traits 的第一个关键词作为候选名称
+  const traits = typeof character?.traits === 'string'
+    ? character.traits.split(/[，、,]/).map((t: string) => t.trim()).filter((t: string) => t)
+    : [];
+  if (traits.length > 0) {
+    const generated = traits[0];
+    if (character) {
+      character.display_name = generated;
+    }
+    return generated;
+  }
+
+  const fallbackName = `神秘访客 ${index + 1}`;
+  if (character) {
+    character.display_name = fallbackName;
+  }
+  return fallbackName;
+};
+
+const getDisplayRole = (character: any): string => {
+  if (!isPlaceholderRole(character?.role)) {
+    return character.role.trim();
+  }
+
+  if (!isPlaceholderName(character?.name)) {
+    return `${character.name.trim()}的身份`;
+  }
+
+  return '角色信息生成中';
+};
 
   // 计算所有章节的累积字数
   const calculateTotalWordCount = (): number => {
@@ -1641,20 +1695,20 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2">
-                      {story.characters.filter(character => character.name && character.name.trim() !== '').slice(0, 4).map((character, index) => (
+                      {story.characters.slice(0, 4).map((character, index) => (
                         <Dialog key={index}>
                           <DialogTrigger asChild>
                             <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200">
                               <div className="flex items-center space-x-2 mb-1">
                                 <User className="w-3 h-3 text-slate-500" />
-                                <h4 className="font-medium text-slate-800 text-xs truncate">{character.name}</h4>
+                                <h4 className="font-medium text-slate-800 text-xs truncate">{getDisplayName(character, index)}</h4>
                               </div>
-                              <p className="text-xs text-slate-500 truncate">{character.role || '角色'}</p>
+                              <p className="text-xs text-slate-500 truncate">{getDisplayRole(character)}</p>
                             </div>
                           </DialogTrigger>
                           <DialogContent className="max-w-lg shadow-2xl">
                             <DialogHeader className="sr-only">
-                              <DialogTitle>{character.name} - 角色详情</DialogTitle>
+                              <DialogTitle>{getDisplayName(character, index)} - 角色详情</DialogTitle>
                             </DialogHeader>
                             <div className="p-8">
                               <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
@@ -1662,8 +1716,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                                   <User className="w-10 h-10 text-indigo-500" />
                                 </div>
                                 <div>
-                                  <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
-                                  <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
+                                  <h1 className="text-3xl font-bold text-gray-900">{getDisplayName(character, index)}</h1>
+                                  <p className="text-indigo-500 font-semibold text-md">{getDisplayRole(character)}</p>
                                 </div>
                               </header>
                               <div className="space-y-6">
@@ -1847,23 +1901,23 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                 </CardHeader>
                 <CardContent className="pb-3">
                   <div className="space-y-2">
-                    {story.characters.filter(character => character.name && character.name.trim() !== '').slice(0, 3).map((character, index) => (
+                    {story.characters.slice(0, 3).map((character, index) => (
                       <Dialog key={index}>
                         <DialogTrigger asChild>
                           <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-2">
                                 <User className="w-3 h-3 text-slate-500 group-hover:text-slate-600" />
-                                <h4 className="font-medium text-slate-800 group-hover:text-slate-900 text-sm">{character.name}</h4>
+                                <h4 className="font-medium text-slate-800 group-hover:text-slate-900 text-sm">{getDisplayName(character, index)}</h4>
                               </div>
-                              <span className="text-xs text-slate-600">{character.role || '未知角色'}</span>
+                              <span className="text-xs text-slate-600">{getDisplayRole(character)}</span>
                             </div>
-                            <p className="text-xs text-slate-500 line-clamp-1">{character.traits || '神秘的角色'}</p>
+                            <p className="text-xs text-slate-500 line-clamp-1">{character.traits || '这位角色的性格正在形成中...'}</p>
                           </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-lg shadow-2xl">
                           <DialogHeader className="sr-only">
-                            <DialogTitle>{character.name} - 角色详情</DialogTitle>
+                            <DialogTitle>{getDisplayName(character, index)} - 角色详情</DialogTitle>
                           </DialogHeader>
 
                           <div className="p-8">
@@ -1872,8 +1926,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
                                 <User className="w-10 h-10 text-indigo-500" />
                               </div>
                               <div>
-                                <h1 className="text-3xl font-bold text-gray-900">{character.name}</h1>
-                                <p className="text-indigo-500 font-semibold text-md">{character.role || '未知角色'}</p>
+                                <h1 className="text-3xl font-bold text-gray-900">{getDisplayName(character, index)}</h1>
+                                <p className="text-indigo-500 font-semibold text-md">{getDisplayRole(character)}</p>
                               </div>
                             </header>
 

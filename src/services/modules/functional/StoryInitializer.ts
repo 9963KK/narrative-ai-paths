@@ -303,7 +303,7 @@ export class StoryInitializer implements IStoryInitializer {
   "scene": "详细的开场场景描述（600-900字，文学品质）",
   "characters": [
     {
-      "name": "角色名字",
+      "name": "角色正式姓名（禁止使用'未知角色'、'角色名字'、空字符串等占位符，必须为至少2个汉字或包含字母的独特名字）",
       "role": "角色身份",
       "traits": "性格特征",
       "appearance": "外貌描述",
@@ -318,7 +318,11 @@ export class StoryInitializer implements IStoryInitializer {
   "setting_details": "详细设定描述"
 }
 
-请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
+请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。
+特别要求：
+- 所有角色都必须提供【真实姓名】，不能留空或使用诸如“未知角色”“角色名字”等占位词；
+- 每位角色的名字需保持唯一性，至少两个汉字或包含字母的混合形式；
+- 若文档未给出名称，请根据设定创造符合背景的名字。`;
     } else {
       // 简单配置的提示词
       return `请基于以下信息创建一个引人入胜的故事开头：
@@ -389,9 +393,10 @@ export class StoryInitializer implements IStoryInitializer {
 2. 每个角色都有独特的个性和背景
 3. 角色之间有互补或冲突的关系
 4. 适合故事类型和设定
+5. 每个角色必须拥有正式的专属姓名（至少2个汉字或包含字母），不得为空或使用“未知”“角色X”等占位符
 
 请以JSON数组格式返回，每个角色包含：
-- name: 角色名字
+- name: 角色名字（必须是正式姓名，禁止使用占位词）
 - role: 角色身份/职业
 - traits: 性格特征
 - appearance: 外貌描述

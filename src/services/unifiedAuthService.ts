@@ -99,15 +99,15 @@ export class UnifiedAuthService {
         });
 
         if (user) {
-          console.log('✅ 用户已注册到Supabase');
+          authLog('✅ 用户已注册到Supabase');
           
           // 自动为新用户赠送100积分
           try {
             const creditInitialized = await creditService.initializeUserCredits(user.id, 100);
             if (creditInitialized) {
-              console.log('🎁 新用户积分初始化成功：100积分');
+              authLog('🎁 新用户积分初始化成功：100积分');
             } else {
-              console.log('ℹ️ 用户积分已存在，跳过初始化');
+              authLog('ℹ️ 用户积分已存在，跳过初始化');
             }
           } catch (error) {
             console.error('⚠️ 积分初始化失败:', error);
@@ -147,15 +147,15 @@ export class UnifiedAuthService {
 
       users.push(newUser);
       this.saveLocalUsers(users);
-      console.log('💾 用户已注册到本地存储（备选方案）');
+      authLog('💾 用户已注册到本地存储（备选方案）');
       
       // 自动为新用户赠送100积分
       try {
         const creditInitialized = await creditService.initializeUserCredits(newUser.id, 100);
         if (creditInitialized) {
-          console.log('🎁 新用户积分初始化成功：100积分');
+          authLog('🎁 新用户积分初始化成功：100积分');
         } else {
-          console.log('ℹ️ 用户积分已存在，跳过初始化');
+          authLog('ℹ️ 用户积分已存在，跳过初始化');
         }
       } catch (error) {
         console.error('⚠️ 积分初始化失败:', error);
@@ -191,7 +191,7 @@ export class UnifiedAuthService {
             
             // 登录成功后立即获取并存储API密钥
             try {
-              console.log('🔑 登录成功，正在获取用户API密钥...');
+            authLog('🔑 登录成功，正在获取用户API密钥...');
               await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
             } catch (error) {
               console.warn('⚠️ 获取API密钥失败，但不影响登录:', error);
@@ -234,7 +234,7 @@ export class UnifiedAuthService {
       
       // 登录成功后立即获取并存储API密钥
       try {
-        console.log('🔑 本地存储登录成功，正在获取用户API密钥...');
+        authLog('🔑 本地存储登录成功，正在获取用户API密钥...');
         await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
       } catch (error) {
         console.warn('⚠️ 获取API密钥失败，但不影响登录:', error);
@@ -280,7 +280,7 @@ export class UnifiedAuthService {
         unifiedAIService.clearSessionCache();
       });
       
-      console.log('👋 用户登出，所有缓存已清理');
+      authLog('👋 用户登出，所有缓存已清理');
     }
   }
 
@@ -334,7 +334,7 @@ export class UnifiedAuthService {
       try {
         const success = await supabaseService.createDefaultAdmin();
         if (success) {
-          console.log('🔑 默认管理员账户已创建（Supabase）');
+          authLog('🔑 默认管理员账户已创建（Supabase）');
           return true;
         }
         return false;
@@ -576,7 +576,7 @@ export class UnifiedAuthService {
 
         // OAuth登录成功后立即获取并存储API密钥
         try {
-          console.log('🔑 OAuth登录成功，正在获取用户API密钥...');
+          authLog('🔑 OAuth登录成功，正在获取用户API密钥...');
           await tempApiKeyStore.fetchAndStoreUserApiKeys(user.id);
         } catch (error) {
           console.warn('⚠️ OAuth登录后获取API密钥失败，但不影响登录:', error);

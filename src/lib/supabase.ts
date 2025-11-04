@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getNormalizedOrigin } from '@/utils/urlUtils';
+import { authLog } from '@/utils/logger';
 
 // Supabase配置
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rvdjkdkkavjcnqaaglkn.supabase.co';
@@ -320,7 +321,7 @@ export class SupabaseService {
 
       const result = await this.createUser(adminUser);
       if (result) {
-        console.log('🔑 默认管理员账户已创建（Supabase存储）');
+        authLog('🔑 默认管理员账户已创建（Supabase存储）');
         return true;
       }
 
@@ -335,10 +336,10 @@ export class SupabaseService {
   async signInWithOAuth(provider: OAuthProvider): Promise<{ data: any; error: any }> {
     try {
       const redirectTo = getCallbackUrl();
-      console.log(`🔄 启动 ${provider} OAuth登录`);
-      console.log(`🌐 当前域名: ${typeof window !== 'undefined' ? window.location.origin : 'SSR环境'}`);
-      console.log(`🎯 设置的回调URL: ${redirectTo}`);
-      console.log(`⚠️  请确保在Supabase Dashboard中配置了此URL: ${redirectTo}`);
+      authLog(`🔄 启动 ${provider} OAuth登录`);
+      authLog(`🌐 当前域名: ${typeof window !== 'undefined' ? window.location.origin : 'SSR环境'}`);
+      authLog(`🎯 设置的回调URL: ${redirectTo}`);
+      authLog(`⚠️  请确保在Supabase Dashboard中配置了此URL: ${redirectTo}`);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -356,7 +357,7 @@ export class SupabaseService {
         return { data: null, error };
       }
 
-      console.log(`✅ ${provider} OAuth登录已启动`);
+      authLog(`✅ ${provider} OAuth登录已启动`);
       return { data, error: null };
     } catch (error) {
       console.error(`${provider} OAuth登录出错:`, error);
@@ -396,7 +397,7 @@ export class SupabaseService {
         return { error };
       }
 
-      console.log('✅ 用户已登出');
+      authLog('✅ 用户已登出');
       return { error: null };
     } catch (error) {
       console.error('登出出错:', error);
@@ -415,7 +416,7 @@ export class SupabaseService {
       let existingUser = await this.findUserByEmailOrUsername(authUser.email);
       
       if (existingUser) {
-        console.log('✅ 找到现有用户，使用OAuth登录');
+        authLog('✅ 找到现有用户，使用OAuth登录');
         return existingUser;
       }
 
@@ -430,7 +431,7 @@ export class SupabaseService {
       const createdUser = await this.createUser(newUser);
       
       if (createdUser) {
-        console.log('✅ OAuth用户已创建');
+        authLog('✅ OAuth用户已创建');
         return createdUser;
       }
 

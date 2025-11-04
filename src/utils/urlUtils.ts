@@ -1,3 +1,5 @@
+import { authLog } from './logger';
+
 /**
  * URL处理工具函数
  * 解决OAuth回调中的hash参数持续问题
@@ -27,8 +29,8 @@ export function cleanOAuthHashParams(): void {
   
   // 检查是否包含OAuth相关参数
   if (hasOAuthHashParams()) {
-    console.log('🧹 检测到OAuth hash参数，正在清理...');
-    console.log('🔍 当前hash:', currentHash);
+    authLog('🧹 检测到OAuth hash参数，正在清理...');
+    authLog('🔍 当前hash:', currentHash);
     
     // 清理hash参数，保留pathname和search参数
     const cleanUrl = window.location.pathname + window.location.search;
@@ -36,8 +38,8 @@ export function cleanOAuthHashParams(): void {
     // 使用replaceState清理URL，不触发页面重载
     window.history.replaceState({}, document.title, cleanUrl);
     
-    console.log('✅ hash参数已清理');
-    console.log('🔗 清理后URL:', window.location.href);
+    authLog('✅ hash参数已清理');
+    authLog('🔗 清理后URL:', window.location.href);
   }
 }
 
@@ -127,7 +129,7 @@ export function setupHashCleaner(): () => void {
   
   const handleHashChange = () => {
     if (hasOAuthHashParams()) {
-      console.log('🔄 Hash变化检测到OAuth参数，自动清理');
+      authLog('🔄 Hash变化检测到OAuth参数，自动清理');
       cleanOAuthHashParams();
     }
   };
@@ -150,13 +152,13 @@ export function setupHashCleaner(): () => void {
 export function cleanOAuthCallbackUrl(): void {
   if (typeof window === 'undefined') return;
   
-  console.log('🚀 开始OAuth回调URL清理');
-  console.log('📍 当前完整URL:', window.location.href);
+authLog('🚀 开始OAuth回调URL清理');
+authLog('📍 当前完整URL:', window.location.href);
   
   // 提取OAuth参数用于调试
   const oauthParams = extractOAuthParams();
   if (Object.keys(oauthParams).length > 0) {
-    console.log('🔑 检测到OAuth参数:', oauthParams);
+    authLog('🔑 检测到OAuth参数:', oauthParams);
   }
   
   // 构建干净的URL
@@ -165,5 +167,5 @@ export function cleanOAuthCallbackUrl(): void {
   // 使用replaceState清理
   window.history.replaceState({}, document.title, cleanUrl);
   
-  console.log('✨ URL清理完成:', cleanUrl);
+authLog('✨ URL清理完成:', cleanUrl);
 }

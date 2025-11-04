@@ -1,6 +1,6 @@
 /**
  * 日志工具函数 - 区分开发/生产环境
- * 开发环境显示所有日志，生产环境只显示错误和警告
+ * 默认仅输出警告和错误，如需查看更多日志可通过setLogLevel调整
  */
 
 // 日志级别配置
@@ -21,8 +21,8 @@ const getCurrentLogLevel = (): number => {
     }
   }
 
-  // 默认级别：开发环境显示所有，生产环境只显示错误和警告
-  return import.meta.env.DEV ? LOG_LEVELS.DEBUG : LOG_LEVELS.WARN;
+  // 默认级别：无论环境，仅显示警告及以上
+  return LOG_LEVELS.WARN;
 };
 
 const currentLogLevel = getCurrentLogLevel();

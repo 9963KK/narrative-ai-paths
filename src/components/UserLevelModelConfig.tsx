@@ -16,6 +16,7 @@ import { SimpleModelSelector } from '@/components/SimpleModelSelector';
 import { SimpleModelSettings, ModelSettings, DEFAULT_SETTINGS } from '@/components/SimpleModelSettings';
 import { userLevelService, type ModelByLevel, type UserLevel } from '@/services/userLevelService';
 import { ModelAccessValidator } from '@/services/modelAccessValidator';
+import { devLog } from '@/utils/logger';
 import { userModelPersistence } from '@/services/userModelPersistence';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -76,9 +77,9 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
             const selectedModel = availableModels.find(model => model.model_id === userSelection.modelId);
             if (selectedModel) {
               setSelectedModel(selectedModel);
-              console.log('✅ 使用localStorage中保存的用户模型选择:', selectedModel.model);
+              devLog('✅ 使用localStorage中保存的用户模型选择:', selectedModel.model);
             } else {
-              console.log('⚠️ 用户之前选择的模型不再可用');
+              devLog('⚠️ 用户之前选择的模型不再可用');
             }
           }
         }
@@ -131,13 +132,13 @@ export const UserLevelModelConfig: React.FC<UserLevelModelConfigProps> = ({
       const updateSuccess = await tempApiKeyStore.updateSelectedModelConfig(model.model_id);
 
       if (updateSuccess) {
-        console.log('✅ 模型配置已同步更新到临时存储和localStorage');
+        devLog('✅ 模型配置已同步更新到临时存储和localStorage');
 
         // 强制刷新unifiedAIService配置，确保立即生效
         try {
           const { unifiedAIService } = await import('@/services/unifiedAIService');
           await unifiedAIService.refreshConfig();
-          console.log('🔄 AI服务配置已强制刷新');
+          devLog('🔄 AI服务配置已强制刷新');
         } catch (refreshError) {
           console.warn('⚠️ 刷新AI服务配置失败:', refreshError);
         }

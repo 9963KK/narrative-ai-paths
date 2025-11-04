@@ -207,7 +207,6 @@ class ConfigurationManager {
           const maxAge = 24 * 60 * 60 * 1000; // 24小时
 
           if (now - stored <= maxAge && tempConfig.apiKey) {
-            console.log('🎯 使用用户切换的模型配置:', tempConfig.provider, tempConfig.model);
             return {
               success: true,
               config: {
@@ -293,9 +292,7 @@ class ConfigurationManager {
               model.provider === tempConfig.provider &&
               model.model === tempConfig.model
             );
-            if (selectedModel) {
-              console.log('🎯 使用用户在sessionStorage中选择的模型:', selectedModel.provider, selectedModel.model);
-            }
+            // selectedModel will be used below if found
           }
         }
       } catch (e) {
@@ -306,7 +303,6 @@ class ConfigurationManager {
       if (!selectedModel) {
         const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
         selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
-        console.log('📋 使用默认模型:', selectedModel?.provider, selectedModel?.model);
       }
       
       if (!selectedModel) {
@@ -449,8 +445,6 @@ class ConfigurationManager {
         };
       }
 
-      console.log(`📡 使用配置: ${baseUrl} (模型: ${selectedModel.provider}/${selectedModel.model})`);
-
       // 构建ModelConfig - 直接使用数据库配置
       const modelConfig: ModelConfig = {
         provider: selectedModel.provider,
@@ -586,7 +580,6 @@ class ConfigurationManager {
    */
   onUserLogout(): void {
     this.clearAllCaches();
-    console.log('👋 用户登出，配置缓存已清理');
   }
 
   /**

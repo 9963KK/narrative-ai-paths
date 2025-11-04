@@ -75,7 +75,7 @@ export const hasSavedConfig = (): boolean => {
 export const clearSavedConfig = (): void => {
   try {
     userStorage.removeItem(CONFIG_STORAGE_KEY);
-    console.log('✅ 已清除保存的配置');
+    devLog('✅ 已清除保存的配置');
   } catch (error) {
     console.error('❌ 清除配置失败:', error);
   }
@@ -126,7 +126,7 @@ export const saveProviderConfig = (provider: string, config: Partial<ModelConfig
     };
     
     userStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
-    console.log(`✅ ${provider} 配置已保存`);
+    devLog(`✅ ${provider} 配置已保存`);
   } catch (error) {
     console.error(`❌ 保存 ${provider} 配置失败:`, error);
   }
@@ -180,7 +180,7 @@ export const clearProviderConfig = (provider: string): void => {
     const multiConfigs = loadMultiProviderConfigs();
     delete multiConfigs[provider];
     userStorage.setItem(MULTI_CONFIG_STORAGE_KEY, JSON.stringify(multiConfigs));
-    console.log(`✅ ${provider} 配置已清除`);
+    devLog(`✅ ${provider} 配置已清除`);
   } catch (error) {
     console.error(`❌ 清除 ${provider} 配置失败:`, error);
   }

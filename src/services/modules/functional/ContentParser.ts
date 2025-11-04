@@ -48,6 +48,9 @@ export class ContentParser implements IContentParser {
         };
       }
 
+      const normalizedMood = this.normalizeMood(parsed.mood);
+      const normalizedTension = this.normalizeTensionLevel(parsed.tension_level);
+
       return {
         success: true,
         content: {
@@ -56,8 +59,8 @@ export class ContentParser implements IContentParser {
           characters: this.normalizeCharacters(parsed.characters || []),
           new_characters: this.normalizeCharacters(parsed.new_characters || []),
           chapter_title: parsed.chapter_title || '序章',
-          mood: this.truncateMood(parsed.mood || '神秘'),
-          tension_level: parsed.tension_level || 3,
+          mood: this.truncateMood(normalizedMood),
+          tension_level: normalizedTension,
           story_length_target: parsed.story_length_target,
           preferred_ending_type: parsed.preferred_ending_type,
           setting_details: parsed.setting_details
@@ -210,11 +213,12 @@ export class ContentParser implements IContentParser {
       
       // 验证必要字段
       if (parsed && typeof parsed === 'object') {
+        const atmosphere = this.normalizeAtmosphere(parsed.atmosphere);
         const result: SummaryData = {
           plot_developments: parsed.plot_developments || [],
           character_changes: parsed.character_changes || [],
           key_decisions: parsed.key_decisions || [],
-          atmosphere: parsed.atmosphere || { mood: "平静", tension_level: 3 },
+          atmosphere,
           important_clues: parsed.important_clues || [],
           timestamp: parsed.timestamp || new Date().toISOString(),
           summary_version: parsed.summary_version || 1
@@ -231,11 +235,12 @@ export class ContentParser implements IContentParser {
         try {
           const parsed = JSON.parse(fixedJson);
           devLog('✅ 修复后解析成功');
+          const atmosphere = this.normalizeAtmosphere(parsed.atmosphere);
           return {
             plot_developments: parsed.plot_developments || [],
             character_changes: parsed.character_changes || [],
             key_decisions: parsed.key_decisions || [],
-            atmosphere: parsed.atmosphere || { mood: "平静", tension_level: 3 },
+            atmosphere,
             important_clues: parsed.important_clues || [],
             timestamp: parsed.timestamp || new Date().toISOString(),
             summary_version: parsed.summary_version || 1
@@ -734,6 +739,127 @@ export class ContentParser implements IContentParser {
   }
 
   /**
+   * 标准化氛围文本
+   */
+  private normalizeMood(rawMood: unknown): string {
+    if (typeof rawMood === 'string') {
+      const trimmed = rawMood.trim();
+      if (trimmed.length > 0) {
+        const lower = trimmed.toLowerCase();
+        const moodMap: Record<string, string> = {
+          mysterious: '神秘',
+          mystery: '神秘',
+          suspense: '悬疑',
+          tense: '紧张',
+          tension: '紧张',
+          intense: '激烈',
+          dramatic: '激烈',
+          calm: '平静',
+          peaceful: '平静',
+          serene: '平静',
+          hopeful: '希望',
+          hopefuls: '希望',
+          romantic: '浪漫',
+          joyful: '欣喜',
+          happy: '欣喜',
+          melancholic: '忧郁',
+          sad: '忧郁',
+          dark: '压抑',
+          oppressive: '压抑'
+        };
+
+        if (moodMap[lower]) {
+          return moodMap[lower];
+        }
+
+        if (trimmed.includes('紧张')) return '紧张';
+        if (trimmed.includes('激烈')) return '激烈';
+        if (trimmed.includes('悬疑')) return '悬疑';
+        if (trimmed.includes('平静') || trimmed.includes('宁静')) return '平静';
+        if (trimmed.includes('浪漫')) return '浪漫';
+        if (trimmed.includes('希望')) return '希望';
+        if (trimmed.includes('欢乐') || trimmed.includes('喜悦')) return '欣喜';
+        if (trimmed.includes('阴暗') || trimmed.includes('压抑')) return '压抑';
+
+        return trimmed;
+      }
+    }
+
+    if (typeof rawMood === 'number') {
+      if (rawMood >= 7) return '紧张';
+      if (rawMood >= 5) return '激烈';
+      if (rawMood >= 3) return '神秘';
+      return '平静';
+    }
+
+    return '神秘';
+  }
+
+  /**
+   * 标准化紧张度
+   */
+  private normalizeTensionLevel(rawLevel: unknown): number {
+    let value: number | null = null;
+
+    if (typeof rawLevel === 'number' && Number.isFinite(rawLevel)) {
+      value = rawLevel;
+    } else if (typeof rawLevel === 'string') {
+      const trimmed = rawLevel.trim();
+      if (trimmed.length > 0) {
+        // 优先解析数字
+        const match = trimmed.match(/(-?\d+(?:\.\d+)?)/);
+        if (match) {
+          value = parseFloat(match[1]);
+        } else {
+          const lower = trimmed.toLowerCase();
+          const keywordMap: Record<string, number> = {
+            low: 3,
+            medium: 5,
+            mid: 5,
+            moderate: 5,
+            high: 8,
+            veryhigh: 9,
+            extreme: 10,
+            intense: 8,
+            calm: 2,
+            relaxed: 2
+          };
+
+          const normalizedKey = lower.replace(/\s+/g, '');
+          if (keywordMap[normalizedKey] !== undefined) {
+            value = keywordMap[normalizedKey];
+          } else {
+            if (trimmed.includes('低')) value = 3;
+            else if (trimmed.includes('中')) value = 5;
+            else if (trimmed.includes('高')) value = 8;
+          }
+        }
+      }
+    }
+
+    if (value === null) {
+      value = 5;
+    }
+
+    const clamped = Math.max(0, Math.min(10, Math.round(value)));
+    return clamped;
+  }
+
+  /**
+   * 标准化摘要氛围对象
+   */
+  private normalizeAtmosphere(rawAtmosphere: unknown): { mood: string; tension_level: number } {
+    if (rawAtmosphere && typeof rawAtmosphere === 'object') {
+      const atmosphereRecord = rawAtmosphere as Record<string, unknown>;
+      const mood = this.normalizeMood(atmosphereRecord.mood);
+      const tension = this.normalizeTensionLevel(atmosphereRecord.tension_level);
+      return { mood: this.truncateMood(mood), tension_level: tension };
+    }
+
+    return { mood: '平静', tension_level: 3 };
+  }
+
+  /**
    * 限制氛围文本长度
    */
   private truncateMood(mood: string, maxLength: number = 12): string {
@@ -799,13 +925,40 @@ export class ContentParser implements IContentParser {
    * 标准化角色数据，确保所有字段都有值
    */
   normalizeCharacters(characters: any[]): Character[] {
-    return characters.map(character => ({
-      name: character.name || '未知角色',
-      role: character.role || '神秘角色',
-      traits: character.traits || '神秘的角色',
-      appearance: character.appearance || '待描述',
-      backstory: character.backstory || '背景故事待补充'
-    }));
+    return characters.map((character, index) => {
+      const rawName = typeof character?.name === 'string' ? character.name.trim() : '';
+      const rawRole = typeof character?.role === 'string' ? character.role.trim() : '';
+      const rawTraits = typeof character?.traits === 'string' ? character.traits.trim() : '';
+
+      const generateFallbackName = (): string => {
+        if (rawRole && rawRole !== '角色身份' && rawRole !== '未知角色') {
+          return rawRole;
+        }
+        if (rawTraits) {
+          const firstTrait = rawTraits.split(/[，,、]/).map(t => t.trim()).find(Boolean);
+          if (firstTrait && firstTrait.length >= 2) {
+            return firstTrait;
+          }
+        }
+        return `角色${index + 1}`;
+      };
+
+      const cleanedName = rawName && rawName !== '未知角色' && rawName !== '角色名字'
+        ? rawName
+        : generateFallbackName();
+
+      return {
+        name: cleanedName,
+        role: rawRole || '故事角色',
+        traits: rawTraits || '性格待补充',
+        appearance: typeof character?.appearance === 'string' && character.appearance.trim()
+          ? character.appearance.trim()
+          : '外貌描述待补充',
+        backstory: typeof character?.backstory === 'string' && character.backstory.trim()
+          ? character.backstory.trim()
+          : '背景故事待补充'
+      } as Character;
+    });
   }
 }
 
