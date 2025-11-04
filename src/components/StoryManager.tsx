@@ -176,13 +176,39 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
   // 标准化角色数据，确保所有字段都有值
   const normalizeCharacters = (characters: any[]): any[] => {
-    return characters.map(character => ({
-      name: character.name || '未知角色',
-      role: character.role || '神秘角色',
-      traits: character.traits || '神秘的角色',
-      appearance: character.appearance || '待描述',
-      backstory: character.backstory || '背景故事待补充'
-    }));
+    return characters.map((character, index) => {
+      const rawName = typeof character?.name === 'string' ? character.name.trim() : '';
+      const rawRole = typeof character?.role === 'string' ? character.role.trim() : '';
+      const rawTraits = typeof character?.traits === 'string' ? character.traits.trim() : '';
+
+      const deriveName = (): string => {
+        if (rawName && rawName !== '未知角色' && rawName !== '角色名字') {
+          return rawName;
+        }
+        if (rawRole && rawRole !== '未知角色' && rawRole !== '角色身份') {
+          return rawRole;
+        }
+        if (rawTraits) {
+          const firstTrait = rawTraits.split(/[，,、]/).map((t: string) => t.trim()).find(Boolean);
+          if (firstTrait && firstTrait.length >= 2) {
+            return firstTrait;
+          }
+        }
+        return `角色${index + 1}`;
+      };
+
+      return {
+        name: deriveName(),
+        role: rawRole || '故事角色',
+        traits: rawTraits || '性格待补充',
+        appearance: typeof character?.appearance === 'string' && character.appearance.trim()
+          ? character.appearance.trim()
+          : '外貌描述待补充',
+        backstory: typeof character?.backstory === 'string' && character.backstory.trim()
+          ? character.backstory.trim()
+          : '背景故事待补充'
+      };
+    });
   };
 
   // 组件加载时尝试加载用户模型配置
