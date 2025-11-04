@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { creditService, type UserCredit } from '@/services/creditService';
-import { unifiedAuthService } from '@/services/unifiedAuthService';
+import { useAuth } from './AuthContext';
+import type { AuthUser } from '@/services/unifiedAuthService';
 
 interface CreditContextType {
   userCredits: UserCredit | null;
@@ -20,24 +21,25 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
   const [userCredits, setUserCredits] = useState<UserCredit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const loadUserCredits = async () => {
+  const loadUserCredits = useCallback(async (targetUser: AuthUser | null) => {
+    if (!targetUser) {
+      setUserCredits(null);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      const currentUser = unifiedAuthService.getCurrentUser();
-      if (!currentUser) {
-        setError('用户未登录');
-        setUserCredits(null);
-        return;
-      }
 
       // 尝试初始化用户积分（如果不存在）
-      await creditService.initializeUserCredits(currentUser.id);
+      await creditService.initializeUserCredits(targetUser.id);
       
       // 获取用户积分
-      const credits = await creditService.getUserCredits(currentUser.id);
+      const credits = await creditService.getUserCredits(targetUser.id);
       setUserCredits(credits);
       
     } catch (err) {
@@ -47,11 +49,11 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const refreshCredits = async () => {
-    await loadUserCredits();
-  };
+  const refreshCredits = useCallback(async () => {
+    await loadUserCredits(user ?? null);
+  }, [user, loadUserCredits]);
 
   const updateCredits = (newCredits: UserCredit) => {
     setUserCredits(newCredits);
@@ -59,19 +61,12 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
 
   // 监听用户变化
   useEffect(() => {
-    const currentUser = unifiedAuthService.getCurrentUser();
-    if (currentUser) {
-      loadUserCredits();
-    } else {
-      setUserCredits(null);
-      setIsLoading(false);
-    }
-  }, []);
+    loadUserCredits(user ?? null);
+  }, [user, loadUserCredits]);
 
   // 监听积分变化事件
   useEffect(() => {
-    const handleCreditUpdate = (event: CustomEvent) => {
-      console.log('🔄 收到积分更新事件:', event.detail);
+    const handleCreditUpdate = () => {
       refreshCredits();
     };
 
@@ -81,7 +76,7 @@ export const CreditProvider: React.FC<CreditProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('creditUpdated', handleCreditUpdate as EventListener);
     };
-  }, []);
+  }, [refreshCredits]);
 
   const value: CreditContextType = {
     userCredits,

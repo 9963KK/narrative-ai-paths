@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cleanOAuthCallbackUrl, extractOAuthParams, hasOAuthHashParams } from '@/utils/urlUtils';
+import { authLog } from '@/utils/logger';
 
 export const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ export const OAuthCallback: React.FC = () => {
 
     // 检查是否已有用户登录（可能是通过AuthContext处理的）
     if (user) {
-      console.log('👤 用户已登录，直接跳转...');
+      authLog('👤 用户已登录，直接跳转...');
       setTimeout(() => {
         if (user.role === 'admin') {
           navigate('/admin', { replace: true });

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { unifiedAuthService } from './unifiedAuthService';
+import { devLog } from '@/utils/logger';
 
 // 积分系统接口定义
 export interface UserCredit {
@@ -310,7 +311,7 @@ export class CreditService {
       }
     });
     window.dispatchEvent(creditUpdateEvent);
-    console.log(`💰 积分${operation}操作完成，已触发UI更新事件`);
+    devLog(`💰 积分${operation}操作完成，已触发UI更新事件`);
   }
 
   // 管理员添加积分

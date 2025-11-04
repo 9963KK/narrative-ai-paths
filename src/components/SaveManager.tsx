@@ -11,6 +11,7 @@ import { Save, FolderOpen, Trash2, Edit3, Download, Upload, Clock, Calendar, Boo
 import { AnimatedCard } from './AnimatedCard';
 import StageProgressIndicator from './ui/StageProgressIndicator';
 import { contextManager, SavedStoryContext, getSavedContexts } from '../services/contextManager';
+import { devLog } from '@/utils/logger';
 
 interface SaveManagerProps {
   onLoadStory?: (contextId: string) => void;
@@ -54,7 +55,7 @@ const SaveManager: React.FC<SaveManagerProps> = ({
   };
 
   const handleLoadContext = (contextId: string) => {
-    console.log('📖 尝试加载存档:', contextId);
+    devLog('📖 尝试加载存档:', contextId);
     if (onLoadStory) {
       onLoadStory(contextId);
     }
@@ -62,10 +63,10 @@ const SaveManager: React.FC<SaveManagerProps> = ({
 
   const handleDeleteContext = (contextId: string) => {
     try {
-      console.log('🗑️ 开始删除存档:', contextId);
+      devLog('🗑️ 开始删除存档:', contextId);
       const success = contextManager.deleteStoryContext(contextId);
       if (success) {
-        console.log('✅ 存档删除成功，重新加载列表');
+        devLog('✅ 存档删除成功，重新加载列表');
         loadSavedContexts(); // 重新加载列表
       } else {
         console.warn('⚠️ 删除操作未成功');

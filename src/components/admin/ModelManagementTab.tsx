@@ -33,6 +33,7 @@ import { userModelConfigService, type SystemModelPool } from '@/services/userMod
 import { cloudAuthService } from '@/services/cloudAuthService';
 import { modelDiscoveryService, type DiscoveredModel } from '@/services/modelDiscoveryService';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/utils/logger';
 
 
 
@@ -140,7 +141,7 @@ export const ModelManagementTab: React.FC = () => {
       );
       
       setDiscoveredModels(models);
-      console.log(`🎉 发现 ${models.length} 个模型:`, models);
+      devLog(`🎉 发现 ${models.length} 个模型:`, models);
       
       if (models.length === 0) {
         alert('未发现任何模型，请检查BaseURL和API密钥是否正确');
@@ -195,11 +196,11 @@ export const ModelManagementTab: React.FC = () => {
           isActive: true
         };
 
-        console.log(`📝 模型转换: ID="${model.id}" -> 存储模型名="${model.name}" (provider: ${model.provider})`);
+        devLog(`📝 模型转换: ID="${model.id}" -> 存储模型名="${model.name}" (provider: ${model.provider})`);
         return modelData;
       });
 
-      console.log('准备添加模型:', systemModels);
+      devLog('准备添加模型:', systemModels);
 
       const result = await userModelConfigService.addSystemModels(systemModels);
       

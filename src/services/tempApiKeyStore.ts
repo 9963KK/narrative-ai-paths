@@ -106,12 +106,12 @@ export class TempApiKeyStore {
    */
   async fetchAndStoreUserApiKeys(userId: string): Promise<boolean> {
     try {
-      console.log('🔑 正在获取用户API密钥...');
+      devLog('🔑 正在获取用户API密钥...');
 
       // 步骤1: 优先检查localStorage中是否有用户之前选择的模型配置
       const savedConfig = userModelPersistence.getUserModelConfig(userId);
       if (savedConfig && savedConfig.apiKey) {
-        console.log('✅ 使用localStorage中保存的用户模型配置:', {
+        devLog('✅ 使用localStorage中保存的用户模型配置:', {
           provider: savedConfig.provider,
           model: savedConfig.model,
           performance_level: savedConfig.performance_level
@@ -138,9 +138,9 @@ export class TempApiKeyStore {
         // 尝试找到用户之前选择的模型
         selectedModel = availableModels.find(model => model.model_id === userSelection.modelId);
         if (selectedModel) {
-          console.log('🎯 使用用户之前选择的模型:', selectedModel.model);
+          devLog('🎯 使用用户之前选择的模型:', selectedModel.model);
         } else {
-          console.log('⚠️ 用户之前选择的模型不再可用，使用默认模型');
+          devWarn('⚠️ 用户之前选择的模型不再可用，使用默认模型');
         }
       }
 
@@ -148,7 +148,7 @@ export class TempApiKeyStore {
       if (!selectedModel) {
         const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
         selectedModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
-        console.log('📋 使用默认模型:', selectedModel.model);
+        devLog('📋 使用默认模型:', selectedModel.model);
       }
 
       if (!selectedModel.has_api_key) {
@@ -188,7 +188,7 @@ export class TempApiKeyStore {
       // 同时保存到localStorage持久化存储
       userModelPersistence.saveUserModelConfig(userId, modelConfig);
 
-      console.log('✅ 用户API密钥获取并存储成功');
+      devLog('✅ 用户API密钥获取并存储成功');
       return true;
     } catch (error) {
       console.error('❌ 获取用户API密钥失败:', error);
@@ -203,7 +203,7 @@ export class TempApiKeyStore {
    */
   async getRealBaseUrl(modelId: string): Promise<string | null> {
     try {
-      console.log(`🌐 开始获取模型 ${modelId} 的baseUrl...`);
+      devLog(`🌐 开始获取模型 ${modelId} 的baseUrl...`);
 
       // 从系统模型池查询baseUrl配置
       const { supabase } = await import('@/lib/supabase');
@@ -219,14 +219,14 @@ export class TempApiKeyStore {
       }
 
       if (systemModel && systemModel.api_config) {
-        console.log(`✅ 从系统模型池获取到API配置`);
+        devLog('✅ 从系统模型池获取到API配置');
 
         const apiConfig = systemModel.api_config;
 
         // 从api_config中提取baseUrl
         if (typeof apiConfig === 'object' && (apiConfig.base_url || apiConfig.baseUrl)) {
           const baseUrl = apiConfig.base_url || apiConfig.baseUrl;
-          console.log(`✅ 从系统模型池对象配置中获取到baseUrl: ${baseUrl}`);
+          devLog(`✅ 从系统模型池对象配置中获取到baseUrl: ${baseUrl}`);
           return baseUrl;
         }
 
@@ -236,7 +236,7 @@ export class TempApiKeyStore {
             const config = JSON.parse(apiConfig);
             if (config.base_url || config.baseUrl) {
               const baseUrl = config.base_url || config.baseUrl;
-              console.log(`✅ 从系统模型池JSON配置中获取到baseUrl: ${baseUrl}`);
+              devLog(`✅ 从系统模型池JSON配置中获取到baseUrl: ${baseUrl}`);
               return baseUrl;
             }
           } catch (parseError) {
@@ -276,7 +276,7 @@ export class TempApiKeyStore {
    */
   async updateSelectedModelConfig(modelId: string): Promise<boolean> {
     try {
-      console.log('🔄 更新用户选择的模型配置:', modelId);
+      devLog('🔄 更新用户选择的模型配置:', modelId);
 
       // 获取用户可用的模型列表
       const { userLevelService } = await import('./userLevelService');
@@ -335,7 +335,7 @@ export class TempApiKeyStore {
       // 清除相关缓存，确保新配置生效
       await this.clearRelatedCaches();
 
-      console.log('✅ 用户模型配置更新成功并持久化到localStorage:', {
+      devLog('✅ 用户模型配置更新成功并持久化到localStorage:', {
         provider: selectedModel.provider,
         model: selectedModel.model,
         performance_level: selectedModel.performance_level

@@ -282,7 +282,7 @@ class UnifiedAIService {
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
-        console.log(`🤖 AI请求 (${attempt}/${this.config.retryAttempts}) - ${modelConfig.provider}/${modelConfig.model}`);
+        devLog(`🤖 AI请求 (${attempt}/${this.config.retryAttempts}) - ${modelConfig.provider}/${modelConfig.model}`);
 
         const response = await this.callAIProvider(request, modelConfig);
         
@@ -397,7 +397,7 @@ class UnifiedAIService {
     const normalizedBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
     const endpoint = `${normalizedBaseUrl}/chat/completions`;
     
-    console.log(`🌐 请求端点: ${endpoint}`);
+    devLog(`🌐 请求端点: ${endpoint}`);
     return endpoint;
   }
 

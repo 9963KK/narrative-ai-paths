@@ -247,7 +247,7 @@ class ModelService {
       }
       
       // 其他错误码（如400，404等）可能是正常的，说明API Key是有效的
-      console.log('🔍 火山引擎API Key验证成功，返回预设模型列表');
+      devLog('🔍 火山引擎API Key验证成功，返回预设模型列表');
       
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -521,3 +521,4 @@ class ModelService {
 
 // 导出单例实例
 export const modelService = new ModelService(); 
+import { devLog } from '@/utils/logger';

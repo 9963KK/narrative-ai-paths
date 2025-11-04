@@ -31,6 +31,7 @@ import {
 
 // 导入新的配置类型
 import { StoryConfig } from './StoryInitializer';
+import { devLog } from '@/utils/logger';
 
 interface StoryState {
   story_id: string;
@@ -65,6 +66,94 @@ interface StoryManagerProps {
   onNavigate?: (path: string) => void;
   userId?: string;
 }
+
+const calculateStoryProgress = (chapter: number): number => {
+  // 调整进度计算，让进度更符合实际发展
+  // 使用更平滑的曲线，让第15章约为90%
+  const baseProgress = Math.min((chapter / 15) * 90, 90); // 15章达到90%基础进度
+  const totalProgress = Math.min(baseProgress + 10, 100); // 预留10%给结局
+  
+  console.log('📊 计算故事进度:', {
+    chapter,
+    baseProgress: Math.round(baseProgress),
+    totalProgress: Math.round(totalProgress)
+  });
+  
+  return Math.round(totalProgress);
+};
+
+const sanitizeStoryGoals = (goals: StoryState['story_goals']): StoryState['story_goals'] => {
+  if (!Array.isArray(goals)) return [];
+
+  const validTypes = new Set(['main', 'sub', 'personal', 'relationship']);
+  const validPriorities = new Set(['high', 'medium', 'low']);
+  const validStatuses = new Set(['pending', 'in_progress', 'completed', 'failed']);
+
+  return goals
+    .filter(goal => goal && typeof goal === 'object')
+    .map(goal => ({
+      ...goal,
+      id: goal.id || `goal_${Math.random().toString(36).slice(2)}`,
+      description: goal.description || '未命名目标',
+      type: validTypes.has(goal.type) ? goal.type : 'sub',
+      priority: validPriorities.has(goal.priority) ? goal.priority : 'medium',
+      status: validStatuses.has(goal.status) ? goal.status : 'pending'
+    }));
+};
+
+const sanitizeCharacters = (characters: StoryState['characters']): StoryState['characters'] => {
+  if (!Array.isArray(characters)) return [];
+
+  return characters.filter(character =>
+    character &&
+    typeof character.name === 'string' &&
+    character.name.trim() !== '' &&
+    typeof character.role === 'string' &&
+    character.role.trim() !== '' &&
+    typeof character.traits === 'string' &&
+    character.traits.trim() !== ''
+  );
+};
+
+const sanitizeStoryState = (state: StoryState): StoryState => {
+  const sanitizedChapter = typeof state.chapter === 'number' && state.chapter >= 0 ? state.chapter : 1;
+  const sanitizedProgress = typeof state.story_progress === 'number'
+    ? Math.min(Math.max(state.story_progress, 0), 100)
+    : calculateStoryProgress(sanitizedChapter);
+  const sanitizedTension = typeof state.tension_level === 'number' && !Number.isNaN(state.tension_level)
+    ? Math.min(Math.max(Math.round(state.tension_level), 0), 100)
+    : 5;
+
+  const sanitized: StoryState = {
+    story_id: state.story_id || `story_${Date.now()}`,
+    current_scene: typeof state.current_scene === 'string' && state.current_scene.trim() !== ''
+      ? state.current_scene
+      : '故事继续发展...',
+    setting: typeof state.setting === 'string' && state.setting.trim() !== ''
+      ? state.setting
+      : '未知世界',
+    chapter: sanitizedChapter,
+    choices_made: Array.isArray(state.choices_made) ? state.choices_made : [],
+    characters: sanitizeCharacters(state.characters),
+    mood: typeof state.mood === 'string' && state.mood.trim() !== '' ? state.mood : '神秘',
+    tension_level: sanitizedTension,
+    is_completed: state.is_completed ?? false,
+    story_progress: sanitizedProgress,
+    story_goals: sanitizeStoryGoals(state.story_goals),
+    main_goal_status: state.main_goal_status && ['pending', 'in_progress', 'completed', 'failed'].includes(state.main_goal_status)
+      ? state.main_goal_status
+      : 'pending'
+  };
+
+  if (state.chapter_title) {
+    sanitized.chapter_title = state.chapter_title;
+  }
+  if (state.completion_type) {
+    sanitized.completion_type = state.completion_type;
+  }
+
+  return sanitized;
+};
 
 const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnToHome, onNavigate, userId }) => {
   const [currentStory, setCurrentStory] = useState<StoryState | null>(null);
@@ -103,7 +192,6 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         const userConfig = await modelConfigAdapter.getUserModelConfig();
         if (userConfig) {
           setCurrentModelConfig(userConfig);
-          console.log('📂 已加载用户模型配置');
         }
       } catch (error) {
         console.error('加载用户模型配置失败:', error);
@@ -116,11 +204,9 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   // 处理预加载的故事上下文
   useEffect(() => {
     if (preloadedContext) {
-      console.log('🎯 处理预加载的故事上下文:', preloadedContext.title);
-      console.log('📋 预加载的选择项:', preloadedContext.currentChoices);
-      
+      const sanitizedState = sanitizeStoryState(preloadedContext.storyState);
       // 恢复故事状态
-      setCurrentStory(preloadedContext.storyState);
+      setCurrentStory(sanitizedState);
       setCurrentModelConfig(preloadedContext.modelConfig);
       setCurrentContextId(preloadedContext.id);
       setHasSavedProgress(true);
@@ -128,13 +214,10 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 恢复保存的选择项到当前选择项状态
       if (preloadedContext.currentChoices && preloadedContext.currentChoices.length > 0) {
         setCurrentChoices(preloadedContext.currentChoices);
-        console.log('📋 已恢复保存的选择项到当前状态');
       }
 
       // 恢复对话历史（模型配置现在由统一AI服务自动管理）
       storyAI.setConversationHistory(preloadedContext.conversationHistory, preloadedContext.summaryState);
-
-      console.log('✅ 预加载故事已恢复到StoryManager');
     }
   }, [preloadedContext]);
 
@@ -149,7 +232,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     if (pendingConfigStr) {
       try {
         const pendingConfig = JSON.parse(pendingConfigStr);
-        console.log('🚀 发现待处理的故事配置，开始初始化故事...');
+        devLog('🚀 发现待处理的故事配置，开始初始化故事...');
         
         // 清除待处理的配置
         localStorage.removeItem('pendingStoryConfig');
@@ -484,14 +567,16 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         };
         
         // 调用AI生成下一章节 - 带重试机制
+        const sanitizedForNextChapter = sanitizeStoryState({
+          ...currentStory,
+          mood: currentStory.mood || '神秘',
+          tension_level: currentStory.tension_level || 5
+        });
+
         const response = await generateNextChapterWithRetry(
-          {
-            ...currentStory,
-            mood: currentStory.mood || '神秘',
-            tension_level: currentStory.tension_level || 5
-          },
+          sanitizedForNextChapter,
           selectedChoice,
-          currentStory.choices_made
+          sanitizedForNextChapter.choices_made
         );
         
         try {
@@ -561,14 +646,15 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
   // 辅助函数：设置正常故事流程
   const setNormalStoryFlow = (updatedStory: StoryState, scene: string) => {
+    const safeStory = sanitizeStoryState(updatedStory);
     const needsChoice = analyzeSceneForChoiceNeed(
       scene,
-      updatedStory.chapter,
-      updatedStory.mood || '神秘'
+      safeStory.chapter,
+      safeStory.mood || '神秘'
     );
     
     const finalStory = {
-      ...updatedStory,
+      ...safeStory,
       needs_choice: needsChoice.needs,
       scene_type: needsChoice.type
     };
@@ -678,23 +764,6 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
     return [...existingCharacters, ...validNewCharacters];
   };
-
-  // 计算故事进度
-  const calculateStoryProgress = (chapter: number): number => {
-    // 调整进度计算，让进度更符合实际发展
-    // 使用更平滑的曲线，让第15章约为90%
-    const baseProgress = Math.min((chapter / 15) * 90, 90); // 15章达到90%基础进度
-    const totalProgress = Math.min(baseProgress + 10, 100); // 预留10%给结局
-    
-    console.log('📊 计算故事进度:', {
-      chapter,
-      baseProgress: Math.round(baseProgress),
-      totalProgress: Math.round(totalProgress)
-    });
-    
-    return Math.round(totalProgress);
-  };
-
   // 更新故事目标状态
   const updateStoryGoals = (currentGoals: StoryState['story_goals'], choiceText: string, chapter: number): StoryState['story_goals'] => {
     if (!currentGoals) return [];
@@ -948,14 +1017,14 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     setCurrentStory(prev => {
       if (!prev) return null;
       
-      return {
+      return sanitizeStoryState({
         ...prev,
         current_scene: randomOutcome,
         chapter: prev.chapter + 1,
         choices_made: [...(prev.choices_made || []), choiceText],
         needs_choice: true, // 修复：确保显示选择项
         scene_type: 'exploration'
-      };
+      });
     });
     
     console.log('✅ 简单场景生成完成，状态将由finally块重置');
@@ -1003,8 +1072,10 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       const summaryState = storyAI.getSummaryState();
 
       // 使用新的统一存档系统
+      const sanitizedState = sanitizeStoryState(currentStory);
+
       const contextId = saveStoryProgress(
-        currentStory,
+        sanitizedState,
         conversationHistory,
         currentModelConfig,
         { 
@@ -1144,8 +1215,9 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       // 获取摘要状态
       const summaryState = storyAI.getSummaryState();
 
+      const sanitizedState = sanitizeStoryState(currentStory);
       // 更新自动保存以包含摘要状态和当前选项
-      const contextId = contextManager.autoSave(currentStory, conversationHistory, currentModelConfig, summaryState, currentChoices);
+      const contextId = contextManager.autoSave(sanitizedState, conversationHistory, currentModelConfig, summaryState, currentChoices);
       if (contextId) {
         setCurrentContextId(contextId);
       }
@@ -1242,8 +1314,9 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         ]
       };
       
+      const sanitizedContinuedStory = sanitizeStoryState(continuedStory);
       // 更新当前故事状态
-      setCurrentStory(continuedStory);
+      setCurrentStory(sanitizedContinuedStory);
       
       // 清空当前上下文ID，因为这是新故事
       setCurrentContextId('');
@@ -1252,7 +1325,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       if (autoSaveEnabled && currentModelConfig) {
         setTimeout(() => {
           try {
-            autoSaveContext(continuedStory, [], currentModelConfig);
+            autoSaveContext(sanitizedContinuedStory, [], currentModelConfig);
             console.log('🔄 续篇故事自动保存完成');
             setHasSavedProgress(true);
           } catch (error) {

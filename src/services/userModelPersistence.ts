@@ -10,6 +10,7 @@
 
 import { ModelConfig } from '@/components/model-config/constants';
 import { ModelByLevel } from './userLevelService';
+import { devLog } from '@/utils/logger';
 
 // 存储键名
 const USER_MODEL_SELECTION_KEY = 'userModelSelection';
@@ -93,7 +94,7 @@ class UserModelPersistenceService {
       };
 
       localStorage.setItem(USER_MODEL_SELECTION_KEY, JSON.stringify(selection));
-      console.log('✅ 用户模型选择已保存到localStorage:', {
+      devLog('✅ 用户模型选择已保存到localStorage:', {
         model: model.model,
         provider: model.provider,
         performance_level: model.performance_level
@@ -117,7 +118,7 @@ class UserModelPersistenceService {
       
       // 验证是否是当前用户的选择
       if (selection.userId !== userId) {
-        console.log('🔄 用户已切换，清除旧的模型选择');
+        devLog('🔄 用户已切换，清除旧的模型选择');
         this.clearUserModelSelection();
         return null;
       }
@@ -148,7 +149,7 @@ class UserModelPersistenceService {
       };
 
       localStorage.setItem(USER_MODEL_CONFIG_KEY, JSON.stringify(encryptedConfig));
-      console.log('✅ 用户模型配置已保存到localStorage（API密钥已加密）');
+      devLog('✅ 用户模型配置已保存到localStorage（API密钥已加密）');
     } catch (error) {
       console.error('❌ 保存用户模型配置失败:', error);
     }
@@ -168,7 +169,7 @@ class UserModelPersistenceService {
       
       // 验证是否是当前用户的配置
       if (encryptedConfig.userId !== userId) {
-        console.log('🔄 用户已切换，清除旧的模型配置');
+        devLog('🔄 用户已切换，清除旧的模型配置');
         this.clearUserModelConfig();
         return null;
       }
@@ -176,7 +177,7 @@ class UserModelPersistenceService {
       // 检查是否过期
       const now = Date.now();
       if (now - encryptedConfig.timestamp > encryptedConfig.ttl) {
-        console.log('⏰ 模型配置已过期，清除缓存');
+        devLog('⏰ 模型配置已过期，清除缓存');
         this.clearUserModelConfig();
         return null;
       }
@@ -223,7 +224,7 @@ class UserModelPersistenceService {
   clearAllUserModelData(): void {
     this.clearUserModelSelection();
     this.clearUserModelConfig();
-    console.log('🧹 已清除所有用户模型数据');
+    devLog('🧹 已清除所有用户模型数据');
   }
 
   /**

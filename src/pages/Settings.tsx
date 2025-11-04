@@ -210,8 +210,8 @@ const Settings: React.FC = () => {
                             <Input 
                               id="username" 
                               value={user?.username || ''} 
-                              disabled={isGuest}
-                              readOnly={isGuest}
+                              disabled
+                              readOnly
                               className="mt-1"
                             />
                           </div>
@@ -221,8 +221,8 @@ const Settings: React.FC = () => {
                               id="email" 
                               type="email" 
                               value={isGuest ? '游客模式' : user?.email || ''} 
-                              disabled={isGuest}
-                              readOnly={isGuest}
+                              disabled
+                              readOnly
                               className="mt-1"
                             />
                           </div>
