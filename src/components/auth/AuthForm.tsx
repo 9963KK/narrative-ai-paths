@@ -137,21 +137,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onOAuth
     resetRegister();
   };
 
-  const handleGuestLogin = async () => {
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const success = await onGuestLogin();
-      if (!success) {
-        setError('游客登录失败，请稍后重试');
-      }
-    } catch (err) {
-      setError('游客登录失败，请稍后重试');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleOAuthLogin = async (provider: OAuthProvider) => {
     if (!onOAuthLogin) {
@@ -415,30 +400,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onLogin, onRegister, onOAuth
                 </div>
               )}
 
-              {/* 游客模式按钮 */}
-              <div className={`flex flex-col items-center space-y-4 pt-6 mt-6 ${(oauthSupported && onOAuthLogin && activeTab === 'login') ? '' : 'relative'}`}>
-                {!(oauthSupported && onOAuthLogin && activeTab === 'login') && (
-                  <div className="relative w-full">
-                    <hr className="border-gray-200" />
-                    <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-white px-4 text-sm text-gray-500">
-                      想要快速体验？
-                    </span>
-                  </div>
-                )}
-                {(oauthSupported && onOAuthLogin && activeTab === 'login') && (
-                  <p className="text-sm text-gray-500 text-center">
-                    想要快速体验？无需注册
-                  </p>
-                )}
-                <Button 
-                  variant="outline" 
-                  className="w-full h-11 border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]" 
-                  onClick={handleGuestLogin}
-                  disabled={isLoading}
-                >
-                  {isLoading ? '正在进入...' : '游客模式体验'}
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </AnimatedCard>
