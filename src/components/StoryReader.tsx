@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +88,8 @@ interface StoryReaderProps {
   hasSavedProgress?: boolean; // 当前是否有已保存的进度
   savedChoices?: Choice[]; // 从存档中加载的选项
   onChoicesUpdate?: (choices: Choice[]) => void; // 选项更新回调
+  streamingText?: string; // 实时流式文本
+  isStreaming?: boolean; // 是否正在流式生成
 }
 
 const StoryReader: React.FC<StoryReaderProps> = ({ 
@@ -105,7 +107,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   onToggleAutoSave,
   hasSavedProgress,
   savedChoices,
-  onChoicesUpdate
+  onChoicesUpdate,
+  streamingText = '',
+  isStreaming = false
 }) => {
   const [story, setStory] = useState<StoryState>(initialStory);
   const [currentText, setCurrentText] = useState('');
@@ -748,7 +752,7 @@ const getDisplayRole = (character: any): string => {
   }, [story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter]);
 
   // 统一的选项生成函数
-  const generateChoicesIfNeeded = async (scene: string, characters: any[], reason: string = '选项生成') => {
+  const generateChoicesIfNeeded = useCallback(async (scene: string, characters: any[], reason: string = '选项生成') => {
     if (!shouldShowChoices()) {
       devLog(`${reason}: 不满足生成条件，跳过`);
       return false;
@@ -781,10 +785,36 @@ const getDisplayRole = (character: any): string => {
     } finally {
       setIsGeneratingChoices(false);
     }
-  };
+  }, [shouldShowChoices, isGeneratingChoices, savedChoices, generateAIChoices]);
+
+  const streamingFinishedRef = useRef(false);
+
+  // 流式文本更新：直接驱动显示，避免等待完整JSON
+  useEffect(() => {
+    if (!isStreaming) return;
+    streamingFinishedRef.current = true;
+    setIsTyping(false);
+    setShowChoices(false);
+    setChoices([]);
+    setCurrentText(streamingText || '');
+  }, [isStreaming, streamingText]);
+
+  // 流式结束后补充状态与选项生成
+  useEffect(() => {
+    if (streamingFinishedRef.current && !isStreaming && story.current_scene) {
+      setCurrentText(streamingText || story.current_scene);
+      setIsTyping(false);
+      if (shouldShowChoices()) {
+        generateChoicesIfNeeded(story.current_scene, story.characters, '流式生成后生成选项');
+      }
+      streamingFinishedRef.current = false;
+    }
+  }, [isStreaming, story.current_scene, streamingText, shouldShowChoices, generateChoicesIfNeeded, story.characters]);
 
   // 优化的打字机效果 - 并行处理
   useEffect(() => {
+    if (isStreaming) return;
+
     if (story.current_scene && story.current_scene !== currentText) {
       setIsTyping(true);
       setCurrentText('');

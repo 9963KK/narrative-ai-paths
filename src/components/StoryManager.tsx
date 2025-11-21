@@ -168,6 +168,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   const [hasSavedProgress, setHasSavedProgress] = useState(false); // 是否有存档
   const [currentChoices, setCurrentChoices] = useState<Choice[]>([]); // 当前选项
   const [isFirstLoadFromSave, setIsFirstLoadFromSave] = useState(false); // 是否是首次从存档加载
+  const [isStreaming, setIsStreaming] = useState(false); // 是否正在流式生成
+  const [streamingText, setStreamingText] = useState(''); // 流式正文缓存
 
   // 处理选项更新
   const handleChoicesUpdate = (choices: Choice[]) => {
@@ -280,9 +282,35 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     try {
       // 清除对话历史（模型配置现在由统一AI服务自动管理）
       storyAI.clearConversationHistory(); // 开始新故事时清除历史
+      setIsStreaming(true);
+      setStreamingText('');
+      // 预先设置占位故事，便于流式文本展示
+      const placeholderStory: StoryState = {
+        story_id: `${userId || 'guest'}_ST${Date.now()}`,
+        current_scene: '',
+        characters: [],
+        setting: (config as any).setting || '未知世界',
+        chapter: 1,
+        choices_made: [],
+        mood: '生成中',
+        tension_level: 5,
+        needs_choice: true,
+        scene_type: 'exploration',
+        story_goals: processStoryGoals(config)
+      };
+      setCurrentStory(placeholderStory);
+      setIsLoading(false);
       
       // 调用AI生成初始故事
-      const response: StoryGenerationResponse = await storyAI.generateInitialStory(config, isAdvanced);
+      const response: StoryGenerationResponse = await storyAI.generateInitialStoryStream(
+        config,
+        isAdvanced,
+        {
+          onToken: (token: string) => {
+            setStreamingText(prev => prev + token);
+          }
+        }
+      );
       
       if (response.success && response.content) {
         // 处理故事目标
@@ -316,6 +344,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       setCurrentStory(fallbackStory);
       setAiError(error instanceof Error ? error.message : '未知错误');
     } finally {
+      setIsStreaming(false);
       setIsLoading(false);
     }
   };
@@ -650,6 +679,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
 
             // 正常故事流程 - 不再强制结束
             setNormalStoryFlow(updatedStory, response.content.scene);
+            setIsStreaming(false);
           } else {
             // AI返回成功但内容为空的情况
             console.warn('⚠️ AI返回成功但内容为空，使用回退方案');
@@ -667,6 +697,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       await generateSimpleNextScene(choiceText, startTime);
     } finally {
       setIsProcessingChoice(false);
+      setIsStreaming(false);
     }
   };
 
@@ -706,12 +737,19 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       try {
         console.log(`🔄 第${attempt}次尝试生成章节...`);
         
-        const response = await storyAI.generateNextChapter(
+        setIsStreaming(true);
+        setStreamingText('');
+
+        const response = await storyAI.generateNextChapterStream(
           storyState.current_scene,
           selectedChoice.text,
           previousChoices,
-          storyState // 传递完整的故事状态
+          storyState, // 传递完整的故事状态
+          {
+            onToken: (token: string) => setStreamingText(prev => prev + token)
+          }
         );
+        setStreamingText(response.content?.scene || '');
         
         if (response.success && response.content) {
           console.log(`✅ 第${attempt}次尝试成功生成章节`);
@@ -732,6 +770,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         const err = error instanceof Error ? error : new Error(`第${attempt}次尝试失败: ${error}`);
         console.warn(`❌ 第${attempt}次尝试出现异常:`, err.message);
         lastError = err;
+        setIsStreaming(false);
         
         if (attempt < maxRetries) {
           // 在重试之前等待一小段时间
@@ -744,6 +783,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     
     // 所有重试都失败了
     console.error(`❌ 经过${maxRetries}次尝试后仍然失败，最后错误:`, lastError?.message);
+    setIsStreaming(false);
     throw lastError || new Error(`章节生成失败：经过${maxRetries}次尝试后仍未成功`);
   };
 
@@ -1472,6 +1512,8 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       hasSavedProgress={hasSavedProgress}
       savedChoices={isFirstLoadFromSave ? preloadedContext?.currentChoices : undefined} // 只在首次读档时使用存档选项
       onChoicesUpdate={handleChoicesUpdate}
+      streamingText={streamingText}
+      isStreaming={isStreaming}
     />
   );
 };
