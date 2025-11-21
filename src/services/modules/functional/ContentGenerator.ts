@@ -12,7 +12,8 @@ import {
   StoryState, 
   Character,
   StoryGenerationResponse,
-  Choice 
+  Choice,
+  ConversationHistory 
 } from '../types';
 
 export class ContentGenerator implements IContentGenerator {
@@ -77,6 +78,71 @@ export class ContentGenerator implements IContentGenerator {
       return this.generateFallbackChapter(state, choice);
     } catch (error) {
       devError('❌ 章节生成失败:', error);
+      return this.generateFallbackChapter(state, choice);
+    }
+  }
+
+  /**
+   * 流式生成下一章节（正文流式 + 元数据JSON）
+   */
+  async generateNextChapterStream(
+    state: StoryState,
+    choice?: string,
+    options: { 
+      onToken?: (token: string) => void;
+      conversationHistory?: ConversationHistory[];
+      historySummary?: string;
+    } = {}
+  ): Promise<StoryGenerationResponse> {
+    try {
+      const textPrompt = this.buildChapterTextPrompt(state, choice);
+      const metaPrompt = this.buildChapterMetadataPrompt(state, choice);
+      const systemPrompt = this.getChapterSystemPrompt(state);
+
+      const [textResult, metaResult] = await Promise.all([
+        aiModelService.callAIStream(
+          textPrompt,
+          systemPrompt,
+          true,
+          options.conversationHistory || [],
+          options.historySummary,
+          options.onToken
+        ),
+        aiModelService.callAI(
+          metaPrompt,
+          systemPrompt,
+          true,
+          true,
+          options.conversationHistory || [],
+          options.historySummary
+        )
+      ]);
+
+      const fullText = (textResult as any)?.fullText || (textResult as any)?.content || '';
+      if (!textResult.success || !fullText) {
+        throw new Error(textResult.error || '流式正文生成失败');
+      }
+
+      let meta: StoryGenerationResponse | null = null;
+      if (metaResult.success && metaResult.choices?.[0]?.message?.content) {
+        meta = contentParser.parseStoryMetadata(metaResult.choices[0].message.content);
+      }
+
+      const mergedContent = {
+        scene: fullText,
+        chapter_title: meta?.content?.chapter_title || state.chapter_title || '新章节',
+        mood: meta?.content?.mood || state.mood || '神秘',
+        tension_level: meta?.content?.tension_level ?? state.tension_level ?? 5,
+        new_characters: meta?.content?.new_characters || [],
+        characters: meta?.content?.characters || []
+      };
+
+      return {
+        success: true,
+        content: mergedContent
+      };
+    } catch (error) {
+      devError('❌ 流式章节生成失败:', error);
       return this.generateFallbackChapter(state, choice);
     }
   }
@@ -249,6 +315,63 @@ ${characterInfo}
 }
 
 请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
+  }
+
+  /**
+   * 流式正文提示词（仅生成文本，不含JSON）
+   */
+  private buildChapterTextPrompt(state: StoryState, choice?: string): string {
+    const choiceText = choice ? `\n\n玩家选择：${choice}` : '';
+    const characterInfo = state.characters.map(c =>
+      `${c.name}(${c.role}): ${c.traits}`
+    ).join('\n');
+
+    return `继续描写故事下一幕，只输出故事正文，不要任何JSON、序号或解释：
+
+【当前背景】：
+${state.current_scene}
+
+【角色】：
+${characterInfo}
+
+【状态】：
+- 章节：第${state.chapter}章
+- 氛围：${state.mood}
+- 紧张度：${state.tension_level}/10
+- 设定：${state.setting}${choiceText}
+
+要求：
+1. 直接输出故事段落，400-700字，沉浸感和戏剧性并重
+2. 不要包含“选择”“决定”字样
+3. 语言流畅，保持角色和情节的连贯性
+4. 不要输出JSON或其他结构化格式
+`;
+  }
+
+  /**
+   * 元数据提示词（小JSON，不含正文）
+   */
+  private buildChapterMetadataPrompt(state: StoryState, choice?: string): string {
+    const choiceText = choice ? `\n玩家选择：${choice}` : '';
+    return `基于当前故事进度，生成简短的章节元数据，使用JSON对象且不要包含正文：
+
+【当前场景概要】：
+${state.current_scene.slice(0, 200)}...
+
+【章节信息】：
+- 当前章节：第${state.chapter}章
+- 当前氛围：${state.mood}
+- 当前紧张度：${state.tension_level}/10${choiceText}
+
+请仅返回以下JSON对象，不要包含scene正文：
+{
+  "chapter_title": "章节标题（8-15字）",
+  "mood": "氛围（简短词语）",
+  "tension_level": 0-10的整数,
+  "new_characters": [],
+  "characters": [],
+  "setting_details": "可选的设定补充"
+}`;
   }
 
   /**

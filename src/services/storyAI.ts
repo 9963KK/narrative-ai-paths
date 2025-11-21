@@ -183,6 +183,50 @@ class StoryAI {
   }
 
   /**
+   * 流式生成初始故事（正文流 + 瘦身元数据）
+   */
+  async generateInitialStoryStream(
+    config: StoryConfig,
+    isAdvanced?: boolean,
+    options: { onToken?: (token: string) => void } = {}
+  ): Promise<StoryGenerationResponse> {
+    try {
+      const response = await storyInitializer.generateInitialStoryStream(config, isAdvanced, options);
+
+      if (response.success && response.content) {
+        const initialState: StoryState = {
+          story_id: `story_${Date.now()}`,
+          current_scene: response.content.scene,
+          characters: response.content.characters || [],
+          setting: response.content.setting_details || config.setting || '神秘的世界',
+          chapter: 1,
+          chapter_title: response.content.chapter_title || '序章',
+          choices_made: [],
+          mood: response.content.mood || '神秘',
+          tension_level: response.content.tension_level || 5,
+          is_completed: false,
+          story_progress: 0,
+          main_goal_status: 'pending',
+          story_goals: []
+        };
+
+        storyStateManager.setState(initialState);
+        conversationManager.clearHistory();
+        conversationManager.addToHistory('assistant', response.content.scene);
+        return response;
+      }
+
+      throw new Error(response.error || '初始故事生成失败');
+    } catch (error) {
+      console.error('❌ 流式初始故事生成失败:', error);
+      return {
+        success: false,
+        error: `初始故事生成失败: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
    * 生成下一章节
    */
   async generateNextChapter(
@@ -272,6 +316,92 @@ class StoryAI {
       console.error('❌ 下一章节生成失败:', error);
       
       // 返回备用内容
+      return this.generateFallbackNextChapter(selectedChoice);
+    }
+  }
+
+  /**
+   * 流式生成下一章节（正文流 + 瘦身元数据）
+   */
+  async generateNextChapterStream(
+    currentStory: string,
+    selectedChoice: string,
+    previousChoices?: string[],
+    storyState?: StoryState,
+    options: { onToken?: (token: string) => void } = {}
+  ): Promise<StoryGenerationResponse> {
+    try {
+      let currentState = storyStateManager.getState();
+
+      if (storyState) {
+        storyStateManager.setState(storyState);
+        currentState = storyState;
+      } else if (!currentState && currentStory) {
+        const tempState: StoryState = {
+          story_id: `temp_${Date.now()}`,
+          current_scene: currentStory,
+          characters: [],
+          setting: '未知世界',
+          chapter: 1,
+          choices_made: previousChoices || [],
+          mood: '神秘',
+          tension_level: 3,
+          is_completed: false,
+          story_progress: 0
+        };
+        currentState = tempState;
+        storyStateManager.setState(tempState);
+      }
+
+      if (!currentState) {
+        return {
+          success: false,
+          error: '故事状态未找到，请重新开始故事'
+        };
+      }
+
+      conversationManager.addToHistory('user', selectedChoice);
+      storyStateManager.addChoice(selectedChoice);
+      await this.checkAndGenerateSummary();
+
+      const history = conversationManager.getHistory();
+      const historySummary = conversationManager.getSummaryState().summary;
+
+      const storyResponse = await contentGenerator.generateNextChapterStream(
+        currentState,
+        selectedChoice,
+        {
+          ...options,
+          conversationHistory: history,
+          historySummary
+        }
+      );
+
+      if (storyResponse && storyResponse.success && storyResponse.content) {
+        const updates: Partial<StoryState> = {
+          current_scene: storyResponse.content.scene,
+          chapter: currentState.chapter + 1,
+          chapter_title: storyResponse.content.chapter_title,
+          mood: storyResponse.content.mood || currentState.mood,
+          tension_level: storyResponse.content.tension_level || currentState.tension_level,
+          story_progress: Math.min(100, (currentState.story_progress || 0) + 10)
+        };
+
+        if (storyResponse.content.new_characters) {
+          for (const newCharacter of storyResponse.content.new_characters) {
+            storyStateManager.addCharacter(newCharacter);
+          }
+        }
+
+        storyStateManager.updateState(updates);
+        conversationManager.addToHistory('assistant', storyResponse.content.scene);
+
+        return storyResponse;
+      }
+
+      throw new Error('章节响应解析失败');
+    } catch (error) {
+      console.error('❌ 流式下一章节生成失败:', error);
       return this.generateFallbackNextChapter(selectedChoice);
     }
   }

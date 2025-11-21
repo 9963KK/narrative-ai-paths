@@ -29,6 +29,20 @@ export interface AIResponse extends BaseResponse {
   };
 }
 
+// 流式AI响应接口
+export interface AIStreamResponse extends BaseResponse {
+  fullText: string;
+  usage?: {
+    total_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
+  model?: {
+    provider: string;
+    model: string;
+  };
+}
+
 // 模块配置接口
 export interface ModuleConfig {
   enabled: boolean;
@@ -151,6 +165,14 @@ export interface SummaryData {
 export interface IAIModelService {
   // 核心AI调用方法
   callAI(prompt: string, systemPrompt?: string, useHistory?: boolean): Promise<AIResponse>;
+  callAIStream(
+    prompt: string,
+    systemPrompt?: string,
+    useHistory?: boolean,
+    conversationHistory?: any[],
+    historySummary?: string,
+    onToken?: (token: string) => void
+  ): Promise<AIStreamResponse>;
   
   // 配置管理
   setModelConfig(config: ModelConfig): void;

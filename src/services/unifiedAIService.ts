@@ -21,6 +21,7 @@ export interface AIRequest {
   requestType?: 'story_generation' | 'choice_generation' | 'analysis' | 'other';
   maxTokens?: number;
   temperature?: number;
+  onToken?: (token: string) => void;
 }
 
 export interface ConversationHistory {
@@ -157,6 +158,89 @@ class UnifiedAIService {
       console.error('❌ 统一AI服务错误:', error);
       return this.createErrorResponse(
         error instanceof Error ? error.message : '未知的AI服务错误'
+      );
+    }
+  }
+
+  /**
+   * 统一AI流式请求方法（用于正文流式输出）
+   */
+  async makeRequestStream(request: AIRequest): Promise<AIResponse> {
+    const startTime = Date.now();
+    this.requestCount++;
+
+    try {
+      const currentUser = unifiedAuthService.getCurrentUser();
+      if (!currentUser) {
+        return this.createErrorResponse('用户未登录，无法使用AI服务');
+      }
+
+      const modelConfig = await this.getUserModelConfig();
+      if (!modelConfig) {
+        return this.createErrorResponse(
+          '🔧 AI模型配置失败！请前往"设置"页面配置AI模型和API密钥。'
+        );
+      }
+
+      // 预估token用于积分预检
+      const estimatedUsage = this.estimateTokenUsage(request, modelConfig);
+      if (this.config.enableCreditCheck) {
+        const creditCheck = await this.checkCredits(
+          currentUser.id,
+          modelConfig,
+          estimatedUsage.inputTokens,
+          estimatedUsage.outputTokens
+        );
+
+        if (!creditCheck.sufficient) {
+          return this.createErrorResponse(creditCheck.message);
+        }
+      }
+
+      const streamResult = await this.callAIProviderStream(request, modelConfig);
+      this.successCount++;
+
+      // 构造近似usage（流式响应一般不返回usage）
+      const completionTokens = Math.ceil(streamResult.fullText.length / 4);
+      const promptTokens = estimatedUsage.inputTokens;
+      const usage = {
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens
+      };
+
+      // 积分扣除与token监控
+      if (this.config.enableCreditCheck) {
+        await this.deductCreditsAndLog(
+          currentUser.id,
+          modelConfig,
+          {
+            promptTokens,
+            completionTokens,
+            totalTokens: usage.totalTokens
+          },
+          request.requestType || 'story_generation'
+        );
+      }
+
+      const responseTime = Date.now() - startTime;
+      apiLog(`AI流式请求完成: ${responseTime}ms, 成功率: ${(this.successCount / this.requestCount * 100).toFixed(1)}%`);
+
+      return {
+        success: true,
+        content: streamResult.fullText,
+        fullText: streamResult.fullText,
+        usage,
+        model: {
+          provider: modelConfig.provider,
+          model: modelConfig.model
+        },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ 统一AI流式服务错误:', error);
+      return this.createErrorResponse(
+        error instanceof Error ? error.message : '未知的AI流式服务错误'
       );
     }
   }
@@ -383,6 +467,107 @@ class UnifiedAIService {
 
     // 解析响应
     return this.parseProviderResponse(provider, data);
+  }
+
+  /**
+   * 调用AI提供商（流式）
+   */
+  private async callAIProviderStream(request: AIRequest, modelConfig: ModelConfig): Promise<{ fullText: string }> {
+    const { provider, model, apiKey, baseUrl, temperature } = modelConfig;
+
+    // 构建消息数组
+    const messages: any[] = [];
+    if (request.systemPrompt) {
+      messages.push({ role: 'system', content: request.systemPrompt });
+    }
+    if (request.conversationHistory && request.conversationHistory.length > 0) {
+      messages.push(...request.conversationHistory);
+    }
+    messages.push({ role: 'user', content: request.prompt });
+
+    const requestBody: any = {
+      model,
+      messages,
+      temperature: request.temperature ?? temperature ?? 0.8,
+      max_tokens: request.maxTokens ?? modelConfig.maxTokens ?? 2000,
+      stream: true
+    };
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    switch (provider) {
+      case 'openai':
+      case 'openai-compatible':
+      case 'deepseek':
+      case 'moonshot':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      case 'anthropic':
+        headers['x-api-key'] = apiKey;
+        headers['anthropic-version'] = '2023-06-01';
+        break;
+      case 'zhipu':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      default:
+        headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const url = this.getAPIEndpoint(baseUrl);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(this.config.timeout)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('流式响应为空');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let fullText = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.replace(/^data:\s*/i, '');
+        if (data === '[DONE]') {
+          return { fullText };
+        }
+
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.message?.content || '';
+          if (delta) {
+            fullText += delta;
+            request.onToken?.(delta);
+          }
+        } catch (error) {
+          console.warn('⚠️ 解析流式片段失败，跳过该片段', error);
+        }
+      }
+    }
+
+    return { fullText };
   }
 
   /**

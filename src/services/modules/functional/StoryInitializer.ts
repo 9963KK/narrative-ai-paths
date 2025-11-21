@@ -64,6 +64,68 @@ export class StoryInitializer implements IStoryInitializer {
   }
 
   /**
+   * 流式生成初始故事（正文流式 + 元数据JSON）
+   */
+  async generateInitialStoryStream(
+    config: StoryConfig,
+    isAdvanced?: boolean,
+    options: { onToken?: (token: string) => void } = {}
+  ): Promise<StoryGenerationResponse> {
+    try {
+      const textPrompt = this.buildInitialTextPrompt(config, isAdvanced);
+      const metaPrompt = this.buildInitialMetadataPrompt(config, isAdvanced);
+      const systemPrompt = this.getInitialStorySystemPrompt(isAdvanced);
+
+      const [textResult, metaResult] = await Promise.all([
+        aiModelService.callAIStream(
+          textPrompt,
+          systemPrompt,
+          false,
+          [],
+          undefined,
+          options.onToken
+        ),
+        aiModelService.callAI(
+          metaPrompt,
+          systemPrompt,
+          false,
+          true
+        )
+      ]);
+
+      const fullText = (textResult as any)?.fullText || (textResult as any)?.content || '';
+      if (!textResult.success || !fullText) {
+        throw new Error(textResult.error || '流式开场生成失败');
+      }
+
+      let meta: StoryGenerationResponse | null = null;
+      if (metaResult.success && metaResult.choices?.[0]?.message?.content) {
+        meta = contentParser.parseStoryMetadata(metaResult.choices[0].message.content);
+      }
+
+      return {
+        success: true,
+        content: {
+          scene: fullText,
+          characters: meta?.content?.characters || [],
+          chapter_title: meta?.content?.chapter_title || '序章',
+          mood: meta?.content?.mood || '神秘',
+          tension_level: meta?.content?.tension_level || 5,
+          story_length_target: meta?.content?.story_length_target || (config as any).story_length || '',
+          preferred_ending_type: meta?.content?.preferred_ending_type || (config as any).preferred_ending || '',
+          setting_details: meta?.content?.setting_details || ''
+        }
+      };
+    } catch (error) {
+      devError('❌ 流式初始故事生成失败:', error);
+      return {
+        success: false,
+        error: `初始故事生成失败: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
    * 生成故事大纲
    */
   async generateStoryOutlines(config: StoryConfig): Promise<string[]> {
@@ -360,6 +422,62 @@ export class StoryInitializer implements IStoryInitializer {
 
 请确保返回的是一个完整的JSON对象，不是数组或其他格式。注意：不需要生成选择项，选择项由专门的模块生成。`;
     }
+  }
+
+  /**
+   * 开场流式正文提示词（仅正文）
+   */
+  private buildInitialTextPrompt(config: StoryConfig, isAdvanced?: boolean): string {
+    const configAny = config as any;
+    const tone = configAny.tone || '未指定';
+    const lengthTip = isAdvanced ? '600-900字' : '400-600字';
+
+    return `创作故事开场正文，直接输出文本（不要JSON、不要列表）：
+
+故事类型：${config.genre}
+故事构想：${config.story_idea}
+主要目标：${config.main_goal || '探索未知的世界'}
+故事基调：${tone}
+期望结局：${configAny.preferred_ending || '未指定'}
+
+要求：
+1. 长度${lengthTip}，沉浸式描写环境与角色
+2. 使用第二人称叙述，保持连贯和文学性
+3. 不要输出任何JSON或字段名，只要故事正文
+`;
+  }
+
+  /**
+   * 开场元数据提示词（不含scene，JSON瘦身）
+   */
+  private buildInitialMetadataPrompt(config: StoryConfig, isAdvanced?: boolean): string {
+    const configAny = config as any;
+    return `为开场正文生成简短元数据，使用JSON对象，不要包含scene正文：
+
+故事类型：${config.genre}
+故事构想：${config.story_idea}
+主要目标：${config.main_goal || '探索未知的世界'}
+故事基调：${configAny.tone || '未指定'}
+期望结局：${configAny.preferred_ending || '未指定'}
+
+请返回以下JSON对象：
+{
+  "chapter_title": "章节标题（8-15字）",
+  "mood": "氛围（简短词语）",
+  "tension_level": 0-10的整数,
+  "characters": [
+    {
+      "name": "角色姓名",
+      "role": "角色身份",
+      "traits": "性格特征",
+      "appearance": "外貌",
+      "backstory": "背景"
+    }
+  ],
+  "story_length_target": "故事长度目标",
+  "preferred_ending_type": "期望结局类型",
+  "setting_details": "设定概要"
+}`;
   }
 
   private buildOutlinePrompt(config: StoryConfig): string {

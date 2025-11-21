@@ -231,7 +231,7 @@ const QuickStart: React.FC = () => {
   if (showOutlineSelection) {
     return (
       <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4">
           <div className="max-w-5xl mx-auto">
             {/* Return Button */}
             <div className="mb-6">
@@ -280,7 +280,7 @@ const QuickStart: React.FC = () => {
               </div>
             </AnimatedHeader>
             {/* Story Outlines Grid */}
-            <AnimatedGrid startIndex={1} className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <AnimatedGrid startIndex={1} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {storyOutlines.map((outline, index) => (
                 <Card
                   key={index}
@@ -377,30 +377,30 @@ const QuickStart: React.FC = () => {
   // 主要的分步向导界面
   return (
     <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/20 via-gray-50 to-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+      <div className="container mx-auto px-4 py-4">
+        <div className="max-w-5xl mx-auto">
           {/* Page Header */}
           <AnimatedHeader>
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
               {/* 返回主页按钮 */}
-              <div className="flex justify-start mb-6">
+              <div className="flex justify-start mb-4">
                 <Button
                   onClick={() => navigate('/app')}
                   variant="outline"
-                  className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
+                  className="px-5 py-2.5 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] rounded-xl"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回主页
                 </Button>
               </div>
               
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl mb-6 shadow-xl">
-                <Wand2 className="w-10 h-10 text-white" />
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mb-4 shadow-xl">
+                <Wand2 className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-3">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
                 快速创作模式
               </h1>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-base text-gray-600 max-w-2xl mx-auto">
                 跟随向导，一步步构建您的专属故事世界
               </p>
             </div>
@@ -408,11 +408,11 @@ const QuickStart: React.FC = () => {
 
           {/* Progress Steps */}
           <AnimatedCard index={1}>
-            <div className="mb-8">
-              <div className="flex items-center justify-center space-x-4 mb-4">
+            <div className="mb-6">
+              <div className="flex items-center justify-center space-x-4 mb-3">
                 {stepTitles.map((title, index) => (
                   <div key={index} className="flex flex-col items-center">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
                       currentStep > index + 1 
                         ? 'bg-green-500 border-green-500 text-white shadow-lg' 
                         : currentStep === index + 1
@@ -420,12 +420,12 @@ const QuickStart: React.FC = () => {
                         : 'bg-white border-gray-300 text-gray-400'
                     }`}>
                       {currentStep > index + 1 ? (
-                        <span className="text-sm font-bold">✓</span>
+                        <span className="text-xs font-bold">✓</span>
                       ) : (
-                        <span className="text-sm font-bold">{index + 1}</span>
+                        <span className="text-xs font-bold">{index + 1}</span>
                       )}
                     </div>
-                    <span className={`text-sm mt-2 transition-colors ${
+                    <span className={`text-xs mt-2 transition-colors ${
                       currentStep >= index + 1 ? 'text-indigo-600 font-medium' : 'text-gray-500'
                     }`}>
                       {title}
@@ -446,22 +446,22 @@ const QuickStart: React.FC = () => {
           {currentStep === 1 && (
             <AnimatedCard index={2}>
               <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-6">
+                <CardHeader className="pb-4">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-4">
-                      <span className="text-2xl">🎭</span>
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-3">
+                      <span className="text-xl">🎭</span>
                     </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    <CardTitle className="text-xl font-bold text-gray-800 mb-2">
                       选择故事类型
                     </CardTitle>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 text-sm">
                       选择一个您感兴趣的故事类型，AI 将据此调整创作风格
                     </p>
                   </div>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     {genres.map((genre) => (
                       <div
                         key={genre.value}
@@ -472,11 +472,11 @@ const QuickStart: React.FC = () => {
                             : 'border-gray-200 hover:border-indigo-300 bg-white'
                         }`}
                       >
-                        <div className="text-3xl mb-3">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
-                        <div className="font-semibold text-gray-800 text-sm mb-1">
+                        <div className="text-2xl mb-2">{genreIcons[genre.value as keyof typeof genreIcons]}</div>
+                        <div className="font-semibold text-gray-800 text-sm mb-0.5">
                           {genreTitles[genre.value as keyof typeof genreTitles]}
                         </div>
-                        <p className="text-xs text-gray-500 leading-relaxed">{genre.desc}</p>
+                        <p className="text-xs text-gray-500 leading-snug">{genre.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -500,24 +500,24 @@ const QuickStart: React.FC = () => {
           {currentStep === 2 && (
             <AnimatedCard index={2}>
               <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-6">
+                <CardHeader className="pb-4">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4">
-                      <span className="text-2xl">💡</span>
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-3">
+                      <span className="text-xl">💡</span>
                     </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    <CardTitle className="text-xl font-bold text-gray-800 mb-2">
                       分享您的故事想法
                     </CardTitle>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 text-sm">
                       描述您脑海中的故事核心概念，可以是一个场景、角色或冲突
                     </p>
                   </div>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-200">
-                      <p className="text-blue-800 text-sm font-medium mb-2">💭 创作提示</p>
+                      <p className="text-blue-800 text-sm font-medium mb-1">💭 创作提示</p>
                       <p className="text-blue-700 text-sm leading-relaxed">
                         一句话即可，例如："一个失忆的赏金猎人在霓虹闪烁的未来都市里，寻找自己被盗走的记忆。"
                       </p>
@@ -526,8 +526,8 @@ const QuickStart: React.FC = () => {
                     <Textarea
                       value={simpleConfig.story_idea}
                       onChange={(e) => setSimpleConfig(prev => ({ ...prev, story_idea: e.target.value }))}
-                      rows={6}
-                      className="w-full p-4 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-xl resize-none"
+                      rows={5}
+                      className="w-full p-4 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500/20 rounded-xl resize-none text-sm"
                       placeholder="请在此输入您的故事想法...&#10;&#10;可以描述：&#10;• 主要角色和背景&#10;• 核心冲突或挑战&#10;• 故事发生的世界或时代&#10;• 您想要探索的主题"
                     />
 
@@ -559,24 +559,24 @@ const QuickStart: React.FC = () => {
           {currentStep === 3 && (
             <AnimatedCard index={2}>
               <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-6">
+                <CardHeader className="pb-4">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-4">
-                      <Target className="w-8 h-8 text-white" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-3">
+                      <Target className="w-6 h-6 text-white" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                    <CardTitle className="text-xl font-bold text-gray-800 mb-2">
                       设定故事目标
                     </CardTitle>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 text-sm">
                       定义故事的核心目标，这将指导整个故事的发展方向
                     </p>
                   </div>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border border-purple-200">
-                      <p className="text-purple-800 text-sm font-medium mb-2">🎯 目标示例</p>
+                      <p className="text-purple-800 text-sm font-medium mb-1">🎯 目标示例</p>
                       <p className="text-purple-700 text-sm leading-relaxed">
                         例如："找回记忆并复仇"、"拯救被邪恶公司控制的城市"、"找到真爱"、"揭开家族秘密"...
                       </p>

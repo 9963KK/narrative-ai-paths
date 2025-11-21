@@ -76,6 +76,46 @@ export class ContentParser implements IContentParser {
   }
 
   /**
+   * 解析不含正文的元数据响应
+   */
+  parseStoryMetadata(response: string): StoryGenerationResponse | null {
+    try {
+      const content = this.extractJsonFromResponse(response);
+      const parsed = JSON.parse(content);
+
+      if (!parsed || typeof parsed !== 'object') {
+        return {
+          success: false,
+          error: '元数据格式无效'
+        };
+      }
+
+      const normalizedMood = this.normalizeMood(parsed.mood);
+      const normalizedTension = this.normalizeTensionLevel(parsed.tension_level);
+
+      return {
+        success: true,
+        content: {
+          chapter_title: parsed.chapter_title || '新章节',
+          mood: this.truncateMood(normalizedMood),
+          tension_level: normalizedTension,
+          new_characters: this.normalizeCharacters(parsed.new_characters || []),
+          characters: this.normalizeCharacters(parsed.characters || []),
+          story_length_target: parsed.story_length_target,
+          preferred_ending_type: parsed.preferred_ending_type,
+          setting_details: parsed.setting_details
+        }
+      };
+    } catch (error) {
+      devError('❌ 元数据解析失败:', error);
+      return {
+        success: false,
+        error: `解析失败: ${(error as Error).message}`
+      };
+    }
+  }
+
+  /**
    * 解析选择项
    */
   parseChoices(response: string): Choice[] | null {

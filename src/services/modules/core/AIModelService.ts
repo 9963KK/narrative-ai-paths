@@ -155,6 +155,48 @@ export class AIModelService implements IAIModelService {
     return this.modelConfig.maxTokens || 2000;
   }
 
+  /**
+   * 流式AI调用方法
+   */
+  async callAIStream(
+    prompt: string,
+    systemPrompt?: string,
+    useHistory: boolean = false,
+    conversationHistory: ConversationHistory[] = [],
+    historySummary?: string,
+    onToken?: (token: string) => void
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      const request: AIRequest = {
+        prompt,
+        systemPrompt,
+        useHistory,
+        conversationHistory,
+        historySummary,
+        requestType: 'story_generation',
+        maxTokens: this.modelConfig?.maxTokens || 2000,
+        temperature: this.modelConfig?.temperature || 0.8,
+        onToken
+      };
+
+      const response = await unifiedAIService.makeRequestStream(request);
+      this.updatePerformanceMetrics(startTime, response.success);
+      return response;
+    } catch (error) {
+      devError('❌ AIModelService 流式调用失败:', error);
+      this.state.errorCount++;
+      this.updatePerformanceMetrics(startTime, false, error as Error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString(),
+        fullText: ''
+      };
+    }
+  }
+
   // ==================== 状态管理 ====================
 
   /**
