@@ -260,6 +260,12 @@ const getDisplayRole = (character: any): string => {
       timestamp: new Date().toISOString()
     });
   }, [savedChoices]);
+  
+  // 处理currentChoiceImage的变化
+  useEffect(() => {
+    // 这里可以添加对currentChoiceImage变化的处理逻辑
+    console.log('🖼️ currentChoiceImage状态更新:', currentChoiceImage);
+  }, [currentChoiceImage]);
 
   // 当故事发生变化时，标记为有未保存的进度
   useEffect(() => {
@@ -1373,11 +1379,10 @@ const getDisplayRole = (character: any): string => {
             }`}>
               <CardContent className="py-3 sm:py-4">
                 <div className="max-w-none">
-                  {/* 如果有当前选择的图片，则显示图片和文本并排 */}
+                  {/* 如果有当前选择的图片，则显示图片和文本环绕 */}
                   {currentChoiceImage ? (
-                    <div className="flex flex-col md:flex-row gap-4">
-                      {/* 图片区域 */}
-                      <div className="md:w-1/3 flex-shrink-0">
+                    <div className="flex flex-col">
+                      <div className="float-right ml-6 mb-6 w-1/3 md:w-2/5 lg:w-1/3">
                         <div className="rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative" style={{ height: '200px' }}>
                           <img
                             src={currentChoiceImage.imageUrl}
@@ -1405,28 +1410,29 @@ const getDisplayRole = (character: any): string => {
                             }}
                           />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1 text-center truncate">
+                        <div className="text-xs text-gray-500 mt-1 text-center truncate px-2">
                           {currentChoiceImage.choiceText}
                         </div>
                       </div>
                       
-                      {/* 文本区域 */}
-                      <div className="md:w-2/3">
-                        <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
-                          isTyping || isProcessingChoice
-                            ? 'opacity-95 content-fit-height'
-                            : 'opacity-100'
-                        }`}>
-                          <div className="transform">
-                            {currentText}
-                            {isTyping && (
-                              <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
-                                |
-                              </span>
-                            )}
-                          </div>
+                      {/* 文本区域 - 环绕图片 */}
+                      <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap overflow-hidden ${
+                        isTyping || isProcessingChoice
+                          ? 'opacity-95 content-fit-height'
+                          : 'opacity-100'
+                      }`}>
+                        <div className="transform">
+                          {currentText}
+                          {isTyping && (
+                            <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
+                              |
+                            </span>
+                          )}
                         </div>
                       </div>
+                      
+                      {/* 清除浮动 */}
+                      <div className="clear-right"></div>
                     </div>
                   ) : (
                     // 如果没有当前选择的图片，则只显示文本
