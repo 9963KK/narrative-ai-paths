@@ -93,13 +93,14 @@ interface StoryReaderProps {
   onChoicesUpdate?: (choices: Choice[]) => void; // 选项更新回调
   streamingText?: string; // 实时流式文本
   isStreaming?: boolean; // 是否正在流式生成
+  currentChoiceImage?: {imageUrl: string, choiceText: string} | null; // 当前选择的图片信息
 }
 
-const StoryReader: React.FC<StoryReaderProps> = ({ 
-  initialStory, 
-  onMakeChoice, 
-  onRestart, 
-  onContinue, 
+const StoryReader: React.FC<StoryReaderProps> = ({
+  initialStory,
+  onMakeChoice,
+  onRestart,
+  onContinue,
   modelConfig,
   aiError,
   isProcessingChoice = false,
@@ -112,7 +113,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   savedChoices,
   onChoicesUpdate,
   streamingText = '',
-  isStreaming = false
+  isStreaming = false,
+  currentChoiceImage = null
 }) => {
   const [story, setStory] = useState<StoryState>(initialStory);
   const [currentText, setCurrentText] = useState('');
@@ -1365,26 +1367,84 @@ const getDisplayRole = (character: any): string => {
 
             {/* 主要故事内容 - 移到最前面 */}
             <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden ${
-              isTyping || isProcessingChoice 
-                ? 'flex-shrink-0 shadow-lg processing-choice-card' 
+              isTyping || isProcessingChoice
+                ? 'flex-shrink-0 shadow-lg processing-choice-card'
                 : 'flex-1 shadow-xl'
             }`}>
               <CardContent className="py-3 sm:py-4">
                 <div className="max-w-none">
-                  <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
-                    isTyping || isProcessingChoice
-                      ? 'opacity-95 content-fit-height' 
-                      : 'opacity-100'
-                  }`}>
-                    <div className="transform">
-                      {currentText}
-                      {isTyping && (
-                        <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
-                          |
-                        </span>
-                      )}
+                  {/* 如果有当前选择的图片，则显示图片和文本并排 */}
+                  {currentChoiceImage ? (
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {/* 图片区域 */}
+                      <div className="md:w-1/3 flex-shrink-0">
+                        <div className="rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative" style={{ height: '200px' }}>
+                          <img
+                            src={currentChoiceImage.imageUrl}
+                            alt={currentChoiceImage.choiceText}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // 图片加载失败时显示占位符
+                              const target = e.currentTarget;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                // 检查是否已经添加了错误提示，避免重复添加
+                                if (!parent.querySelector('.image-error-placeholder')) {
+                                  const errorDiv = document.createElement('div');
+                                  errorDiv.className = 'image-error-placeholder text-gray-400 text-sm flex flex-col items-center justify-center h-full w-full';
+                                  errorDiv.innerHTML = `
+                                    <svg class="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>图片加载失败</span>
+                                  `;
+                                  parent.appendChild(errorDiv);
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 text-center truncate">
+                          {currentChoiceImage.choiceText}
+                        </div>
+                      </div>
+                      
+                      {/* 文本区域 */}
+                      <div className="md:w-2/3">
+                        <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
+                          isTyping || isProcessingChoice
+                            ? 'opacity-95 content-fit-height'
+                            : 'opacity-100'
+                        }`}>
+                          <div className="transform">
+                            {currentText}
+                            {isTyping && (
+                              <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
+                                |
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    // 如果没有当前选择的图片，则只显示文本
+                    <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
+                      isTyping || isProcessingChoice
+                        ? 'opacity-95 content-fit-height'
+                        : 'opacity-100'
+                    }`}>
+                      <div className="transform">
+                        {currentText}
+                        {isTyping && (
+                          <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
+                            |
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

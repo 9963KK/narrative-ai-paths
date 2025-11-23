@@ -171,6 +171,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
   const [isFirstLoadFromSave, setIsFirstLoadFromSave] = useState(false); // 是否是首次从存档加载
   const [isStreaming, setIsStreaming] = useState(false); // 是否正在流式生成
   const [streamingText, setStreamingText] = useState(''); // 流式正文缓存
+  const [currentChoiceImage, setCurrentChoiceImage] = useState<{imageUrl: string, choiceText: string} | null>(null); // 当前选择的图片
 
   // 处理选项更新
   const handleChoicesUpdate = (choices: Choice[]) => {
@@ -483,6 +484,21 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
     }
 
     console.log(`👆 玩家选择: [${choiceId}] ${choiceText}`);
+
+    // 保存当前选择的图片信息
+    if (currentChoices) {
+      const selectedChoice = currentChoices.find(choice => choice.id === choiceId);
+      if (selectedChoice && selectedChoice.imageUrl) {
+        setCurrentChoiceImage({
+          imageUrl: selectedChoice.imageUrl,
+          choiceText: selectedChoice.text
+        });
+        console.log('🖼️ 保存当前选择的图片信息:', {
+          imageUrl: selectedChoice.imageUrl,
+          choiceText: selectedChoice.text
+        });
+      }
+    }
 
     try {
       // 检查是否是主动结束故事的选择
@@ -1524,6 +1540,7 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
       onChoicesUpdate={handleChoicesUpdate}
       streamingText={streamingText}
       isStreaming={isStreaming}
+      currentChoiceImage={currentChoiceImage} // 传递当前选择的图片信息
     />
   );
 };
