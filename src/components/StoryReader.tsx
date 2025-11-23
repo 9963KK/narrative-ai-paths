@@ -9,6 +9,7 @@ import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Set
 import { toast } from '@/hooks/use-toast';
 import { storyAI } from '@/services/storyAI';
 import { devLog, devError, stateLog } from '@/utils/logger';
+import { imageGenerationService } from '@/services/imageGenerationService';
 
 // 辅助函数：根据性能等级获取模型描述
 const getModelLevelDescription = (performanceLevel?: string, action: string = '正在思考中'): string => {
@@ -70,6 +71,8 @@ interface Choice {
   description: string;
   difficulty?: number;
   consequences?: string;
+  imagePrompt?: string; // 图片生成提示词
+  imageUrl?: string;   // 生成的图片URL
 }
 
 interface StoryReaderProps {
@@ -769,9 +772,15 @@ const getDisplayRole = (character: any): string => {
 
     try {
       const newChoices = await generateAIChoices(scene, characters);
+      devLog(`${reason}: AI选择生成完成`, newChoices);
       if (newChoices && newChoices.length > 0) {
-        setPendingChoices(newChoices);
-        devLog(`${reason}: 选项生成完成`, newChoices);
+        // 预生成选择项图片
+        console.log('🖼️ 开始预生成选择项图片', { choiceCount: newChoices.length, scene });
+        const choicesWithImages = await imageGenerationService.preGenerateImages(newChoices, scene);
+        console.log('🖼️ 图片预生成完成', choicesWithImages);
+        devLog(`${reason}: 图片预生成完成`, choicesWithImages);
+        setPendingChoices(choicesWithImages);
+        devLog(`${reason}: 选项生成完成`, choicesWithImages);
         return true;
       } else {
         console.warn(`⚠️ ${reason}: 选项生成失败`);
@@ -1677,6 +1686,50 @@ const getDisplayRole = (character: any): string => {
                         style={{ animationDelay: `${index * 150}ms` }}
                       >
                         <div className="w-full">
+                          {/* 图片显示区域 */}
+                          {choice.imageUrl && (
+                            <div className="mb-3 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative" style={{ height: '120px' }}>
+                              <img
+                                src={choice.imageUrl}
+                                alt={choice.text}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // 图片加载失败时显示占位符
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    // 检查是否已经添加了错误提示，避免重复添加
+                                    if (!parent.querySelector('.image-error-placeholder')) {
+                                      const errorDiv = document.createElement('div');
+                                      errorDiv.className = 'image-error-placeholder text-gray-400 text-sm flex flex-col items-center justify-center h-full w-full';
+                                      errorDiv.innerHTML = `
+                                        <svg class="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span>图片加载失败</span>
+                                        <button class="mt-1 text-xs text-blue-500 hover:text-blue-700" onclick="this.parentElement.parentElement.querySelector('img').src=this.parentElement.parentElement.querySelector('img').src">
+                                          点击重试
+                                        </button>
+                                      `;
+                                      parent.appendChild(errorDiv);
+                                    }
+                                  }
+                                }}
+                                onLoad={(e) => {
+                                  // 图片加载成功时隐藏加载指示器
+                                  const loadingIndicator = e.currentTarget.nextElementSibling as HTMLElement | null;
+                                  if (loadingIndicator) {
+                                    loadingIndicator.style.display = 'none';
+                                  }
+                                }}
+                              />
+                              {/* 加载指示器 */}
+                              <div className="absolute inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center justify-between mb-1">
                             <div className={`font-semibold ${
                               choice.id === -999 ? "text-orange-800" : "text-slate-800"

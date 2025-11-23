@@ -45,6 +45,8 @@ export interface Choice {
   description: string;
   difficulty?: number;
   consequences?: string;
+  imagePrompt?: string; // 图片生成提示词
+  imageUrl?: string;   // 生成的图片URL
 }
 
 // 保存的故事上下文接口

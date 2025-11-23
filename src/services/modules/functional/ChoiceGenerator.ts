@@ -6,7 +6,7 @@
 
 import { aiModelService } from '../core/AIModelService';
 import { contentParser } from './ContentParser';
-import { devError } from '@/utils/logger';
+import { devLog, devError } from '@/utils/logger';
 import { 
   IChoiceGenerator, 
   StoryState, 
@@ -25,6 +25,9 @@ export class ChoiceGenerator implements IChoiceGenerator {
    */
   async generateChoices(state: StoryState, context: string): Promise<Choice[]> {
     try {
+      devLog('🎯 开始生成选择项', { state, context });
+
+      devLog('🎯 开始生成选择项', { state, context });
 
       const choiceCount = this.determineChoiceCount(state);
       const prompt = this.buildChoicesPrompt(state, context, choiceCount);
@@ -218,6 +221,7 @@ ${context}
 - description: 详细行动描述（具体明确，20-40字）
 - consequences: 可能的后果（描述风险和机会，30-50字）
 - difficulty: 难度等级（1-5）
+- imagePrompt: 图片生成提示词（描述这个选择的视觉画面，用于生成插图）
 
 请严格按照以下JSON格式返回：
 {
@@ -227,7 +231,8 @@ ${context}
       "text": "正面交锋",
       "description": "直接面对眼前的威胁，使用你的技能和勇气解决问题",
       "consequences": "可能会获得重要信息或资源，但也面临受伤或失败的风险",
-      "difficulty": 4
+      "difficulty": 4,
+      "imagePrompt": "一个勇敢的冒险者正面对峙强大的敌人，周围是神秘的魔法光芒，紧张的战斗氛围"
     }
   ]
 }`;
@@ -322,7 +327,8 @@ ${context}
         text: this.optimizeChoiceText(choice.text),
         description: this.optimizeChoiceDescription(choice.description),
         consequences: choice.consequences || this.generateDefaultConsequences(choice),
-        difficulty: this.evaluateChoiceDifficulty(choice, state)
+        difficulty: this.evaluateChoiceDifficulty(choice, state),
+        imagePrompt: choice.imagePrompt || this.generateDefaultImagePrompt(choice, state)
       };
 
       validatedChoices.push(optimizedChoice);
@@ -377,6 +383,18 @@ ${context}
   }
 
   /**
+   * 生成默认图片提示词
+   */
+  private generateDefaultImagePrompt(choice: Choice, state: StoryState): string {
+    // 根据选择内容和故事状态生成默认图片提示词
+    const characterNames = state.characters.map(c => c.name).join('、');
+    const setting = state.setting || '神秘世界';
+    const mood = state.mood || '未知';
+    
+    return `在${setting}中，${characterNames}面临"${choice.text}"的选择。场景氛围：${mood}。请创作一幅符合这个情节的插图，画面要生动展现这个关键时刻。`;
+  }
+
+  /**
    * 平衡难度分布
    */
   private balanceDifficultyDistribution(choices: Choice[]): Choice[] {
@@ -424,7 +442,8 @@ ${context}
         text: '深入调查',
         description: '仔细探查周围的环境，寻找隐藏的线索和秘密。',
         consequences: '可能发现重要信息，但也可能触发未知的危险。',
-        difficulty: 3
+        difficulty: 3,
+        imagePrompt: '一个侦探或调查者在神秘的环境中仔细搜查线索，周围充满悬念'
       });
     } else if (state.mood === '紧张' || state.mood === '危机') {
       customizedChoices.push({
@@ -432,7 +451,8 @@ ${context}
         text: '快速行动',
         description: '抓住时机，迅速采取行动解决眼前的危机。',
         consequences: '可能扭转局势，但仓促行动也可能带来新的问题。',
-        difficulty: 4
+        difficulty: 4,
+        imagePrompt: '紧急情况下快速行动的角色，周围是紧张的危机场景'
       });
     }
 

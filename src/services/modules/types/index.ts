@@ -107,6 +107,8 @@ export interface Choice {
   description: string;
   consequences: string;
   difficulty: number;
+  imagePrompt?: string; // 图片生成提示词
+  imageUrl?: string;   // 生成的图片URL
 }
 
 // 故事生成响应接口

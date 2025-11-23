@@ -20,6 +20,7 @@ const getModelLevelDescription = (performanceLevel?: string): string => {
 };
 import { storyAI, StoryGenerationResponse } from '../services/storyAI';
 import { modelConfigAdapter } from '@/services/modelConfigAdapter';
+import { imageGenerationService } from '@/services/imageGenerationService';
 import { 
   contextManager, 
   SavedStoryContext, 
@@ -221,6 +222,15 @@ const StoryManager: React.FC<StoryManagerProps> = ({ preloadedContext, onReturnT
         if (userConfig) {
           setCurrentModelConfig(userConfig);
         }
+        
+        // 直接配置图片生成服务（使用你提供的配置）
+        console.log('🖼️ 配置图片生成服务:');
+        imageGenerationService.setConfig({
+          provider: 'openai', // 或 'gemini'
+          model: 'gemini-2.5-flash-image',
+          apiKey: 'sk-43a1OroT63326N3q44D466D33d3a46A19c5d00A6B4Ca9f18',
+          baseUrl: 'https://aihubmix.com/v1' // 可选
+        });
       } catch (error) {
         console.error('加载用户模型配置失败:', error);
       }

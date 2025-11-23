@@ -33,7 +33,8 @@ export const models = {
   ],
   google: [
     { value: 'gemini-pro', label: 'Gemini Pro' },
-    { value: 'gemini-pro-vision', label: 'Gemini Pro Vision' }
+    { value: 'gemini-pro-vision', label: 'Gemini Pro Vision' },
+    { value: 'gemini-2.5-flash-image', label: 'Gemini 2.5 Flash Image' }
   ],
   openrouter: [
     { value: 'anthropic/claude-3-opus', label: 'Claude 3 Opus' },
@@ -77,4 +78,10 @@ export interface ModelConfig {
   maxTokens: number;
   customPrompt?: string;
   performance_level?: string; // 模型性能等级：basic, advanced, premium
+  
+  // 图片生成配置
+  imageProvider?: string;
+  imageModel?: string;
+  imageApiKey?: string;
+  imageBaseUrl?: string;
 }

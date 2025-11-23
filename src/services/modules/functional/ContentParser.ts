@@ -608,6 +608,8 @@ export class ContentParser implements IContentParser {
     }
     
     // 已移除提取后内容调试输出
+    console.log('🔧 AI返回的原始内容:', response);
+    console.log('🔧 提取的JSON内容:', content);
     
     // 先尝试直接解析，避免不必要的修复
     try {
@@ -616,6 +618,7 @@ export class ContentParser implements IContentParser {
       return content;
     } catch (directParseError) {
       devLog('🔧 JSON格式有问题，尝试修复:', directParseError.message);
+      console.log('🔧 JSON解析错误详情:', directParseError);
     }
     
     // 尝试修复JSON格式
@@ -918,27 +921,31 @@ export class ContentParser implements IContentParser {
    * 获取默认选择项（回退方案）
    */
   getDefaultChoices(): Choice[] {
+    devLog('🔧 使用默认选择项');
     return [
       {
         id: 1,
         text: "继续前进",
         description: "勇敢地面对未知，继续探索前方的道路。",
         consequences: "可能会遇到新的挑战或发现重要线索。",
-        difficulty: 3
+        difficulty: 3,
+        imagePrompt: "一个勇敢的冒险者在神秘的道路上继续前行，周围是未知的风景"
       },
       {
         id: 2,
         text: "寻找线索",
         description: "仔细观察周围环境，寻找有用的线索。",
         consequences: "有机会获得关键情报，但也可能浪费时间。",
-        difficulty: 2
+        difficulty: 2,
+        imagePrompt: "一个人在仔细搜查环境，寻找隐藏的线索和秘密"
       },
       {
         id: 3,
         text: "谨慎行动",
         description: "采取保守策略，避免冒险。",
         consequences: "可以降低风险，但可能错失良机。",
-        difficulty: 1
+        difficulty: 1,
+        imagePrompt: "一个谨慎的角色在评估情况，周围环境显得神秘而危险"
       }
     ];
   }
