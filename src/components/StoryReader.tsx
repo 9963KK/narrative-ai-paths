@@ -867,7 +867,7 @@ const StoryReader: React.FC<StoryReaderProps> = ({
           devLog('没有存档选项或非首次读档，重新生成选项...');
           // 清空状态并重新生成选项
           setPendingChoices(null);
-          setIsGeneratingChoices(false);
+          // 不要在这里设置 setIsGeneratingChoices(false)，让 generateChoicesIfNeeded 自己管理状态
           generateChoicesIfNeeded(story.current_scene, story.characters, '预生成选项');
         }
       } else {

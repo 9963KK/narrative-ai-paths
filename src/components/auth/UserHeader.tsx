@@ -47,7 +47,7 @@ const UserHeaderComponent: React.FC = () => {
     <div className="flex items-center justify-between px-6 py-4 bg-[#fdfbf9] border-b border-[#f2f0ea]/50">
       <div className="flex items-center gap-8">
         {/* Logo Area */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/app')}>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
           <div className="w-10 h-10 bg-[#c5a059] rounded-xl flex items-center justify-center shadow-sm">
             <img src="/pen-icon.svg" alt="Logo" className="w-6 h-6 text-white invert brightness-0" style={{ filter: 'brightness(0) invert(1)' }} />
           </div>

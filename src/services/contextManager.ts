@@ -130,6 +130,18 @@ class ContextManager {
         console.log('📸 创建故事快照，ID:', contextId);
       }
 
+      // 处理选项：移除 imageUrl 以减少存储空间
+      // base64 图片数据非常大，会导致 localStorage 超出限制
+      let choicesToSave = options.currentChoices;
+      if (choicesToSave && choicesToSave.length > 0) {
+        choicesToSave = choicesToSave.map(choice => {
+          const { imageUrl, ...choiceWithoutImage } = choice;
+          // 只保留 imagePrompt，图片可以在需要时重新生成
+          return choiceWithoutImage;
+        });
+        console.log('🖼️ 已移除选项中的图片URL以节省存储空间');
+      }
+
       const savedContext: SavedStoryContext = {
         id: contextId,
         title: options.title || this.generateStoryTitle(storyState),
@@ -147,7 +159,7 @@ class ContextManager {
         thumbnail: this.generateThumbnail(storyState),
         genre: this.extractGenre(storyState),
         summaryState: options.summaryState, // 保存摘要状态
-        currentChoices: options.currentChoices // 保存当前选项
+        currentChoices: choicesToSave // 保存处理后的选项（不含图片URL）
       };
 
       // 添加或更新存档

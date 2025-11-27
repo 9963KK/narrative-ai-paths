@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, Feather, Users, Sparkles, Scroll, ArrowRight, Star, Menu, X, Command, PenTool, Coffee, Map, ChevronDown, MousePointer2, Grid, Wand2, Maximize2 } from 'lucide-react';
+import { BookOpen, Feather, Users, Sparkles, Scroll, ArrowRight, Star, Menu, X, Command, PenTool, Coffee, Map, ChevronDown, MousePointer2 } from 'lucide-react';
 
 // 模拟的图片占位符
 const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2428&auto=format&fit=crop";
@@ -130,25 +130,6 @@ export default function Home() {
     return (
         <div className="font-serif text-[#2c241b] bg-[#1a120b] selection:bg-[#c5a059] selection:text-white relative">
 
-            {/* 右侧悬浮菜单 */}
-            <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4">
-                <div className="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/50 flex flex-col gap-4 items-center py-6 animate-fade-in-right">
-                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
-                        <Grid className="w-5 h-5" />
-                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">功能菜单</span>
-                    </button>
-                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
-                        <Wand2 className="w-5 h-5" />
-                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">AI 设置</span>
-                    </button>
-                    <div className="w-6 h-px bg-[#e8e4d9]"></div>
-                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
-                        <Maximize2 className="w-5 h-5" />
-                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">全屏模式</span>
-                    </button>
-                </div>
-            </div>
-
             {/* Navigation Bar */}
             <nav
                 className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isScrolled ? 'bg-[#faf7f2]/90 backdrop-blur-md py-3 shadow-sm border-b border-[#c5a059]/20' : 'bg-transparent py-6'
@@ -170,7 +151,7 @@ export default function Home() {
                     </div>
 
                     <div className="hidden md:flex items-center gap-8">
-                        {['首页', '功能特性', '作品画廊', '关于我们'].map((item) => (
+                        {['首页'].map((item) => (
                             <a
                                 key={item}
                                 href="#"
