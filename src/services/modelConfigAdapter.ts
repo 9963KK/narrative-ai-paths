@@ -1,4 +1,4 @@
-import { userModelConfigService, type DefaultModel } from './userModelConfigService';
+import { userModelConfigService } from './userModelConfigService';
 import { userLevelService, type ModelByLevel } from './userLevelService';
 import { ModelConfig } from '@/components/model-config/constants';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +19,7 @@ class ModelConfigAdapter {
   async getUserModelConfig(includeApiKey: boolean = false): Promise<ModelConfig | null> {
     try {
       devLog(`🔧 获取用户模型配置，includeApiKey: ${includeApiKey}`);
-      
+
       // 优先使用临时存储的配置（登录时已获取）
       if (includeApiKey) {
         const tempConfig = tempApiKeyStore.getTempModelConfig();
@@ -33,11 +33,11 @@ class ModelConfigAdapter {
         }
         devLog('临时存储中没有配置，回退到数据库查询');
       }
-      
+
       // 回退到原有的数据库查询逻辑
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       devLog(`📋 获取到 ${availableModels.length} 个可用模型`);
-      
+
       if (availableModels.length === 0) {
         devError('❌ 用户没有可用的模型');
         return null;
@@ -46,10 +46,10 @@ class ModelConfigAdapter {
       // 选择第一个有API密钥的模型
       const modelsWithApiKey = availableModels.filter(model => model.has_api_key);
       const defaultModel = modelsWithApiKey.length > 0 ? modelsWithApiKey[0] : availableModels[0];
-      
+
       devLog(`选择的模型: ${defaultModel.model_id} (${defaultModel.provider}/${defaultModel.model})`);
       apiLog(`🔑 模型是否有API密钥: ${defaultModel.has_api_key}`);
-      
+
       if (!defaultModel.has_api_key) {
         devError('❌ 选择的模型未配置API密钥');
         return null;
@@ -105,7 +105,7 @@ class ModelConfigAdapter {
   } | null> {
     try {
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
-      
+
       if (availableModels.length === 0) {
         return null;
       }
@@ -140,7 +140,7 @@ class ModelConfigAdapter {
   }>> {
     try {
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
-      
+
       return availableModels.map(model => ({
         modelId: model.model_id,
         provider: model.provider,
@@ -164,7 +164,7 @@ class ModelConfigAdapter {
     try {
       const availableModels = await userLevelService.getUserAvailableModelsByLevel();
       const targetModel = availableModels.find(model => model.model_id === modelId);
-      
+
       if (!targetModel) {
         devError('未找到指定的模型:', modelId);
         return null;
@@ -194,7 +194,7 @@ class ModelConfigAdapter {
   async getRecommendedModel(usageType: 'story_generation' | 'choice_generation' | 'analysis' = 'story_generation'): Promise<ModelConfig | null> {
     try {
       const recommendedModel = await userModelConfigService.getRecommendedModel(usageType);
-      
+
       if (!recommendedModel) {
         return null;
       }
@@ -294,18 +294,18 @@ class ModelConfigAdapter {
         .from('system_model_pool')
         .select('api_config')
         .eq('id', modelId)
-        .single();
-        
+        .maybeSingle();
+
       if (error) {
         devError('❌ 查询系统模型池失败:', error);
         return null;
       }
-      
+
       if (systemModel && systemModel.api_config) {
         apiLog(`✅ 从系统模型池获取到API配置`);
-        
+
         const apiConfig = systemModel.api_config;
-        
+
         // 从api_config中提取API密钥
         if (typeof apiConfig === 'object' && apiConfig.api_key) {
           apiLog(`✅ 从系统模型池对象配置中获取到API密钥`);

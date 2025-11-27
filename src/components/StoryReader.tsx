@@ -5,11 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import StageProgressIndicator from '@/components/ui/StageProgressIndicator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X } from 'lucide-react';
+import { Loader2, Dice1, Dice2, Dice3, Dice4, Dice5, Save, FolderOpen, Home, Settings, User, X, Target } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { storyAI } from '@/services/storyAI';
 import { devLog, devError, stateLog } from '@/utils/logger';
+import { documentRecordManager, DocumentRecord } from '@/services/documentRecordManager';
 import { imageGenerationService } from '@/services/imageGenerationService';
+
+// 纹理资源
+const PAPER_TEXTURE_URL = "https://www.transparenttextures.com/patterns/cream-paper.png";
 
 // 辅助函数：根据性能等级获取模型描述
 const getModelLevelDescription = (performanceLevel?: string, action: string = '正在思考中'): string => {
@@ -93,7 +97,7 @@ interface StoryReaderProps {
   onChoicesUpdate?: (choices: Choice[]) => void; // 选项更新回调
   streamingText?: string; // 实时流式文本
   isStreaming?: boolean; // 是否正在流式生成
-  currentChoiceImage?: {imageUrl: string, choiceText: string} | null; // 当前选择的图片信息
+  currentChoiceImage?: { imageUrl: string, choiceText: string } | null; // 当前选择的图片信息
 }
 
 const StoryReader: React.FC<StoryReaderProps> = ({
@@ -126,81 +130,81 @@ const StoryReader: React.FC<StoryReaderProps> = ({
   const [isStoryStuck, setIsStoryStuck] = useState(false); // 故事是否真的卡住了
 
   // 解析性格特征为标签数组
-const parseTraitsToTags = (traits: string): string[] => {
-  if (!traits) return [];
-  return traits
-    .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
-    .map(trait => trait.trim()) // 去除空格
-    .filter(trait => trait.length > 0); // 过滤空字符串
-};
+  const parseTraitsToTags = (traits: string): string[] => {
+    if (!traits) return [];
+    return traits
+      .split(/[，、,]/) // 按中文逗号、顿号、英文逗号分割
+      .map(trait => trait.trim()) // 去除空格
+      .filter(trait => trait.length > 0); // 过滤空字符串
+  };
 
-const isPlaceholderName = (name?: string | null): boolean => {
-  if (!name) return true;
-  const trimmed = name.trim();
-  return trimmed.length === 0 || trimmed === '未知角色';
-};
+  const isPlaceholderName = (name?: string | null): boolean => {
+    if (!name) return true;
+    const trimmed = name.trim();
+    return trimmed.length === 0 || trimmed === '未知角色';
+  };
 
-const isPlaceholderRole = (role?: string | null): boolean => {
-  if (!role) return true;
-  const trimmed = role.trim();
-  return trimmed.length === 0 || trimmed === '神秘角色';
-};
+  const isPlaceholderRole = (role?: string | null): boolean => {
+    if (!role) return true;
+    const trimmed = role.trim();
+    return trimmed.length === 0 || trimmed === '神秘角色';
+  };
 
-const getDisplayName = (character: any, index: number): string => {
-  if (character?.display_name) return character.display_name;
+  const getDisplayName = (character: any, index: number): string => {
+    if (character?.display_name) return character.display_name;
 
-  if (!isPlaceholderName(character?.name)) {
-    return character.name.trim();
-  }
-
-  if (!isPlaceholderRole(character?.role)) {
-    return character.role.trim();
-  }
-
-  // 使用 traits 的第一个关键词作为候选名称
-  const traits = typeof character?.traits === 'string'
-    ? character.traits.split(/[，、,]/).map((t: string) => t.trim()).filter((t: string) => t)
-    : [];
-  if (traits.length > 0) {
-    const generated = traits[0];
-    if (character) {
-      character.display_name = generated;
+    if (!isPlaceholderName(character?.name)) {
+      return character.name.trim();
     }
-    return generated;
-  }
 
-  const fallbackName = `神秘访客 ${index + 1}`;
-  if (character) {
-    character.display_name = fallbackName;
-  }
-  return fallbackName;
-};
+    if (!isPlaceholderRole(character?.role)) {
+      return character.role.trim();
+    }
 
-const getDisplayRole = (character: any): string => {
-  if (!isPlaceholderRole(character?.role)) {
-    return character.role.trim();
-  }
+    // 使用 traits 的第一个关键词作为候选名称
+    const traits = typeof character?.traits === 'string'
+      ? character.traits.split(/[，、,]/).map((t: string) => t.trim()).filter((t: string) => t)
+      : [];
+    if (traits.length > 0) {
+      const generated = traits[0];
+      if (character) {
+        character.display_name = generated;
+      }
+      return generated;
+    }
 
-  if (!isPlaceholderName(character?.name)) {
-    return `${character.name.trim()}的身份`;
-  }
+    const fallbackName = `神秘访客 ${index + 1}`;
+    if (character) {
+      character.display_name = fallbackName;
+    }
+    return fallbackName;
+  };
 
-  return '角色信息生成中';
-};
+  const getDisplayRole = (character: any): string => {
+    if (!isPlaceholderRole(character?.role)) {
+      return character.role.trim();
+    }
+
+    if (!isPlaceholderName(character?.name)) {
+      return `${character.name.trim()}的身份`;
+    }
+
+    return '角色信息生成中';
+  };
 
   // 计算所有章节的累积字数
   const calculateTotalWordCount = (): number => {
     try {
       const conversationHistory = storyAI.getConversationHistory();
       let totalWords = 0;
-      
+
       // 计算所有AI生成的助手回复的字数
       conversationHistory.forEach(msg => {
         if (msg.role === 'assistant') {
           totalWords += msg.content.length;
         }
       });
-      
+
       // 在打字机效果期间，使用完整的场景文本长度而不是当前显示的文本
       if (isTyping && story.current_scene) {
         // 打字机效果期间，检查当前场景是否已经在历史记录中
@@ -215,7 +219,7 @@ const getDisplayRole = (character: any): string => {
           totalWords += currentText.length;
         }
       }
-      
+
       return totalWords;
     } catch (error) {
       console.warn('计算总字数失败，使用当前章节字数:', error);
@@ -225,10 +229,10 @@ const getDisplayRole = (character: any): string => {
   };
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(true); // 是否有未保存的进度
   const [isSaving, setIsSaving] = useState(false); // 是否正在保存
-  
+
   // 新增：选项预生成状态管理
   const [pendingChoices, setPendingChoices] = useState<Choice[] | null>(null); // 预生成的选项
-  
+
   // 监控isProcessingChoice状态变化
   useEffect(() => {
     // 已移除状态变化调试输出
@@ -251,7 +255,7 @@ const getDisplayRole = (character: any): string => {
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory]);
-  
+
   // 调试：监控savedChoices变化
   useEffect(() => {
     stateLog('savedChoices状态变化:', {
@@ -260,7 +264,7 @@ const getDisplayRole = (character: any): string => {
       timestamp: new Date().toISOString()
     });
   }, [savedChoices]);
-  
+
   // 处理currentChoiceImage的变化
   useEffect(() => {
     // 这里可以添加对currentChoiceImage变化的处理逻辑
@@ -275,7 +279,7 @@ const getDisplayRole = (character: any): string => {
   // 处理保存故事
   const handleSaveStory = async () => {
     if (!onSaveStory || isSaving) return; // 防止重复调用
-    
+
     setIsSaving(true);
     try {
       await onSaveStory(undefined, choices.length > 0 ? choices : undefined);
@@ -307,7 +311,7 @@ const getDisplayRole = (character: any): string => {
         console.warn('⚠️ JSON解析相关错误，但不立即设为卡住状态（AI内部会重试）');
         // 不立即设置为卡住，给重试机制一些时间
       } else {
-      setIsStoryStuck(true);
+        setIsStoryStuck(true);
       }
     } else {
       // AI错误清除时，重置卡住状态（除非其他原因导致卡住）
@@ -373,11 +377,11 @@ const getDisplayRole = (character: any): string => {
     }
 
     const availableChoices = storyPatterns[choiceType as keyof typeof storyPatterns] || storyPatterns.mystery;
-    
+
     // 动态调整选择数量  
     const choiceCount = determineLocalChoiceCount(storyData);
     devLog(`动态选择数量计算 (类型: ${choiceType}):`, choiceCount);
-    
+
     const selectedChoices = availableChoices
       .sort(() => Math.random() - 0.5) // 随机排序
       .slice(0, choiceCount)
@@ -385,10 +389,10 @@ const getDisplayRole = (character: any): string => {
         id: index + 1,
         ...choice,
         // 根据角色特征调整选择可用性
-        available: Array.isArray(characters) && characters.length > 0 ? characters.some(char => 
-          choice.difficulty <= 3 || 
+        available: Array.isArray(characters) && characters.length > 0 ? characters.some(char =>
+          choice.difficulty <= 3 ||
           (char.traits && typeof char.traits === 'string' && (
-            char.traits.includes('强') || 
+            char.traits.includes('强') ||
             char.traits.includes('能力') ||
             char.traits.includes('技能')
           ))
@@ -401,10 +405,10 @@ const getDisplayRole = (character: any): string => {
   // 动态决定本地选择数量
   const determineLocalChoiceCount = (story: any): number => {
     const { chapter, tension_level = 5, mood = '神秘', choices_made = [] } = story;
-    
+
     // 基础选择数量（2-5个）
     let baseCount = 3;
-    
+
     // 根据章节调整
     if (chapter <= 2) {
       baseCount = Math.floor(Math.random() * 2) + 2; // 2-3个
@@ -413,7 +417,7 @@ const getDisplayRole = (character: any): string => {
     } else {
       baseCount = Math.floor(Math.random() * 4) + 2; // 2-5个
     }
-    
+
     // 根据紧张度调整
     if (tension_level >= 8) {
       baseCount = Math.min(5, baseCount + 1);
@@ -422,21 +426,21 @@ const getDisplayRole = (character: any): string => {
     } else if (tension_level <= 3) {
       baseCount = Math.max(2, baseCount - 1);
     }
-    
+
     // 根据氛围调整
     if (mood === '紧张' || mood === '激烈' || mood === '悬疑') {
       baseCount = Math.min(5, baseCount + 1);
     } else if (mood === '平静' || mood === '和谐') {
       baseCount = Math.max(2, baseCount - 1);
     }
-    
+
     // 随机因素
     if (Math.random() < 0.15) {
       baseCount = Math.max(2, baseCount - 1);
     } else if (Math.random() < 0.15) {
       baseCount = Math.min(5, baseCount + 1);
     }
-    
+
     return baseCount;
   };
 
@@ -447,9 +451,9 @@ const getDisplayRole = (character: any): string => {
       console.warn('⚠️ generateContextualChoices 收到无效的 scene 参数:', scene);
       return generateDynamicChoices('', characters, story); // 回退到动态选择生成
     }
-    
+
     const sceneText = scene.toLowerCase();
-    
+
     // 分析场景中的关键元素
     const hasLocation = /在|来到|面前|门前|遗迹|建筑|房间/.test(sceneText);
     const hasMagic = /魔法|符文|法术|咒语|力量|魔力|闪光|发光/.test(sceneText);
@@ -457,106 +461,106 @@ const getDisplayRole = (character: any): string => {
     const hasDanger = /危险|威胁|敌人|警告|恐怖|陷阱/.test(sceneText);
     const hasExploration = /探索|调查|搜索|发现|寻找|观察/.test(sceneText);
     const hasMystery = /神秘|秘密|谜团|未知|隐藏/.test(sceneText);
-    
+
     // 动态决定选择数量
     const targetChoiceCount = determineLocalChoiceCount(story);
     devLog(`本地生成目标选择数量:`, targetChoiceCount);
-    
+
     let choices: Choice[] = [];
-    
+
     // 根据当前场景内容生成相关选择
     if (sceneText.includes('符文') && sceneText.includes('发光')) {
       choices = [
-        { 
-          id: 1, 
-          text: "触碰符文", 
-          description: "伸手去触摸那些发光的古老符文", 
+        {
+          id: 1,
+          text: "触碰符文",
+          description: "伸手去触摸那些发光的古老符文",
           difficulty: 4,
           consequences: "可能激活魔法力量，但也有未知风险"
         },
-        { 
-          id: 2, 
-          text: "仔细研究符文", 
-          description: "先观察符文的图案和含义", 
+        {
+          id: 2,
+          text: "仔细研究符文",
+          description: "先观察符文的图案和含义",
           difficulty: 2,
           consequences: "更安全的方式，可能获得有用信息"
         },
-        { 
-          id: 3, 
-          text: "让莉娜检查", 
-          description: "请魔法导师莉娜来分析这些符文", 
+        {
+          id: 3,
+          text: "让莉娜检查",
+          description: "请魔法导师莉娜来分析这些符文",
           difficulty: 3,
           consequences: "利用专业知识，但可能错过直接体验"
         }
       ];
     } else if (sceneText.includes('古遗迹') || sceneText.includes('石门')) {
       choices = [
-        { 
-          id: 1, 
-          text: "推开石门", 
-          description: "直接尝试进入古遗迹", 
+        {
+          id: 1,
+          text: "推开石门",
+          description: "直接尝试进入古遗迹",
           difficulty: 4,
           consequences: "可能触发陷阱或警报"
         },
-        { 
-          id: 2, 
-          text: "寻找另一个入口", 
-          description: "绕着建筑寻找其他进入方式", 
+        {
+          id: 2,
+          text: "寻找另一个入口",
+          description: "绕着建筑寻找其他进入方式",
           difficulty: 3,
           consequences: "更安全但可能耗费时间"
         },
-        { 
-          id: 3, 
-          text: "先做准备", 
-          description: "检查装备，制定进入计划", 
+        {
+          id: 3,
+          text: "先做准备",
+          description: "检查装备，制定进入计划",
           difficulty: 2,
           consequences: "降低风险，提高成功率"
         }
       ];
     } else if (hasMagic && hasCharacters) {
       choices = [
-        { 
-          id: 1, 
-          text: "尝试施法", 
-          description: "运用魔法力量应对当前情况", 
+        {
+          id: 1,
+          text: "尝试施法",
+          description: "运用魔法力量应对当前情况",
           difficulty: 4,
           consequences: "效果强大但消耗较大"
         },
-        { 
-          id: 2, 
-          text: "合作施法", 
-          description: "与伙伴联合使用魔法", 
+        {
+          id: 2,
+          text: "合作施法",
+          description: "与伙伴联合使用魔法",
           difficulty: 3,
           consequences: "风险分担，效果稳定"
         },
-        { 
-          id: 3, 
-          text: "暂时观望", 
-          description: "先观察情况再做决定", 
+        {
+          id: 3,
+          text: "暂时观望",
+          description: "先观察情况再做决定",
           difficulty: 2,
           consequences: "保存实力，但可能错过时机"
         }
       ];
     } else if (hasExploration || hasMystery) {
       choices = [
-        { 
-          id: 1, 
-          text: "深入探索", 
-          description: "继续深入调查未知区域", 
+        {
+          id: 1,
+          text: "深入探索",
+          description: "继续深入调查未知区域",
           difficulty: 4,
           consequences: "可能发现重要线索，但风险较高"
         },
-        { 
-          id: 2, 
-          text: "小心前进", 
-          description: "谨慎地一步步探索", 
+        {
+          id: 2,
+          text: "小心前进",
+          description: "谨慎地一步步探索",
           difficulty: 3,
           consequences: "平衡风险与收益"
         },
-        { 
-          id: 3, 
-          text: "收集信息", 
-          description: "先搜集更多线索再行动", 
+        {
+          id: 3,
+          text: "收集信息",
+          description: "先搜集更多线索再行动",
           difficulty: 2,
           consequences: "增加成功率，但可能错过机会"
         }
@@ -564,30 +568,30 @@ const getDisplayRole = (character: any): string => {
     } else {
       // 通用选择，但也尽量与场景相关
       choices = [
-        { 
-          id: 1, 
-          text: "积极行动", 
-          description: "主动应对当前状况", 
+        {
+          id: 1,
+          text: "积极行动",
+          description: "主动应对当前状况",
           difficulty: 3,
           consequences: "快速推进但存在风险"
         },
-        { 
-          id: 2, 
-          text: "谨慎应对", 
-          description: "仔细考虑后再行动", 
+        {
+          id: 2,
+          text: "谨慎应对",
+          description: "仔细考虑后再行动",
           difficulty: 2,
           consequences: "降低风险，稳步前进"
         },
-        { 
-          id: 3, 
-          text: "寻求帮助", 
-          description: "与同伴商讨最佳方案", 
+        {
+          id: 3,
+          text: "寻求帮助",
+          description: "与同伴商讨最佳方案",
           difficulty: 2,
           consequences: "集思广益，但可能耗费时间"
         }
       ];
     }
-    
+
     // 根据目标选择数量调整选项
     const extraChoices = [
       {
@@ -625,7 +629,7 @@ const getDisplayRole = (character: any): string => {
     // 根据目标数量调整选择
     if (choices.length < targetChoiceCount) {
       const needMore = targetChoiceCount - choices.length;
-      
+
       // 随机添加额外选择
       const shuffledExtra = extraChoices.sort(() => Math.random() - 0.5);
       for (let i = 0; i < needMore && i < shuffledExtra.length; i++) {
@@ -637,20 +641,20 @@ const getDisplayRole = (character: any): string => {
     } else if (choices.length > targetChoiceCount) {
       // 如果选择太多，随机保留目标数量
       choices = choices.sort(() => Math.random() - 0.5).slice(0, targetChoiceCount);
-      
+
       // 重新分配ID
       choices = choices.map((choice, index) => ({
         ...choice,
         id: index + 1
       }));
     }
-    
+
     // 当进度达到80%且低于95%时，添加直通结局选项
     // 也可以基于章节数作为后备条件
     const currentProgress = story.story_progress || 0;
     const calculatedProgress = Math.min((story.chapter / 18) * 85, 85);
     const effectiveProgress = Math.max(currentProgress, calculatedProgress);
-    
+
     console.log('🎬 检查直通结局选项条件:', {
       currentProgress,
       calculatedProgress: Math.round(calculatedProgress),
@@ -659,7 +663,7 @@ const getDisplayRole = (character: any): string => {
       shouldShowEndingOption: effectiveProgress >= 80 && effectiveProgress < 95,
       chapterBasedFallback: story.chapter >= 15 && story.chapter < 20
     });
-    
+
     // 进度条件或章节条件满足时显示直通结局选项
     if ((effectiveProgress >= 80 && effectiveProgress < 95) || (story.chapter >= 15 && story.chapter < 20)) {
       devLog('添加直通结局选项');
@@ -673,9 +677,9 @@ const getDisplayRole = (character: any): string => {
     } else {
       console.log('❌ 不满足直通结局选项条件');
     }
-    
+
     console.log(`🎲 最终生成选择数量: ${choices.length}/${targetChoiceCount}`);
-    
+
     return choices;
   };
 
@@ -683,9 +687,9 @@ const getDisplayRole = (character: any): string => {
   const generateAIChoices = async (scene: string, characters: any[]): Promise<Choice[]> => {
     setIsGeneratingChoices(true);
     setIsStoryStuck(false); // 重置卡住状态
-    
+
     // 直接开始生成，不添加人工延时
-    
+
     try {
       // 优先使用AI生成选择
       if (modelConfig && modelConfig.apiKey) {
@@ -693,7 +697,7 @@ const getDisplayRole = (character: any): string => {
           // 导入storyAI服务
           const { storyAI } = await import('../services/storyAI');
           // 模型配置现在由统一AI服务自动管理
-          
+
           const aiChoices = await storyAI.generateChoices(scene, characters, story.setting || '未知世界');
           if (aiChoices && aiChoices.length > 0) {
             devLog('AI选择生成成功');
@@ -707,7 +711,7 @@ const getDisplayRole = (character: any): string => {
           // 但我们还有智能回退方案，所以暂时不设为卡住
         }
       }
-      
+
       // 回退到基于场景内容的智能生成
       const contextualChoices = generateContextualChoices(scene, characters, story);
       if (contextualChoices && contextualChoices.length > 0) {
@@ -718,14 +722,14 @@ const getDisplayRole = (character: any): string => {
         // 此时AI已经重试了3次，智能回退也失败了
         console.error('❌ AI重试3次失败 + 智能回退也失败，故事可能真的卡住了');
         setIsStoryStuck(true);
-        
+
         // 通用选择，适应当前故事内容
         const baseChoices = [
           { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
           { id: 2, text: "停下思考", description: "冷静分析当前情况", difficulty: 2 },
           { id: 3, text: "与同伴交流", description: "和伙伴讨论下一步行动", difficulty: 2 }
         ];
-        
+
         // 根据故事设定稍作调整
         if (story.setting.toLowerCase().includes('科幻')) {
           baseChoices.push({ id: 4, text: "检查科技设备", description: "查看身边的科技装备", difficulty: 2 });
@@ -734,14 +738,14 @@ const getDisplayRole = (character: any): string => {
         } else if (story.setting.toLowerCase().includes('现代') || story.setting.toLowerCase().includes('当代')) {
           baseChoices.push({ id: 4, text: "查看手机", description: "检查是否有新的信息", difficulty: 1 });
         }
-        
+
         return baseChoices;
       }
     } catch (error) {
       console.error('❌ 生成选择发生严重错误（包含AI重试3次失败）:', error);
       // 这是最严重的错误，连try-catch都捕获了
       setIsStoryStuck(true);
-      
+
       // 错误回退 - 最后的保险，保证总是有选择
       return [
         { id: 1, text: "继续前进", description: "勇敢地向前迈进", difficulty: 3 },
@@ -757,9 +761,9 @@ const getDisplayRole = (character: any): string => {
   const shouldShowChoices = useCallback(() => {
     const hasReachedEndingCondition = (story.story_progress || 0) >= 95 || story.chapter >= 20;
     return story.needs_choice !== false &&
-           !story.is_completed &&
-           !initialStory.is_completed &&
-           !hasReachedEndingCondition;
+      !story.is_completed &&
+      !initialStory.is_completed &&
+      !hasReachedEndingCondition;
   }, [story.needs_choice, story.is_completed, initialStory.is_completed, story.story_progress, story.chapter]);
 
   // 统一的选项生成函数
@@ -837,10 +841,10 @@ const getDisplayRole = (character: any): string => {
       setCurrentText('');
       setShowChoices(false);
       setChoices([]);
-      
+
       // 检查是否需要生成选项
       const needsChoices = shouldShowChoices();
-      
+
       devLog('检查是否需要生成选项:', {
         needs_choice: story.needs_choice,
         is_completed: story.is_completed,
@@ -851,7 +855,7 @@ const getDisplayRole = (character: any): string => {
         chapter: story.chapter,
         hasSavedChoices: savedChoices?.length || 0
       });
-      
+
       // 智能处理存档选项：首次读档使用存档选项，后续重新生成
       if (needsChoices) {
         if (savedChoices && savedChoices.length > 0) {
@@ -871,7 +875,7 @@ const getDisplayRole = (character: any): string => {
         setPendingChoices(null);
         setIsGeneratingChoices(false);
       }
-      
+
       // 打字机效果（与选项生成并行）
       let index = 0;
       const interval = setInterval(() => {
@@ -881,10 +885,10 @@ const getDisplayRole = (character: any): string => {
         } else {
           setIsTyping(false);
           devLog('打字机效果完成，检查选项状态...');
-          
+
           // 打字完成，触发选项显示检查
           devLog('打字机完成，触发选项显示检查');
-          
+
           clearInterval(interval);
         }
       }, 30); // 稍微加快打字速度
@@ -892,16 +896,16 @@ const getDisplayRole = (character: any): string => {
       return () => clearInterval(interval);
     }
   }, [story.current_scene]);
-  
+
   // 统一的选项显示状态机
   useEffect(() => {
     // 显示条件：有待显示选项 + 打字机完成 + 当前没有显示选项 + 应该显示选项
     if (pendingChoices &&
-        pendingChoices.length > 0 &&
-        !isTyping &&
-        !showChoices &&
-        choices.length === 0 &&
-        shouldShowChoices()) {
+      pendingChoices.length > 0 &&
+      !isTyping &&
+      !showChoices &&
+      choices.length === 0 &&
+      shouldShowChoices()) {
 
       devLog('选项显示条件满足，准备显示选项!');
 
@@ -909,11 +913,11 @@ const getDisplayRole = (character: any): string => {
       setTimeout(() => {
         // 再次检查条件，确保状态没有变化
         if (!isTyping &&
-            pendingChoices &&
-            pendingChoices.length > 0 &&
-            !showChoices &&
-            choices.length === 0 &&
-            shouldShowChoices()) {
+          pendingChoices &&
+          pendingChoices.length > 0 &&
+          !showChoices &&
+          choices.length === 0 &&
+          shouldShowChoices()) {
 
           setChoices(pendingChoices);
           setShowChoices(true);
@@ -938,12 +942,12 @@ const getDisplayRole = (character: any): string => {
     // 核心逻辑：检测存储变量是否为空（说明选项被消费了）
     // 条件：打字机完成 + 存储变量都为空 + 没有正在生成 + 没有正在处理选择(本地+外部) + 重试次数未超限
     if (!isTyping &&
-        choices.length === 0 &&
-        !pendingChoices &&
-        !isGeneratingChoices &&
-        !isProcessingChoice &&
-        !localProcessingChoice &&
-        choiceGenerationRetryCount < MAX_RETRY_COUNT) {
+      choices.length === 0 &&
+      !pendingChoices &&
+      !isGeneratingChoices &&
+      !isProcessingChoice &&
+      !localProcessingChoice &&
+      choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
       stateLog(`检测到选项存储变量为空，开始重新生成... (重试次数: ${choiceGenerationRetryCount + 1}/${MAX_RETRY_COUNT})`);
 
@@ -951,12 +955,12 @@ const getDisplayRole = (character: any): string => {
       const timeoutId = setTimeout(async () => {
         // 再次检查条件，确保状态没有变化
         if (!isTyping &&
-            choices.length === 0 &&
-            !pendingChoices &&
-            !isGeneratingChoices &&
-            !isProcessingChoice &&
-            !localProcessingChoice &&
-            choiceGenerationRetryCount < MAX_RETRY_COUNT) {
+          choices.length === 0 &&
+          !pendingChoices &&
+          !isGeneratingChoices &&
+          !isProcessingChoice &&
+          !localProcessingChoice &&
+          choiceGenerationRetryCount < MAX_RETRY_COUNT) {
 
           console.log(`⚠️ 确认需要重新生成选项... (第${choiceGenerationRetryCount + 1}次尝试)`);
           setChoiceGenerationRetryCount(prev => prev + 1);
@@ -1022,14 +1026,14 @@ const getDisplayRole = (character: any): string => {
       selectedText: selectedChoice?.text,
       isProcessingChoice: true
     });
-    
+
     // 调用父组件的选择处理方法
     onMakeChoice(choiceId, selectedChoice?.text || '');
-    
+
     // 根据选择生成更丰富的后续内容
     const getNextScene = (choice: Choice | undefined) => {
       if (!choice) return "故事继续发展...";
-      
+
       const difficulty = choice.difficulty || 3;
       const outcomes = {
         1: "你的行动虽然简单，但效果显著。",
@@ -1038,9 +1042,9 @@ const getDisplayRole = (character: any): string => {
         4: "勇敢的选择让你面临新的挑战，但也带来了机会。",
         5: "极具挑战性的行动产生了戏剧性的后果。"
       };
-      
+
       const baseOutcome = outcomes[difficulty as keyof typeof outcomes] || outcomes[3];
-      
+
       // 根据故事内容生成相应的后续情节
       const storyType = story.setting.toLowerCase();
       if (storyType.includes('科幻') || storyType.includes('未来')) {
@@ -1053,7 +1057,7 @@ const getDisplayRole = (character: any): string => {
         return `${baseOutcome} 周围的环境发生了微妙的变化，你感觉到故事正在朝着一个全新的方向发展...`;
       }
     };
-    
+
     // 移除这个本地的故事更新逻辑，因为现在由StoryManager处理
   };
 
@@ -1103,11 +1107,11 @@ const getDisplayRole = (character: any): string => {
 
   // 智能判断是否应该建议结束故事
   const shouldSuggestEnding = (story: StoryState): { suggest: boolean; reason: string; confidence: number } => {
-    const { 
-      chapter, 
-      story_progress = 0, 
-      choices_made = [], 
-      tension_level = 5, 
+    const {
+      chapter,
+      story_progress = 0,
+      choices_made = [],
+      tension_level = 5,
       current_scene,
       story_goals = [],
       mood = '神秘'
@@ -1135,12 +1139,12 @@ const getDisplayRole = (character: any): string => {
 
     // 4. 故事节奏分析 - 检查是否刚经历高潮
     const recentScene = current_scene.toLowerCase();
-    const hasRecentClimax = recentScene.includes('成功') || 
-                           recentScene.includes('完成') || 
-                           recentScene.includes('解决') ||
-                           recentScene.includes('胜利') ||
-                           recentScene.includes('实现');
-    
+    const hasRecentClimax = recentScene.includes('成功') ||
+      recentScene.includes('完成') ||
+      recentScene.includes('解决') ||
+      recentScene.includes('胜利') ||
+      recentScene.includes('实现');
+
     if (hasRecentClimax && tension_level <= 6) {
       reasons.push('刚刚经历了重要情节高潮');
       confidenceScore += 20;
@@ -1151,12 +1155,12 @@ const getDisplayRole = (character: any): string => {
       const mainGoals = story_goals.filter(g => g.type === 'main');
       const completedMainGoals = mainGoals.filter(g => g.status === 'completed');
       const failedMainGoals = mainGoals.filter(g => g.status === 'failed');
-      
+
       if (completedMainGoals.length > 0 && completedMainGoals.length >= mainGoals.length * 0.6) {
         reasons.push('主要目标基本完成');
         confidenceScore += 25;
       }
-      
+
       // 如果有目标失败，但故事仍在继续，可能是好的结束点
       if (failedMainGoals.length > 0 && chapter >= 7) {
         reasons.push('经历挫折后到达转折点');
@@ -1166,31 +1170,31 @@ const getDisplayRole = (character: any): string => {
 
     // 6. 用户参与度和选择质量分析
     const recentChoices = choices_made.slice(-3);
-    const hasThoughtfulChoices = recentChoices.some(choice => 
+    const hasThoughtfulChoices = recentChoices.some(choice =>
       choice.length > 10 && (
-        choice.includes('深入') || 
-        choice.includes('仔细') || 
+        choice.includes('深入') ||
+        choice.includes('仔细') ||
         choice.includes('认真') ||
         choice.includes('考虑')
       )
     );
-    
+
     if (hasThoughtfulChoices) {
       reasons.push('做出了深思熟虑的重要选择');
       confidenceScore += 15;
     }
 
     // 7. 故事结构完整性 - 检查角色发展
-    const hasCharacterDevelopment = current_scene.includes('成长') || 
-      current_scene.includes('理解') || 
+    const hasCharacterDevelopment = current_scene.includes('成长') ||
+      current_scene.includes('理解') ||
       current_scene.includes('友谊') ||
       current_scene.includes('领悟') ||
-      choices_made.some(choice => 
-        choice.includes('帮助') || 
-        choice.includes('合作') || 
+      choices_made.some(choice =>
+        choice.includes('帮助') ||
+        choice.includes('合作') ||
         choice.includes('理解')
       );
-    
+
     if (hasCharacterDevelopment) {
       reasons.push('角色已有明显成长');
       confidenceScore += 15;
@@ -1230,12 +1234,12 @@ const getDisplayRole = (character: any): string => {
   // 获取结局建议的详细信息
   const getEndingSuggestion = (story: StoryState) => {
     const suggestion = shouldSuggestEnding(story);
-    
+
     if (!suggestion.suggest) return null;
-    
+
     // 根据故事状态推荐结局类型
     let recommendedTypes: { type: 'natural' | 'satisfying' | 'open' | 'dramatic', label: string, description: string }[] = [];
-    
+
     if (story.story_progress >= 80) {
       recommendedTypes.push({
         type: 'satisfying',
@@ -1243,7 +1247,7 @@ const getDisplayRole = (character: any): string => {
         description: '解决主要冲突，给角色完美归宿'
       });
     }
-    
+
     if (story.tension_level <= 5 && (story.mood === '平静' || story.mood === '希望')) {
       recommendedTypes.push({
         type: 'natural',
@@ -1251,7 +1255,7 @@ const getDisplayRole = (character: any): string => {
         description: '顺应故事发展，自然而然地结束'
       });
     }
-    
+
     if (story.story_progress < 80 || story.story_goals?.some(g => g.status === 'pending')) {
       recommendedTypes.push({
         type: 'open',
@@ -1259,7 +1263,7 @@ const getDisplayRole = (character: any): string => {
         description: '留有想象空间，暗示未来可能性'
       });
     }
-    
+
     if (story.tension_level >= 6) {
       recommendedTypes.push({
         type: 'dramatic',
@@ -1267,7 +1271,7 @@ const getDisplayRole = (character: any): string => {
         description: '情感冲击强烈，留下深刻印象'
       });
     }
-    
+
     // 如果没有特别推荐，提供默认选项
     if (recommendedTypes.length === 0) {
       recommendedTypes.push({
@@ -1276,7 +1280,7 @@ const getDisplayRole = (character: any): string => {
         description: '顺应故事发展，自然而然地结束'
       });
     }
-    
+
     return {
       ...suggestion,
       recommendedTypes
@@ -1286,24 +1290,27 @@ const getDisplayRole = (character: any): string => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#fdfbf9] p-4 font-serif relative">
+      {/* 全局纹理覆盖 */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none mix-blend-multiply fixed" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* 主要布局：左右分栏 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-screen">
-          
+
           {/* 左侧：故事内容区域 (主要区域) */}
           <div className="lg:col-span-2 flex flex-col space-y-4 min-h-0">
-            
+
             {/* 移动端顶部状态栏 - 包含操作按钮 */}
             <div className="lg:hidden">
-              <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
+              <Card className="bg-white shadow-md border border-[#f2f0ea] rounded-xl overflow-hidden">
                 <CardContent className="py-3 sm:py-4">
                   {/* 第一行：章节和进度信息 */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <span className="text-lg font-bold text-slate-800">第 {story.chapter} 章</span>
+                      <span className="text-lg font-bold text-[#2c241b]">第 {story.chapter} 章</span>
                       {story.chapter_title && !story.chapter_title.startsWith('第') && (
-                        <span className="text-sm text-slate-600">{story.chapter_title}</span>
+                        <span className="text-sm text-[#5d554a]">{story.chapter_title}</span>
                       )}
                     </div>
                     <div className="w-24">
@@ -1316,7 +1323,7 @@ const getDisplayRole = (character: any): string => {
                       />
                     </div>
                   </div>
-                  
+
                   {/* 第二行：操作按钮 */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -1326,7 +1333,7 @@ const getDisplayRole = (character: any): string => {
                           disabled={isSaving}
                           variant="outline"
                           size="sm"
-                          className={`flex items-center gap-1 text-xs ${hasUnsavedProgress ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-green-300 text-green-600 hover:bg-green-50'} ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`flex items-center gap-1 text-xs ${hasUnsavedProgress ? 'border-[#c5a059] text-[#c5a059] hover:bg-[#c5a059]/10' : 'border-[#f2f0ea] text-[#5d554a] hover:bg-[#fdfbf9]'} ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {isSaving ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -1336,14 +1343,14 @@ const getDisplayRole = (character: any): string => {
                           {isSaving ? '保存中' : hasUnsavedProgress ? '保存' : '已保存'}
                         </Button>
                       )}
-                      
+
                       {onReturnHome && (
                         <Button
                           onClick={onReturnHome}
                           variant="outline"
                           size="sm"
                           disabled={!hasSavedProgress}
-                          className={`flex items-center gap-1 text-xs ${!hasSavedProgress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50 border-blue-300'}`}
+                          className={`flex items-center gap-1 text-xs ${!hasSavedProgress ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c5a059]/10 border-[#f2f0ea] text-[#5d554a]'}`}
                           title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
                         >
                           <Home className="h-3 w-3" />
@@ -1351,9 +1358,9 @@ const getDisplayRole = (character: any): string => {
                         </Button>
                       )}
                     </div>
-                    
+
                     {/* 右侧信息：字数统计和角色数量 */}
-                    <div className="flex items-center space-x-2 text-xs text-slate-500">
+                    <div className="flex items-center space-x-2 text-xs text-[#8c7b6c]">
                       <span>字数: {(() => {
                         // 计算所有章节的累积字数
                         const totalWordCount = calculateTotalWordCount();
@@ -1361,7 +1368,7 @@ const getDisplayRole = (character: any): string => {
                       })()}</span>
                       <span>角色: {story.characters?.length || 0}</span>
                       {story.mood && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                        <span className="px-2 py-0.5 bg-[#f2f0ea] text-[#5d554a] rounded text-xs font-serif">
                           {story.mood}
                         </span>
                       )}
@@ -1372,18 +1379,19 @@ const getDisplayRole = (character: any): string => {
             </div>
 
             {/* 主要故事内容 - 移到最前面 */}
-            <Card className={`bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden ${
-              isTyping || isProcessingChoice
-                ? 'flex-shrink-0 shadow-lg processing-choice-card'
-                : 'flex-1 shadow-xl'
-            }`}>
-              <CardContent className="py-3 sm:py-4">
+            <Card className={`bg-white shadow-lg border border-[#f2f0ea] rounded-xl overflow-hidden relative ${isTyping || isProcessingChoice
+              ? 'flex-shrink-0 processing-choice-card'
+              : 'flex-1'
+              }`}>
+              {/* 装饰性纹理 */}
+              <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+              <CardContent className="py-6 sm:py-8 px-6 sm:px-10 relative z-10">
                 <div className="max-w-none">
                   {/* 如果有当前选择的图片，则显示图片和文本环绕 */}
                   {currentChoiceImage ? (
                     <div className="flex flex-col">
                       <div className="float-right ml-6 mb-6 w-1/3 md:w-2/5 lg:w-1/3">
-                        <div className="rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative" style={{ height: '200px' }}>
+                        <div className="rounded-lg overflow-hidden bg-[#fdfbf9] border border-[#f2f0ea] flex items-center justify-center relative" style={{ height: '200px' }}>
                           <img
                             src={currentChoiceImage.imageUrl}
                             alt={currentChoiceImage.choiceText}
@@ -1397,12 +1405,12 @@ const getDisplayRole = (character: any): string => {
                                 // 检查是否已经添加了错误提示，避免重复添加
                                 if (!parent.querySelector('.image-error-placeholder')) {
                                   const errorDiv = document.createElement('div');
-                                  errorDiv.className = 'image-error-placeholder text-gray-400 text-sm flex flex-col items-center justify-center h-full w-full';
+                                  errorDiv.className = 'image-error-placeholder text-[#8c7b6c] text-sm flex flex-col items-center justify-center h-full w-full';
                                   errorDiv.innerHTML = `
-                                    <svg class="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-8 h-8 mb-2 text-[#8c7b6c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
-                                    <span>图片加载失败</span>
+                                    <span class="font-serif text-[#5d554a]">图片加载失败</span>
                                   `;
                                   parent.appendChild(errorDiv);
                                 }
@@ -1410,41 +1418,39 @@ const getDisplayRole = (character: any): string => {
                             }}
                           />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1 text-center truncate px-2">
+                        <div className="text-xs text-[#8c7b6c] mt-1 text-center truncate px-2 font-serif">
                           {currentChoiceImage.choiceText}
                         </div>
                       </div>
-                      
+
                       {/* 文本区域 - 环绕图片 */}
-                      <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap overflow-hidden ${
-                        isTyping || isProcessingChoice
-                          ? 'opacity-95 content-fit-height'
-                          : 'opacity-100'
-                      }`}>
+                      <div className={`text-[#2c241b] text-lg leading-loose whitespace-pre-wrap overflow-hidden font-serif tracking-wide ${isTyping || isProcessingChoice
+                        ? 'opacity-95 content-fit-height'
+                        : 'opacity-100'
+                        }`}>
                         <div className="transform">
                           {currentText}
                           {isTyping && (
-                            <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
+                            <span className="inline-block ml-1 text-[#c5a059] font-normal animate-pulse">
                               |
                             </span>
                           )}
                         </div>
                       </div>
-                      
+
                       {/* 清除浮动 */}
                       <div className="clear-right"></div>
                     </div>
                   ) : (
                     // 如果没有当前选择的图片，则只显示文本
-                    <div className={`text-slate-800 text-lg leading-relaxed whitespace-pre-wrap ${
-                      isTyping || isProcessingChoice
-                        ? 'opacity-95 content-fit-height'
-                        : 'opacity-100'
-                    }`}>
+                    <div className={`text-[#2c241b] text-lg leading-loose whitespace-pre-wrap font-serif tracking-wide ${isTyping || isProcessingChoice
+                      ? 'opacity-95 content-fit-height'
+                      : 'opacity-100'
+                      }`}>
                       <div className="transform">
                         {currentText}
                         {isTyping && (
-                          <span className="inline-block ml-1 text-blue-500 font-normal animate-pulse">
+                          <span className="inline-block ml-1 text-[#c5a059] font-normal animate-pulse">
                             |
                           </span>
                         )}
@@ -1457,29 +1463,29 @@ const getDisplayRole = (character: any): string => {
 
             {/* 选择处理中 - 优化版 */}
             {isProcessingChoice && (
-              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 backdrop-blur-sm shadow-xl border border-indigo-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="py-3 sm:py-4">
-                  <div className="text-center space-y-3">
+              <Card className="bg-[#fdfbf9] shadow-md border border-[#c5a059]/30 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="py-4 sm:py-6">
+                  <div className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
-                        <div className="w-8 h-8 border-2 border-indigo-200 rounded-full"></div>
-                        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                        <div className="w-8 h-8 border-2 border-[#f2f0ea] rounded-full"></div>
+                        <div className="w-8 h-8 border-2 border-[#c5a059] border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
                       </div>
-                      <span className="text-slate-700 font-medium">正在创作后续剧情...</span>
+                      <span className="text-[#5d554a] font-medium font-serif">正在创作后续剧情...</span>
                     </div>
-                    
-                    <div className="bg-white/80 border border-indigo-100 rounded-lg p-3">
+
+                    <div className="bg-white border border-[#f2f0ea] rounded-lg p-3 inline-block">
                       <div className="flex items-center justify-center space-x-2">
-                        <span className="text-indigo-600 font-medium text-sm">您的选择：</span>
-                        <span className="text-slate-700 font-semibold text-sm">"{selectedChoiceText}"</span>
+                        <span className="text-[#c5a059] font-medium text-sm">您的选择：</span>
+                        <span className="text-[#2c241b] font-semibold text-sm font-serif">"{selectedChoiceText}"</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-center space-x-1">
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-150"></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse delay-300"></div>
-                      <span className="ml-3 text-xs text-slate-500">
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse delay-150"></div>
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse delay-300"></div>
+                      <span className="ml-3 text-xs text-[#8c7b6c] font-serif">
                         {modelConfig?.apiKey ?
                           getModelLevelDescription(modelConfig.performance_level, '正在思考中')
                           : '内容生成中...'}
@@ -1492,24 +1498,24 @@ const getDisplayRole = (character: any): string => {
 
             {/* 选择项生成中 - 新增 */}
             {isGeneratingChoices && !isProcessingChoice && !showChoices && (
-              <Card className="bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardContent className="py-3 sm:py-4">
+              <Card className="bg-[#fdfbf9] shadow-md border border-[#c5a059]/30 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
+                <CardContent className="py-4 sm:py-6">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
-                        <div className="w-6 h-6 border-2 border-blue-200 rounded-full"></div>
-                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                        <div className="w-6 h-6 border-2 border-[#f2f0ea] rounded-full"></div>
+                        <div className="w-6 h-6 border-2 border-[#c5a059] border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
                       </div>
-                      <span className="text-slate-700 font-medium">
+                      <span className="text-[#5d554a] font-medium font-serif">
                         {isTyping ? '正在准备选项...' : '正在生成选择项...'}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-center space-x-1">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300"></div>
-                      <span className="ml-3 text-xs text-slate-500">
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse delay-150"></div>
+                      <div className="w-1.5 h-1.5 bg-[#c5a059] rounded-full animate-pulse delay-300"></div>
+                      <span className="ml-3 text-xs text-[#8c7b6c] font-serif">
                         {modelConfig?.apiKey ?
                           getModelLevelDescription(modelConfig.performance_level, '正在生成中')
                           : '选项生成中...'}
@@ -1519,23 +1525,23 @@ const getDisplayRole = (character: any): string => {
                 </CardContent>
               </Card>
             )}
-            
+
             {/* 选项已预生成完成，等待打字机结束 */}
             {pendingChoices && pendingChoices.length > 0 && isTyping && !showChoices && (
-              <Card className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 backdrop-blur-sm shadow-xl border border-green-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+              <Card className="bg-[#fdfbf9] shadow-md border border-[#5d7a5d]/30 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
                 <CardContent className="py-3 sm:py-4">
                   <div className="text-center space-y-3">
                     <div className="flex items-center justify-center space-x-3">
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-[#5d7a5d] rounded-full flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <span className="text-slate-700 font-medium">选项已准备完成</span>
+                      <span className="text-[#5d554a] font-medium font-serif">选项已准备完成</span>
                     </div>
-                    
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <p className="text-green-700 text-sm">
+
+                    <div className="bg-[#5d7a5d]/10 border border-[#5d7a5d]/30 rounded-lg p-3">
+                      <p className="text-[#5d7a5d] text-sm font-serif">
                         ✨ 选项已准备完成
                       </p>
                     </div>
@@ -1546,56 +1552,66 @@ const getDisplayRole = (character: any): string => {
 
             {/* 故事结束状态 */}
             {story.is_completed && (
-              <Card className="bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-sm shadow-2xl border-2 border-purple-300/50 rounded-3xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl text-purple-800 mb-2">
-                    {story.completion_type === 'success' && '🎉 完美结局'}
-                    {story.completion_type === 'failure' && '💔 悲壮结局'}
-                    {story.completion_type === 'neutral' && '🌅 开放结局'}
-                    {story.completion_type === 'cliffhanger' && '🎬 待续...'}
+              <Card className="bg-[#fdfbf9] shadow-xl border-2 border-[#c5a059]/50 rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 relative">
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+                <CardHeader className="text-center relative z-10 border-b border-[#f2f0ea] pb-6">
+                  <div className="w-16 h-16 mx-auto bg-[#2c241b] rounded-full flex items-center justify-center mb-4 border-2 border-[#c5a059] shadow-md">
+                    <span className="text-3xl">
+                      {story.completion_type === 'success' && '🎉'}
+                      {story.completion_type === 'failure' && '💔'}
+                      {story.completion_type === 'neutral' && '🌅'}
+                      {story.completion_type === 'cliffhanger' && '🎬'}
+                    </span>
+                  </div>
+                  <CardTitle className="text-3xl text-[#2c241b] mb-2 font-serif tracking-wide">
+                    {story.completion_type === 'success' && '完美结局'}
+                    {story.completion_type === 'failure' && '悲壮结局'}
+                    {story.completion_type === 'neutral' && '开放结局'}
+                    {story.completion_type === 'cliffhanger' && '未完待续'}
                   </CardTitle>
-                  <div className="text-sm text-purple-600">
-                    故事在第 {story.chapter} 章结束
+                  <div className="text-[#5d554a] font-serif italic">
+                    故事在第 {story.chapter} 章落下帷幕
                     {story.story_progress && (
-                      <span className="ml-2">• 完成度: {Math.round(story.story_progress)}%</span>
+                      <span className="ml-2 not-italic text-[#8c7b6c]">• 完成度 {Math.round(story.story_progress)}%</span>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  
+
                   {/* 故事目标状态 */}
                   {story.story_goals && story.story_goals.length > 0 && (
-                    <div className="bg-white bg-opacity-50 rounded-lg p-3 border border-purple-200">
-                      <h4 className="font-semibold text-purple-800 mb-2">故事目标</h4>
+                    <div className="bg-[#fffdf9] rounded-lg p-4 border border-[#f2f0ea] relative z-10">
+                      <h4 className="font-bold text-[#2c241b] mb-3 font-serif flex items-center gap-2">
+                        <Target className="w-4 h-4 text-[#c5a059]" />
+                        故事目标
+                      </h4>
                       <div className="space-y-2">
                         {story.story_goals.map((goal, index) => (
                           <div key={goal.id} className="flex items-center justify-between text-sm">
                             <div className="flex-1">
-                              <span className={`font-medium ${
-                                goal.status === 'completed' ? 'text-green-700' :
-                                goal.status === 'failed' ? 'text-red-700' :
-                                goal.status === 'in_progress' ? 'text-yellow-700' : 'text-gray-700'
-                              }`}>
+                              <span className={`font-medium ${goal.status === 'completed' ? 'text-[#5d7a5d]' :
+                                goal.status === 'failed' ? 'text-[#8a4b38]' :
+                                  goal.status === 'in_progress' ? 'text-[#c5a059]' : 'text-[#5d554a]'
+                                }`}>
                                 {goal.description}
                               </span>
                             </div>
                             <div className="flex items-center space-x-1 ml-2">
                               {goal.type === 'main' && (
-                                <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">
+                                <Badge variant="outline" className="text-xs border-[#c5a059] text-[#8c7b6c] font-serif">
                                   主要
                                 </Badge>
                               )}
-                              <Badge 
-                                className={`text-xs ${
-                                  goal.status === 'completed' ? 'bg-green-600' :
-                                  goal.status === 'failed' ? 'bg-red-600' :
-                                  goal.status === 'in_progress' ? 'bg-yellow-600' : 'bg-gray-600'
-                                } text-white`}
+                              <Badge
+                                className={`text-xs font-serif ${goal.status === 'completed' ? 'bg-[#5d7a5d] hover:bg-[#4a634a]' :
+                                  goal.status === 'failed' ? 'bg-[#8a4b38] hover:bg-[#6e3c2d]' :
+                                    goal.status === 'in_progress' ? 'bg-[#c5a059] hover:bg-[#a38448]' : 'bg-[#8c7b6c] hover:bg-[#706256]'
+                                  } text-white border-none`}
                               >
-                                {goal.status === 'completed' && '✅'}
-                                {goal.status === 'failed' && '❌'}
-                                {goal.status === 'in_progress' && '🔄'}
-                                {goal.status === 'pending' && '⏳'}
+                                {goal.status === 'completed' && '已完成'}
+                                {goal.status === 'failed' && '已失败'}
+                                {goal.status === 'in_progress' && '进行中'}
+                                {goal.status === 'pending' && '待触发'}
                               </Badge>
                             </div>
                           </div>
@@ -1604,16 +1620,16 @@ const getDisplayRole = (character: any): string => {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2 justify-center pt-4">
-                    <Badge className="bg-purple-600 text-white">
-                      {story.completion_type === 'success' ? '英雄凯旋' : 
-                       story.completion_type === 'failure' ? '悲剧英雄' :
-                       story.completion_type === 'neutral' ? '人生如戏' : '未完待续'}
+                  <div className="flex flex-wrap gap-2 justify-center pt-4 relative z-10">
+                    <Badge className="bg-[#2c241b] text-[#c5a059] border border-[#c5a059] font-serif px-3 py-1">
+                      {story.completion_type === 'success' ? '英雄凯旋' :
+                        story.completion_type === 'failure' ? '悲剧英雄' :
+                          story.completion_type === 'neutral' ? '人生如戏' : '未完待续'}
                     </Badge>
-                    <Badge variant="outline" className="border-purple-300 text-purple-600">
+                    <Badge variant="outline" className="border-[#c5a059] text-[#5d554a] font-serif">
                       总章节: {story.chapter}
                     </Badge>
-                    <Badge variant="outline" className="border-purple-300 text-purple-600">
+                    <Badge variant="outline" className="border-[#c5a059] text-[#5d554a] font-serif">
                       故事进度: {story.story_progress || 0}%
                     </Badge>
                   </div>
@@ -1623,27 +1639,28 @@ const getDisplayRole = (character: any): string => {
 
             {/* 故事卡住时的继续按钮 */}
             {!story.is_completed && isStoryStuck && onContinue && (
-              <Card className="bg-red-50/90 backdrop-blur-sm shadow-xl border border-red-200/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardHeader>
-                  <CardTitle className="text-lg text-red-800 flex items-center gap-2">
-                    ⚠️ 故事卡住了
+              <Card className="bg-[#fdfbf9] shadow-xl border border-[#8a4b38] rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 relative">
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+                <CardHeader className="relative z-10 border-b border-[#f2f0ea]">
+                  <CardTitle className="text-lg text-[#8a4b38] flex items-center gap-2 font-serif">
+                    ⚠️ 故事似乎遇到了阻碍
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-red-700 mb-4">
-                    AI生成选择时遇到了问题，或者网络连接超时。您可以手动推进故事继续。
+                <CardContent className="text-center pt-6 relative z-10">
+                  <p className="text-[#5d554a] mb-4 font-serif">
+                    灵感的源泉似乎暂时枯竭了，或者连接出现了问题。您可以尝试手动推进故事。
                   </p>
                   {aiError && (
-                    <p className="text-sm text-red-600 mb-4 bg-red-100 p-2 rounded">
+                    <div className="text-sm text-[#8a4b38] mb-4 bg-[#8a4b38]/10 p-3 rounded border border-[#8a4b38]/20 font-serif italic">
                       错误详情: {aiError}
-                    </p>
+                    </div>
                   )}
                   <Button
                     onClick={() => {
                       setIsStoryStuck(false);
                       if (onContinue) onContinue();
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-[#8a4b38] hover:bg-[#6e3c2d] text-white font-serif px-6"
                   >
                     手动继续故事
                   </Button>
@@ -1653,25 +1670,26 @@ const getDisplayRole = (character: any): string => {
 
             {/* 进度 >= 95% 或章节 >= 20 时的结局类型选择 */}
             {!story.is_completed && ((story.story_progress || 0) >= 95 || story.chapter >= 20) && !isProcessingChoice && (
-              <Card className="bg-purple-50/90 backdrop-blur-sm shadow-xl border border-purple-300/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
-                <CardHeader>
-                  <CardTitle className="text-lg text-purple-800 flex items-center gap-2">
-                    🎬 选择故事结局类型
-                    <Badge className="bg-purple-600 text-white text-xs">
+              <Card className="bg-[#fdfbf9] shadow-xl border border-[#c5a059] rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 relative">
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+                <CardHeader className="relative z-10 border-b border-[#f2f0ea]">
+                  <CardTitle className="text-xl text-[#2c241b] flex items-center gap-2 font-serif">
+                    <span className="text-2xl">🎬</span> 选择故事结局类型
+                    <Badge className="bg-[#c5a059] text-white text-xs font-serif ml-auto">
                       完成度: {Math.round(story.story_progress || 0)}%
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-purple-100 border border-purple-300 rounded-lg p-4">
-                    <p className="text-sm text-purple-700 mb-2">
+                <CardContent className="space-y-4 pt-6 relative z-10">
+                  <div className="bg-[#fffdf9] border border-[#f2f0ea] rounded-lg p-4 shadow-sm">
+                    <p className="text-sm text-[#5d554a] mb-2 font-serif leading-relaxed">
                       经过 {story.chapter} 章的精彩冒险，故事已经非常完整了！现在是时候为这个故事选择一个合适的结局了。
                     </p>
-                    <p className="text-xs text-purple-600">
-                      选择您喜欢的结局类型，AI将生成相应的完整结局场景。
+                    <p className="text-xs text-[#8c7b6c] font-serif italic">
+                      选择您喜欢的结局类型，AI将为您编织最终的篇章。
                     </p>
                   </div>
-                  
+
                   {/* 结局类型选择 */}
                   <div className="grid grid-cols-2 gap-4">
                     <Button
@@ -1681,12 +1699,12 @@ const getDisplayRole = (character: any): string => {
                           onMakeChoice(-1, '选择圆满结局：给所有角色一个完美的归宿');
                         }
                       }}
-                      className="h-auto p-5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                      className="h-auto p-5 bg-[#5d7a5d] hover:bg-[#4a634a] text-white flex flex-col items-start rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border border-[#4a634a]"
                     >
-                      <div className="font-medium mb-1">🎉 圆满结局</div>
-                      <div className="text-xs text-green-100 text-left">解决所有冲突，给角色完美归宿</div>
+                      <div className="font-medium mb-1 font-serif text-lg">🎉 圆满结局</div>
+                      <div className="text-xs text-green-50 text-left font-serif opacity-90">解决所有冲突，给角色完美归宿</div>
                     </Button>
-                    
+
                     <Button
                       onClick={() => {
                         if (onMakeChoice) {
@@ -1694,12 +1712,12 @@ const getDisplayRole = (character: any): string => {
                           onMakeChoice(-1, '选择开放结局：留有想象空间和未来可能性');
                         }
                       }}
-                      className="h-auto p-5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                      className="h-auto p-5 bg-[#4a6fa5] hover:bg-[#36527a] text-white flex flex-col items-start rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border border-[#36527a]"
                     >
-                      <div className="font-medium mb-1">🌟 开放结局</div>
-                      <div className="text-xs text-blue-100 text-left">留有想象空间，暗示未来可能</div>
+                      <div className="font-medium mb-1 font-serif text-lg">🌟 开放结局</div>
+                      <div className="text-xs text-[#f2f0ea]/90 text-left font-serif opacity-90">留有想象空间，暗示未来可能</div>
                     </Button>
-                    
+
                     <Button
                       onClick={() => {
                         if (onMakeChoice) {
@@ -1707,12 +1725,12 @@ const getDisplayRole = (character: any): string => {
                           onMakeChoice(-1, '选择戏剧结局：创造情感冲击和深刻印象');
                         }
                       }}
-                      className="h-auto p-5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                      className="h-auto p-5 bg-[#8a4b38] hover:bg-[#6e3c2d] text-white flex flex-col items-start rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border border-[#6e3c2d]"
                     >
-                      <div className="font-medium mb-1">⚡ 戏剧结局</div>
-                      <div className="text-xs text-red-100 text-left">情感冲击强烈，留下深刻印象</div>
+                      <div className="font-medium mb-1 font-serif text-lg">⚡ 戏剧结局</div>
+                      <div className="text-xs text-red-50 text-left font-serif opacity-90">情感冲击强烈，留下深刻印象</div>
                     </Button>
-                    
+
                     <Button
                       onClick={() => {
                         if (onMakeChoice) {
@@ -1720,10 +1738,10 @@ const getDisplayRole = (character: any): string => {
                           onMakeChoice(-1, '选择意外结局：出人意料的转折和惊喜');
                         }
                       }}
-                      className="h-auto p-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white flex flex-col items-start rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                      className="h-auto p-5 bg-[#c5a059] hover:bg-[#b08d4b] text-white flex flex-col items-start rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border border-[#b08d4b]"
                     >
-                      <div className="font-medium mb-1">🎲 意外结局</div>
-                      <div className="text-xs text-orange-100 text-left">出人意料的转折和惊喜</div>
+                      <div className="font-medium mb-1 font-serif text-lg">🎲 意外结局</div>
+                      <div className="text-xs text-amber-50 text-left font-serif opacity-90">出人意料的转折和惊喜</div>
                     </Button>
                   </div>
                 </CardContent>
@@ -1732,9 +1750,9 @@ const getDisplayRole = (character: any): string => {
 
             {/* 选择项 */}
             {!story.is_completed && showChoices && choices.length > 0 && !isProcessingChoice && (story.story_progress || 0) < 95 && story.chapter < 20 && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+              <Card className="bg-white shadow-lg border border-[#f2f0ea] rounded-xl overflow-hidden animate-in slide-in-from-bottom-4">
                 <CardHeader>
-                  <CardTitle className="text-lg text-slate-800">选择你的行动</CardTitle>
+                  <CardTitle className="text-lg text-[#2c241b] font-serif">选择你的行动</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -1744,17 +1762,16 @@ const getDisplayRole = (character: any): string => {
                         variant="outline"
                         onClick={() => handleChoice(choice.id)}
                         disabled={isProcessingChoice}
-                        className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md animate-in slide-in-from-bottom-4 ${
-                          choice.id === -999
-                            ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300/50 hover:from-amber-100 hover:to-orange-100 hover:border-amber-400/60 hover:scale-[1.02]"
-                            : "bg-white/80 border-gray-200/50 hover:bg-indigo-50/80 hover:border-indigo-300/60 hover:scale-[1.02]"
-                        }`}
+                        className={`w-full text-left h-auto p-5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm hover:shadow-md animate-in slide-in-from-bottom-4 ${choice.id === -999
+                          ? "bg-[#fffdf9] border-2 border-[#c5a059] hover:bg-[#fdfbf9] hover:scale-[1.02]"
+                          : "bg-[#fdfbf9] border border-[#f2f0ea] hover:bg-white hover:border-[#c5a059] hover:scale-[1.02] group"
+                          }`}
                         style={{ animationDelay: `${index * 150}ms` }}
                       >
                         <div className="w-full">
                           {/* 图片显示区域 */}
                           {choice.imageUrl && (
-                            <div className="mb-3 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative" style={{ height: '120px' }}>
+                            <div className="mb-3 rounded-lg overflow-hidden bg-[#fdfbf9] border border-[#f2f0ea] flex items-center justify-center relative" style={{ height: '120px' }}>
                               <img
                                 src={choice.imageUrl}
                                 alt={choice.text}
@@ -1768,13 +1785,13 @@ const getDisplayRole = (character: any): string => {
                                     // 检查是否已经添加了错误提示，避免重复添加
                                     if (!parent.querySelector('.image-error-placeholder')) {
                                       const errorDiv = document.createElement('div');
-                                      errorDiv.className = 'image-error-placeholder text-gray-400 text-sm flex flex-col items-center justify-center h-full w-full';
+                                      errorDiv.className = 'image-error-placeholder text-[#8c7b6c] text-sm flex flex-col items-center justify-center h-full w-full';
                                       errorDiv.innerHTML = `
-                                        <svg class="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-8 h-8 mb-2 text-[#8c7b6c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
-                                        <span>图片加载失败</span>
-                                        <button class="mt-1 text-xs text-blue-500 hover:text-blue-700" onclick="this.parentElement.parentElement.querySelector('img').src=this.parentElement.parentElement.querySelector('img').src">
+                                        <span class="font-serif text-[#5d554a]">图片加载失败</span>
+                                        <button class="mt-1 text-xs text-[#c5a059] hover:text-[#b08d4b] underline font-serif" onclick="this.parentElement.parentElement.querySelector('img').src=this.parentElement.parentElement.querySelector('img').src">
                                           点击重试
                                         </button>
                                       `;
@@ -1791,38 +1808,35 @@ const getDisplayRole = (character: any): string => {
                                 }}
                               />
                               {/* 加载指示器 */}
-                              <div className="absolute inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                              <div className="absolute inset-0 bg-[#fdfbf9] bg-opacity-50 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#c5a059]"></div>
                               </div>
                             </div>
                           )}
                           <div className="flex items-center justify-between mb-1">
-                            <div className={`font-semibold ${
-                              choice.id === -999 ? "text-orange-800" : "text-slate-800"
-                            }`}>
+                            <div className={`font-semibold font-serif text-lg ${choice.id === -999 ? "text-[#c5a059]" : "text-[#2c241b] group-hover:text-[#c5a059] transition-colors"
+                              }`}>
                               {choice.id === -999 && "🎬 "}
                               {choice.text}
                             </div>
                             {choice.difficulty && (
                               <div className="flex items-center space-x-1">
                                 <DifficultyIcon level={choice.difficulty} />
-                                <span className="text-xs text-slate-500">难度{choice.difficulty}</span>
+                                <span className="text-xs text-[#8c7b6c] font-serif">难度{choice.difficulty}</span>
                               </div>
                             )}
                             {choice.id === -999 && (
-                              <Badge className="bg-orange-500 text-white text-xs">
+                              <Badge className="bg-[#c5a059] text-white text-xs font-serif">
                                 直通结局
                               </Badge>
                             )}
                           </div>
-                          <div className={`text-sm mb-2 ${
-                            choice.id === -999 ? "text-orange-700" : "text-slate-600"
-                          }`}>
+                          <div className={`text-sm mb-2 font-serif ${choice.id === -999 ? "text-[#8c7b6c]" : "text-[#5d554a]"
+                            }`}>
                             {choice.description}
                           </div>
-                          <div className={`text-xs italic ${
-                            choice.id === -999 ? "text-orange-600" : "text-slate-500"
-                          }`}>
+                          <div className={`text-xs italic font-serif ${choice.id === -999 ? "text-[#c5a059]" : "text-[#8c7b6c]"
+                            }`}>
                             可能后果: {choice.consequences || "未知的影响，需要谨慎考虑"}
                           </div>
                         </div>
@@ -1836,45 +1850,47 @@ const getDisplayRole = (character: any): string => {
             {/* 移动端角色信息 - 在底部操作按钮之前 */}
             <div className="lg:hidden">
               {story.characters && story.characters.length > 0 && (
-                <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-white/50 rounded-2xl overflow-hidden">
-                  <CardContent className="py-3 sm:py-4">
+                <Card className="bg-[#fdfbf9] shadow-xl border border-[#f2f0ea] rounded-xl overflow-hidden relative">
+                  <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+                  <CardContent className="py-3 sm:py-4 relative z-10">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-slate-800">角色信息</h3>
-                      <span className="text-xs text-slate-500">{story.characters.length}个角色</span>
+                      <h3 className="text-sm font-bold text-[#2c241b] font-serif">角色名录</h3>
+                      <span className="text-xs text-[#8c7b6c] font-serif">{story.characters.length}位登场人物</span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2">
                       {story.characters.slice(0, 4).map((character, index) => (
                         <Dialog key={index}>
                           <DialogTrigger asChild>
-                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200">
+                            <div className="bg-white p-2 rounded-lg border border-[#f2f0ea] hover:border-[#c5a059] cursor-pointer transition-all duration-200 shadow-sm">
                               <div className="flex items-center space-x-2 mb-1">
-                                <User className="w-3 h-3 text-slate-500" />
-                                <h4 className="font-medium text-slate-800 text-xs truncate">{getDisplayName(character, index)}</h4>
+                                <User className="w-3 h-3 text-[#c5a059]" />
+                                <h4 className="font-bold text-[#2c241b] text-xs truncate font-serif">{getDisplayName(character, index)}</h4>
                               </div>
-                              <p className="text-xs text-slate-500 truncate">{getDisplayRole(character)}</p>
+                              <p className="text-xs text-[#5d554a] truncate font-serif">{getDisplayRole(character)}</p>
                             </div>
                           </DialogTrigger>
-                          <DialogContent className="max-w-lg shadow-2xl">
+                          <DialogContent className="max-w-lg shadow-2xl bg-[#fdfbf9] border-[#c5a059] p-0 overflow-hidden">
+                            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
                             <DialogHeader className="sr-only">
                               <DialogTitle>{getDisplayName(character, index)} - 角色详情</DialogTitle>
                             </DialogHeader>
-                            <div className="p-8">
-                              <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
-                                <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                                  <User className="w-10 h-10 text-indigo-500" />
+                            <div className="p-8 relative z-10">
+                              <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-[#c5a059]/30">
+                                <div className="flex-shrink-0 w-16 h-16 bg-[#2c241b] rounded-full flex items-center justify-center border-2 border-[#c5a059]">
+                                  <User className="w-8 h-8 text-[#c5a059]" />
                                 </div>
                                 <div>
-                                  <h1 className="text-3xl font-bold text-gray-900">{getDisplayName(character, index)}</h1>
-                                  <p className="text-indigo-500 font-semibold text-md">{getDisplayRole(character)}</p>
+                                  <h1 className="text-2xl font-bold text-[#2c241b] font-serif">{getDisplayName(character, index)}</h1>
+                                  <p className="text-[#c5a059] font-medium text-md font-serif">{getDisplayRole(character)}</p>
                                 </div>
                               </header>
                               <div className="space-y-6">
                                 <div>
-                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
+                                  <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">性格特征</h2>
                                   <div className="flex flex-wrap gap-2">
                                     {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
-                                      <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                      <span key={traitIndex} className="bg-[#f2f0ea] text-[#5d554a] text-xs font-medium px-3 py-1 rounded-full border border-[#dcd8cc] font-serif">
                                         {trait}
                                       </span>
                                     ))}
@@ -1882,14 +1898,14 @@ const getDisplayRole = (character: any): string => {
                                 </div>
                                 {character.appearance && (
                                   <div>
-                                    <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
-                                    <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
+                                    <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">外貌描述</h2>
+                                    <p className="text-[#2c241b] leading-relaxed font-serif text-sm">{character.appearance}</p>
                                   </div>
                                 )}
                                 {character.backstory && (
                                   <div>
-                                    <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
-                                    <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
+                                    <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">背景故事</h2>
+                                    <p className="text-[#2c241b] leading-relaxed font-serif text-sm">{character.backstory}</p>
                                   </div>
                                 )}
                               </div>
@@ -1898,10 +1914,10 @@ const getDisplayRole = (character: any): string => {
                         </Dialog>
                       ))}
                     </div>
-                    
+
                     {story.characters.length > 4 && (
-                      <div className="text-xs text-slate-500 text-center mt-2">
-                        还有 {story.characters.length - 4} 个角色...
+                      <div className="text-xs text-[#8c7b6c] text-center mt-2 font-serif italic">
+                        还有 {story.characters.length - 4} 位隐藏人物...
                       </div>
                     )}
                   </CardContent>
@@ -1915,7 +1931,7 @@ const getDisplayRole = (character: any): string => {
                 <>
                   <Button
                     onClick={onRestart}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    className="bg-[#2c241b] hover:bg-[#4a3e32] text-[#c5a059] border border-[#c5a059] px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] font-serif font-bold text-lg"
                   >
                     开启新冒险
                   </Button>
@@ -1924,7 +1940,7 @@ const getDisplayRole = (character: any): string => {
                       devLog('分享故事功能待实现');
                     }}
                     variant="outline"
-                    className="border-purple-300/50 text-purple-700 hover:bg-purple-50/80 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                    className="border-[#c5a059] text-[#5d554a] hover:bg-[#c5a059]/10 px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] font-serif"
                   >
                     分享故事
                   </Button>
@@ -1933,7 +1949,7 @@ const getDisplayRole = (character: any): string => {
                 <Button
                   onClick={onRestart}
                   variant="outline"
-                  className="border-slate-300/50 text-slate-700 hover:bg-slate-50/80 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                  className="border-[#f2f0ea] text-[#5d554a] hover:bg-[#fdfbf9] px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] font-serif"
                 >
                   重新开始
                 </Button>
@@ -1942,24 +1958,24 @@ const getDisplayRole = (character: any): string => {
           </div>
 
           {/* 右侧：辅助信息边栏 */}
-          <div className="hidden lg:flex lg:col-span-1 flex-col space-y-4 h-fit max-h-screen overflow-y-auto px-1"
-               style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
-            
+          <div className="hidden lg:flex lg:col-span-1 flex-col space-y-4 h-fit max-h-screen sticky top-4 overflow-y-auto px-1 pb-4"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+
             {/* 头部信息 - 紧凑型 */}
-            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-xl overflow-hidden">
+            <Card className="bg-white shadow-md border border-[#f2f0ea] rounded-xl overflow-hidden">
               <CardContent className="pt-4 pb-4">
                 {/* 章节信息 */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-slate-800">第 {story.chapter} 章</span>
+                    <span className="text-lg font-bold text-[#2c241b] font-serif">第 {story.chapter} 章</span>
                     {story.chapter_title && !story.chapter_title.startsWith('第') && !story.chapter_title.includes('章') && (
-                      <span className="text-sm text-slate-600 font-medium truncate ml-2">
+                      <span className="text-sm text-[#5d554a] font-medium truncate ml-2 font-serif">
                         {story.chapter_title}
                       </span>
                     )}
                   </div>
                 </div>
-                
+
                 {/* 操作按钮组 */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {onSaveStory && (
@@ -1968,11 +1984,10 @@ const getDisplayRole = (character: any): string => {
                       disabled={isSaving}
                       variant="outline"
                       size="sm"
-                      className={`flex items-center gap-1 justify-center text-xs ${
-                        hasUnsavedProgress 
-                          ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
-                          : 'border-green-300 text-green-600 hover:bg-green-50'
-                      } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex items-center gap-1 justify-center text-xs ${hasUnsavedProgress
+                        ? 'border-[#c5a059] text-[#c5a059] hover:bg-[#c5a059]/10'
+                        : 'border-[#f2f0ea] text-[#5d554a] hover:bg-[#fdfbf9]'
+                        } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {isSaving ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -1982,18 +1997,17 @@ const getDisplayRole = (character: any): string => {
                       {isSaving ? '保存' : hasUnsavedProgress ? '保存' : '已保存'}
                     </Button>
                   )}
-                  
+
                   {onReturnHome && (
                     <Button
                       onClick={onReturnHome}
                       variant="outline"
                       size="sm"
                       disabled={!hasSavedProgress}
-                      className={`flex items-center gap-1 justify-center text-xs ${
-                        !hasSavedProgress 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : 'hover:bg-blue-50 border-blue-300'
-                      }`}
+                      className={`flex items-center gap-1 justify-center text-xs ${!hasSavedProgress
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:bg-[#c5a059]/10 border-[#f2f0ea] text-[#5d554a]'
+                        }`}
                       title={!hasSavedProgress ? "当前游戏还没有存档，请先保存后再返回主页" : "返回主页"}
                     >
                       <Home className="h-3 w-3" />
@@ -2004,27 +2018,25 @@ const getDisplayRole = (character: any): string => {
 
                 {/* 自动保存控制 */}
                 {onToggleAutoSave && (
-                  <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg mb-3">
-                    <span className="text-xs font-medium text-slate-700">自动保存</span>
-                    <div 
-                      className={`relative inline-flex h-4 w-7 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        autoSaveEnabled ? 'bg-green-500' : 'bg-gray-300'
-                      }`}
+                  <div className="flex items-center justify-between p-2 bg-[#fdfbf9] rounded-lg mb-3 border border-[#f2f0ea]">
+                    <span className="text-xs font-medium text-[#5d554a] font-serif">自动保存</span>
+                    <div
+                      className={`relative inline-flex h-4 w-7 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${autoSaveEnabled ? 'bg-[#5d7a5d]' : 'bg-[#f2f0ea]'
+                        }`}
                       onClick={() => onToggleAutoSave(!autoSaveEnabled)}
                       role="switch"
                       aria-checked={autoSaveEnabled}
                     >
-                      <span 
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${
-                          autoSaveEnabled ? 'translate-x-3' : 'translate-x-0'
-                        }`}
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${autoSaveEnabled ? 'translate-x-3' : 'translate-x-0'
+                          }`}
                       />
                     </div>
                   </div>
                 )}
-                
+
                 {/* 简化统计信息 */}
-                <div className="text-xs text-gray-500 bg-slate-50 p-2 rounded-lg">
+                <div className="text-xs text-[#8c7b6c] bg-[#fdfbf9] p-2 rounded-lg border border-[#f2f0ea] font-serif">
                   <div className="flex justify-between items-center">
                     <span>字数: {(() => {
                       // 计算所有章节的累积字数
@@ -2033,7 +2045,7 @@ const getDisplayRole = (character: any): string => {
                     })()}</span>
                     <span>角色: {story.characters?.length || 0}</span>
                     {story.mood && (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-[#f2f0ea] text-[#5d554a] rounded text-xs">
                         {story.mood}
                       </span>
                     )}
@@ -2044,24 +2056,24 @@ const getDisplayRole = (character: any): string => {
 
             {/* 角色信息 - 紧凑版 */}
             {story.characters && story.characters.length > 0 && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-xl overflow-hidden">
+              <Card className="bg-white shadow-md border border-[#f2f0ea] rounded-xl overflow-hidden">
                 <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-base text-slate-800">角色信息</CardTitle>
+                  <CardTitle className="text-base text-[#2c241b] font-serif">角色信息</CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                   <div className="space-y-2">
                     {story.characters.slice(0, 3).map((character, index) => (
                       <Dialog key={index}>
                         <DialogTrigger asChild>
-                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 hover:bg-slate-100 hover:border-slate-300 cursor-pointer transition-all duration-200 group">
+                          <div className="bg-[#fdfbf9] p-2 rounded-lg border border-[#f2f0ea] hover:border-[#c5a059] cursor-pointer transition-all duration-200 group">
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-2">
-                                <User className="w-3 h-3 text-slate-500 group-hover:text-slate-600" />
-                                <h4 className="font-medium text-slate-800 group-hover:text-slate-900 text-sm">{getDisplayName(character, index)}</h4>
+                                <User className="w-3 h-3 text-[#c5a059] group-hover:text-[#b08d4d]" />
+                                <h4 className="font-medium text-[#2c241b] group-hover:text-[#c5a059] text-sm font-serif">{getDisplayName(character, index)}</h4>
                               </div>
-                              <span className="text-xs text-slate-600">{getDisplayRole(character)}</span>
+                              <span className="text-xs text-[#5d554a]">{getDisplayRole(character)}</span>
                             </div>
-                            <p className="text-xs text-slate-500 line-clamp-1">{character.traits || '这位角色的性格正在形成中...'}</p>
+                            <p className="text-xs text-[#8c7b6c] line-clamp-1">{character.traits || '这位角色的性格正在形成中...'}</p>
                           </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-lg shadow-2xl">
@@ -2070,39 +2082,37 @@ const getDisplayRole = (character: any): string => {
                           </DialogHeader>
 
                           <div className="p-8">
-                            <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
-                              <div className="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <User className="w-10 h-10 text-indigo-500" />
+                            <header className="flex items-center space-x-4 mb-6 pb-6 border-b border-[#f2f0ea]">
+                              <div className="flex-shrink-0 w-16 h-16 bg-[#2c241b] rounded-full flex items-center justify-center border-2 border-[#c5a059]">
+                                <User className="w-8 h-8 text-[#c5a059]" />
                               </div>
                               <div>
-                                <h1 className="text-3xl font-bold text-gray-900">{getDisplayName(character, index)}</h1>
-                                <p className="text-indigo-500 font-semibold text-md">{getDisplayRole(character)}</p>
+                                <h1 className="text-3xl font-bold text-[#2c241b] font-serif">{getDisplayName(character, index)}</h1>
+                                <p className="text-[#c5a059] font-medium text-md font-serif">{getDisplayRole(character)}</p>
                               </div>
                             </header>
 
                             <div className="space-y-6">
                               <div>
-                                <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">性格特征</h2>
+                                <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">性格特征</h2>
                                 <div className="flex flex-wrap gap-2">
                                   {parseTraitsToTags(character.traits || '神秘的角色').map((trait, traitIndex) => (
-                                    <span key={traitIndex} className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                    <span key={traitIndex} className="bg-[#f2f0ea] text-[#5d554a] text-xs font-medium px-3 py-1 rounded-full border border-[#dcd8cc] font-serif">
                                       {trait}
                                     </span>
                                   ))}
                                 </div>
                               </div>
-
                               {character.appearance && (
                                 <div>
-                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">外貌描述</h2>
-                                  <p className="text-gray-700 leading-relaxed">{character.appearance}</p>
+                                  <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">外貌描述</h2>
+                                  <p className="text-[#2c241b] leading-relaxed font-serif text-sm">{character.appearance}</p>
                                 </div>
                               )}
-
                               {character.backstory && (
                                 <div>
-                                  <h2 className="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-3">背景故事</h2>
-                                  <p className="text-gray-700 leading-relaxed">{character.backstory}</p>
+                                  <h2 className="text-xs font-bold uppercase text-[#8c7b6c] tracking-widest mb-3 font-serif">背景故事</h2>
+                                  <p className="text-[#2c241b] leading-relaxed font-serif text-sm">{character.backstory}</p>
                                 </div>
                               )}
                             </div>
@@ -2111,8 +2121,8 @@ const getDisplayRole = (character: any): string => {
                       </Dialog>
                     ))}
                     {story.characters.length > 3 && (
-                      <div className="text-xs text-slate-500 text-center py-1">
-                        还有 {story.characters.length - 3} 个角色...
+                      <div className="text-xs text-[#8c7b6c] text-center py-1 font-serif italic">
+                        还有 {story.characters.length - 3} 位隐藏人物...
                       </div>
                     )}
                   </div>
@@ -2122,28 +2132,27 @@ const getDisplayRole = (character: any): string => {
 
             {/* 故事目标 - 紧凑版 */}
             {!story.is_completed && story.story_goals && story.story_goals.length > 0 && (
-              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/50 rounded-xl overflow-hidden">
+              <Card className="bg-white shadow-md border border-[#f2f0ea] rounded-xl overflow-hidden">
                 <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-base text-slate-800 flex items-center gap-2">
+                  <CardTitle className="text-base text-[#2c241b] flex items-center gap-2 font-serif">
                     🎯 故事目标
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-3">
                   <div className="space-y-2">
                     {story.story_goals.slice(0, 3).map((goal, index) => (
-                      <div key={goal.id} className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      <div key={goal.id} className="bg-[#fdfbf9] p-2 rounded-lg border border-[#f2f0ea]">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs font-medium ${
-                                goal.status === 'completed' ? 'text-green-700' :
-                                goal.status === 'failed' ? 'text-red-700' :
-                                goal.status === 'in_progress' ? 'text-yellow-700' : 'text-slate-700'
-                              }`}>
+                              <span className={`text-xs font-medium font-serif ${goal.status === 'completed' ? 'text-[#5d7a5d]' :
+                                goal.status === 'failed' ? 'text-[#8a4b38]' :
+                                  goal.status === 'in_progress' ? 'text-[#c5a059]' : 'text-[#5d554a]'
+                                }`}>
                                 {goal.description}
                               </span>
                               {goal.type === 'main' && (
-                                <span className="text-xs px-1 py-0 bg-purple-100 text-purple-600 rounded">主</span>
+                                <span className="text-xs px-1 py-0 bg-[#f2f0ea] text-[#8c7b6c] rounded font-serif border border-[#c5a059]/30">主</span>
                               )}
                             </div>
                           </div>
@@ -2157,7 +2166,7 @@ const getDisplayRole = (character: any): string => {
                       </div>
                     ))}
                     {story.story_goals.length > 3 && (
-                      <div className="text-xs text-slate-500 text-center py-1">
+                      <div className="text-xs text-[#8c7b6c] text-center py-1 font-serif italic">
                         还有 {story.story_goals.length - 3} 个目标...
                       </div>
                     )}
@@ -2168,7 +2177,7 @@ const getDisplayRole = (character: any): string => {
 
             {/* 故事进度提示 - 极简版 */}
             {!story.is_completed && (
-              <Card className="bg-gradient-to-r from-blue-50/90 to-purple-50/90 backdrop-blur-sm shadow-xl border border-blue-200/50 rounded-xl overflow-hidden">
+              <Card className="bg-white shadow-md border border-[#f2f0ea] rounded-xl overflow-hidden">
                 <CardContent className="pt-3 pb-3">
                   <div className="space-y-3">
                     <StageProgressIndicator
@@ -2179,9 +2188,9 @@ const getDisplayRole = (character: any): string => {
                       size="md"
                       className="mb-1"
                     />
-                    
+
                     {story.chapter >= 5 && (
-                      <div className="text-xs text-slate-500 bg-white bg-opacity-70 rounded px-2 py-1 border border-slate-200">
+                      <div className="text-xs text-[#5d554a] bg-[#fdfbf9] bg-opacity-70 rounded px-2 py-1 border border-[#f2f0ea] font-serif">
                         💡 {getEndingHint(story.chapter, story.story_progress || 0)}
                       </div>
                     )}
@@ -2192,15 +2201,15 @@ const getDisplayRole = (character: any): string => {
 
             {/* AI状态信息 */}
             {(modelConfig || aiError) && (
-              <Card className="bg-slate-50/90 backdrop-blur-sm shadow-lg border border-slate-200/50 rounded-xl overflow-hidden">
+              <Card className="bg-[#fdfbf9]/90 backdrop-blur-sm shadow-lg border border-[#f2f0ea]/50 rounded-xl overflow-hidden">
                 <CardContent className="pt-4">
                   {modelConfig && (
-                    <p className="text-xs text-slate-500 text-center">
+                    <p className="text-xs text-[#8c7b6c] text-center font-serif">
                       AI模型: {getModelLevelName(modelConfig.performance_level)}
                     </p>
                   )}
                   {aiError && (
-                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 text-center">
+                    <div className="mt-2 p-3 bg-[#fffdf9] border border-[#c5a059] rounded text-sm text-[#8a4b38] text-center font-serif">
                       ⚠️ {aiError}
                     </div>
                   )}

@@ -26,7 +26,7 @@ export class TempApiKeyStore {
         maxTokens: modelConfig.maxTokens,
         timestamp: Date.now()
       }));
-      
+
     } catch (error) {
       console.error('❌ 存储临时模型配置失败:', error);
     }
@@ -43,12 +43,12 @@ export class TempApiKeyStore {
       }
 
       const config = JSON.parse(configStr);
-      
+
       // 检查是否过期（24小时）
       const now = Date.now();
       const stored = config.timestamp || 0;
       const maxAge = 24 * 60 * 60 * 1000; // 24小时
-      
+
       if (now - stored > maxAge) {
         this.clearTempStorage();
         return null;
@@ -84,7 +84,7 @@ export class TempApiKeyStore {
     try {
       // 清除模型配置
       sessionStorage.removeItem(TEMP_MODEL_CONFIG_KEY);
-      
+
       // 清除所有API密钥相关的临时存储
       const keysToRemove: string[] = [];
       for (let i = 0; i < sessionStorage.length; i++) {
@@ -93,9 +93,9 @@ export class TempApiKeyStore {
           keysToRemove.push(key);
         }
       }
-      
+
       keysToRemove.forEach(key => sessionStorage.removeItem(key));
-      
+
     } catch (error) {
       console.error('❌ 清除临时存储失败:', error);
     }
@@ -211,7 +211,7 @@ export class TempApiKeyStore {
         .from('system_model_pool')
         .select('api_config')
         .eq('id', modelId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('❌ 查询系统模型池失败:', error);

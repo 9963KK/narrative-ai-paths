@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Search,
   FileText,
-  Clock,
   CheckCircle,
-  AlertCircle,
   XCircle,
   Trash2,
   Download,
@@ -18,8 +16,9 @@ import {
   Filter,
   Eye,
   Calendar,
-  HardDrive,
-  Loader2
+  Loader2,
+  Database,
+  AlertCircle
 } from 'lucide-react';
 import { documentRecordManager, DocumentRecord } from '@/services/documentRecordManager';
 
@@ -57,12 +56,11 @@ const DocumentRecordManager: React.FC<DocumentRecordManagerProps> = ({
 
   // 过滤记录
   const filteredRecords = records.filter(record => {
-    const matchesSearch = searchQuery === '' || 
-      record.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.thumbnailContent?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch = searchQuery === '' ||
+      record.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -99,7 +97,7 @@ const DocumentRecordManager: React.FC<DocumentRecordManagerProps> = ({
     const date = new Date(timeString);
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -117,15 +115,15 @@ const DocumentRecordManager: React.FC<DocumentRecordManagerProps> = ({
   const getStatusInfo = (status: DocumentRecord['status']) => {
     switch (status) {
       case 'uploaded':
-        return { color: 'bg-blue-100 text-blue-800', icon: <Upload className="h-3 w-3" /> };
+        return { color: 'bg-[#faf7f2] text-[#5d554a] border-[#e8e4d9]', icon: <Upload className="h-3 w-3" />, label: '已上传' };
       case 'analyzing':
-        return { color: 'bg-yellow-100 text-yellow-800', icon: <Loader2 className="h-3 w-3 animate-spin" /> };
+        return { color: 'bg-[#fffdf9] text-[#c5a059] border-[#c5a059]', icon: <Loader2 className="h-3 w-3 animate-spin" />, label: '分析中' };
       case 'analyzed':
-        return { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-3 w-3" /> };
+        return { color: 'bg-[#fdfbf9] text-[#2c241b] border-[#c5a059]', icon: <CheckCircle className="h-3 w-3" />, label: '已分析' };
       case 'failed':
-        return { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-3 w-3" /> };
+        return { color: 'bg-[#fffdf9] text-[#8a4b38] border-[#8a4b38]', icon: <XCircle className="h-3 w-3" />, label: '失败' };
       default:
-        return { color: 'bg-gray-100 text-gray-800', icon: <FileText className="h-3 w-3" /> };
+        return { color: 'bg-[#faf7f2] text-[#8c7b6c] border-[#e8e4d9]', icon: <FileText className="h-3 w-3" />, label: '未知' };
     }
   };
 
@@ -133,108 +131,103 @@ const DocumentRecordManager: React.FC<DocumentRecordManagerProps> = ({
   const stats = documentRecordManager.getStats();
 
   return (
-    <div className="space-y-6">
-      {/* 统计信息 */}
-      {showStats && (
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-0 shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              解析统计
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalRecords}</div>
-                <div className="text-sm text-gray-600">总记录数</div>
+    <div className="space-y-6 font-serif">
+      <Card className="bg-white shadow-sm border border-[#f2f0ea] rounded-2xl overflow-hidden">
+        <CardContent className="p-6">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#faf7f2] rounded-lg border border-[#e8e4d9]">
+                <Database className="h-5 w-5 text-[#c5a059]" />
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.analyzedRecords}</div>
-                <div className="text-sm text-gray-600">已分析</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{stats.failedRecords}</div>
-                <div className="text-sm text-gray-600">失败</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats.successRate.toFixed(1)}%</div>
-                <div className="text-sm text-gray-600">成功率</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{stats.totalWordCount.toLocaleString()}</div>
-                <div className="text-sm text-gray-600">总词数</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">{formatFileSize(stats.totalFileSize)}</div>
-                <div className="text-sm text-gray-600">总文件大小</div>
+              <div>
+                <h2 className="text-lg font-bold text-[#2c241b] flex items-center gap-2">
+                  文档解析记录
+                  <span className="px-2 py-0.5 rounded-full bg-[#faf7f2] text-xs text-[#8c7b6c] font-medium border border-[#e8e4d9]">
+                    {filteredRecords.length}/{records.length}
+                  </span>
+                </h2>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* 控制栏 */}
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <HardDrive className="h-5 w-5 text-gray-700" />
-              文档解析记录
-              <Badge variant="secondary" className="text-xs">
-                {filteredRecords.length} / {records.length}
-              </Badge>
-            </CardTitle>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowStats(!showStats)}
-                className="flex items-center gap-2"
+                className="text-[#5d554a] border-[#e8e4d9] hover:bg-[#faf7f2] hover:border-[#c5a059] hover:text-[#2c241b]"
               >
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-4 w-4 mr-2" />
                 {showStats ? '隐藏统计' : '显示统计'}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportRecords}
-                className="flex items-center gap-2"
+                className="text-[#5d554a] border-[#e8e4d9] hover:bg-[#faf7f2] hover:border-[#c5a059] hover:text-[#2c241b]"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-2" />
                 导出记录
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleClearAllRecords}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                className="text-[#8a4b38] border-[#e8e4d9] hover:bg-[#fffdf9] hover:border-[#8a4b38]"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-2" />
                 清空记录
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            {/* 搜索框 */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+
+          {/* Stats Panel */}
+          {showStats && (
+            <div className="mb-6 p-4 bg-[#faf7f2] rounded-xl border border-[#e8e4d9] grid grid-cols-2 md:grid-cols-6 gap-4 animate-in slide-in-from-top-2">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#2c241b]">{stats.totalRecords}</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">总记录数</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#c5a059]">{stats.analyzedRecords}</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">已分析</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#8a4b38]">{stats.failedRecords}</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">失败</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#5d554a]">{stats.successRate.toFixed(1)}%</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">成功率</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#2c241b]">{stats.totalWordCount.toLocaleString()}</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">总词数</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#c5a059]">{formatFileSize(stats.totalFileSize)}</div>
+                <div className="text-xs text-[#8c7b6c] mt-1">总大小</div>
+              </div>
+            </div>
+          )}
+
+          {/* Search Bar */}
+          <div className="flex gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#8c7b6c]" />
               <Input
-                placeholder="搜索文件名或内容..."
+                placeholder="搜索文件名称..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white border-[#e8e4d9] focus:border-[#c5a059] focus:ring-[#c5a059]/20 text-[#2c241b] placeholder:text-[#8c7b6c]/50"
               />
             </div>
-            {/* 状态筛选 */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#8c7b6c]" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="h-10 pl-9 pr-8 border border-[#e8e4d9] rounded-md text-sm bg-white text-[#5d554a] focus:outline-none focus:ring-2 focus:ring-[#c5a059]/20 focus:border-[#c5a059] appearance-none cursor-pointer"
               >
                 <option value="all">全部状态</option>
                 <option value="uploaded">已上传</option>
@@ -244,101 +237,97 @@ const DocumentRecordManager: React.FC<DocumentRecordManagerProps> = ({
               </select>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* 记录列表 */}
-      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-        <CardContent className="p-0">
-          <ScrollArea className="h-[500px]">
+          {/* Records List */}
+          <ScrollArea className="h-[500px] pr-4">
             {loading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <div className="flex flex-col items-center justify-center h-64 text-[#8c7b6c]">
+                <Loader2 className="h-8 w-8 animate-spin mb-2 text-[#c5a059]" />
+                <p>加载记录中...</p>
               </div>
             ) : filteredRecords.length === 0 ? (
-              <div className="text-center py-16">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">
-                  {searchQuery || statusFilter !== 'all' ? '没有找到匹配的记录' : '暂无文档记录'}
-                </p>
+              <div className="flex flex-col items-center justify-center h-64 text-[#8c7b6c] border-2 border-dashed border-[#e8e4d9] rounded-xl bg-[#faf7f2]/50">
+                <FileText className="h-12 w-12 mb-3 opacity-50" />
+                <p>暂无相关记录</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="space-y-3">
                 {filteredRecords.map((record) => {
                   const statusInfo = getStatusInfo(record.status);
                   return (
                     <div
                       key={record.id}
-                      className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="group bg-white border border-[#f2f0ea] rounded-xl p-4 hover:shadow-md hover:border-[#c5a059]/50 transition-all duration-200 cursor-pointer"
                       onClick={() => onSelectRecord?.(record)}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-gray-900 truncate">
-                                {record.fileName}
-                              </h3>
-                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {formatTime(record.uploadTime)}
-                                </span>
-                                <span>{formatFileSize(record.fileSize)}</span>
-                                {record.wordCount && (
-                                  <span>{record.wordCount.toLocaleString()} 词</span>
-                                )}
-                              </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 overflow-hidden flex-1">
+                          <div className="p-2 bg-[#faf7f2] rounded-lg group-hover:bg-[#f2f0ea] transition-colors border border-[#e8e4d9]">
+                            <FileText className="h-5 w-5 text-[#8c7b6c] group-hover:text-[#c5a059]" />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-[#2c241b] truncate text-base mb-1">
+                              {record.fileName}
+                            </h3>
+                            <div className="flex items-center gap-4 text-xs text-[#8c7b6c]">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatTime(record.uploadTime)}
+                              </span>
+                              <span>{formatFileSize(record.fileSize)}</span>
+                              {record.wordCount && (
+                                <span>{record.wordCount.toLocaleString()} 词</span>
+                              )}
                             </div>
                           </div>
-                          {record.thumbnailContent && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mt-2">
-                              {record.thumbnailContent}
-                            </p>
-                          )}
-                          {record.errorMessage && (
-                            <p className="text-sm text-red-600 mt-2">
-                              错误: {record.errorMessage}
-                            </p>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <Badge className={`${statusInfo.color} flex items-center gap-1`}>
+
+                        <div className="flex items-center gap-3 ml-4">
+                          <Badge variant="outline" className={`${statusInfo.color} border gap-1.5 py-1 px-3`}>
                             {statusInfo.icon}
-                            {record.status === 'uploaded' && '已上传'}
-                            {record.status === 'analyzing' && '分析中'}
-                            {record.status === 'analyzed' && '已分析'}
-                            {record.status === 'failed' && '失败'}
+                            {statusInfo.label}
                           </Badge>
-                          <div className="flex gap-1">
+
+                          <div className="flex items-center justify-end gap-1 min-w-[72px] opacity-0 group-hover:opacity-100 transition-opacity">
                             {record.status === 'analyzed' && record.analysisResult && (
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onViewResult?.(record);
                                 }}
-                                className="h-8 w-8 p-0"
+                                className="h-8 w-8 text-[#8c7b6c] hover:text-[#2c241b] hover:bg-[#faf7f2]"
+                                title="查看详情"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteRecord(record.id);
                               }}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              className="h-8 w-8 text-[#8c7b6c] hover:text-[#8a4b38] hover:bg-[#fffdf9]"
+                              title="删除记录"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       </div>
+
+                      {record.errorMessage && (
+                        <div className="mt-3 pl-[52px]">
+                          <p className="text-sm text-[#8a4b38] flex items-center gap-2 bg-[#fffdf9] p-2 rounded border border-[#8a4b38]/20">
+                            <AlertCircle className="h-4 w-4" />
+                            {record.errorMessage}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

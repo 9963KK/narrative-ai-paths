@@ -98,6 +98,7 @@ export interface StoryState {
   story_progress?: number;
   main_goal_status?: 'pending' | 'in_progress' | 'completed' | 'failed';
   story_goals?: StoryGoal[];
+  achievements?: string[];
 }
 
 // 选择项接口
@@ -150,8 +151,8 @@ export interface ConversationHistory {
 // 摘要数据接口
 export interface SummaryData {
   plot_developments: string[];
-  character_changes: Array<{name: string, change: string}>;
-  key_decisions: Array<{decision: string, consequence: string}>;
+  character_changes: Array<{ name: string, change: string }>;
+  key_decisions: Array<{ decision: string, consequence: string }>;
   atmosphere: {
     mood: string;
     tension_level: number;
@@ -175,15 +176,15 @@ export interface IAIModelService {
     historySummary?: string,
     onToken?: (token: string) => void
   ): Promise<AIStreamResponse>;
-  
+
   // 配置管理
   setModelConfig(config: ModelConfig): void;
   getModelConfig(): ModelConfig | null;
-  
+
   // Token管理
   estimateTokens(text: string): number;
   getRemainingTokens(): number;
-  
+
   // 状态管理
   getState(): ModuleState;
   resetState(): void;
@@ -195,15 +196,15 @@ export interface IStoryStateManager {
   getState(): StoryState | null;
   setState(state: StoryState): void;
   updateState(updates: Partial<StoryState>): void;
-  
+
   // 持久化
   saveState(userId: string): Promise<void>;
   loadState(userId: string): Promise<StoryState | null>;
-  
+
   // 验证
   validateState(state: StoryState): boolean;
   resetState(): void;
-  
+
   // 状态查询
   getCurrentChapter(): number;
   getCharacters(): Character[];
@@ -217,10 +218,10 @@ export interface IStoryInitializer {
   // 故事生成
   generateInitialStory(config: StoryConfig): Promise<StoryGenerationResponse>;
   generateStoryOutlines(config: StoryConfig): Promise<string[]>;
-  
+
   // 角色创建
   createInitialCharacters(config: StoryConfig): Promise<Character[]>;
-  
+
   // 设定建立
   establishSetting(config: StoryConfig): Promise<string>;
 }
@@ -231,7 +232,7 @@ export interface IContentGenerator {
   generateNextChapter(state: StoryState, choice?: string): Promise<StoryGenerationResponse>;
   generateSceneDescription(context: string): Promise<string>;
   generateDialogue(characters: Character[], context: string): Promise<string>;
-  
+
   // 情节控制
   advancePlot(state: StoryState): Promise<string>;
   buildTension(currentLevel: number, target: number): Promise<string>;
@@ -241,11 +242,11 @@ export interface IContentGenerator {
 export interface IChoiceGenerator {
   // 选择生成
   generateChoices(state: StoryState, context: string): Promise<Choice[]>;
-  
+
   // 选择优化
   determineChoiceCount(state: StoryState): number;
   evaluateChoiceDifficulty(choice: Choice, state: StoryState): number;
-  
+
   // 后果预测
   predictConsequences(choice: Choice, state: StoryState): Promise<string>;
 }
@@ -256,11 +257,11 @@ export interface IContentParser {
   parseStoryResponse(response: string): StoryGenerationResponse | null;
   parseChoices(response: string): Choice[] | null;
   parseCharacters(response: string): Character[] | null;
-  
+
   // 验证方法
   validateStoryContent(content: any): boolean;
   validateChoiceFormat(choices: any[]): boolean;
-  
+
   // 修复方法
   repairMalformedJSON(jsonString: string): string;
   sanitizeContent(content: string): string;
@@ -271,11 +272,11 @@ export interface IEndingGenerator {
   // 结束判断
   shouldStoryEnd(state: StoryState): boolean;
   determineEndingType(state: StoryState): 'success' | 'failure' | 'neutral' | 'cliffhanger';
-  
+
   // 结局生成
   generateStoryEnding(state: StoryState): Promise<string>;
   generateCustomEnding(state: StoryState, endingType: string): Promise<string>;
-  
+
   // 结局评估
   evaluateStoryCompletion(state: StoryState): number; // 0-100 完成度
 }
@@ -285,11 +286,11 @@ export interface ISummaryManager {
   // 摘要生成
   generateSummary(history: ConversationHistory[]): Promise<string>;
   mergeSummaries(oldSummary: string, newSummary: string): string;
-  
+
   // 摘要管理
   shouldTriggerSummary(conversationCount: number): boolean;
   compressHistory(history: ConversationHistory[]): string;
-  
+
   // 摘要解析
   parseSummaryJSON(summaryText: string): SummaryData | null;
   formatSummaryDisplay(summary: string): void;
@@ -301,15 +302,15 @@ export interface IConversationManager {
   addToHistory(role: 'system' | 'user' | 'assistant', content: string): void;
   getHistory(): ConversationHistory[];
   clearHistory(): void;
-  
+
   // 上下文管理
   buildContext(includeHistory: boolean): string;
   optimizeContextWindow(): void;
-  
+
   // 会话持久化
   saveConversation(userId: string): Promise<void>;
   loadConversation(userId: string): Promise<ConversationHistory[]>;
-  
+
   // 摘要集成
   setSummaryState(summary: string, summaryData?: SummaryData): void;
   getSummaryState(): { summary: string; data?: SummaryData };
@@ -320,11 +321,11 @@ export interface ICharacterDeveloper {
   // 角色开发
   developCharacter(character: Character, context: string): Promise<Character>;
   createNewCharacter(requirements: string): Promise<Character>;
-  
+
   // 关系管理
   updateCharacterRelationships(characters: Character[]): Promise<Character[]>;
   trackCharacterArc(character: Character, story: StoryState): Promise<string>;
-  
+
   // 角色验证
   validateCharacter(character: Character): boolean;
   mergeCharacterUpdates(existing: Character, updates: Partial<Character>): Character;
@@ -372,19 +373,19 @@ export interface DocumentAnalysisResult {
 export interface IDocumentAnalyzer {
   // 文档分析
   analyzeDocument(content: string, fileName: string): Promise<DocumentAnalysisResult>;
-  
+
   // 文件处理
   readFile(file: File): Promise<string>;
   isFileTypeSupported(file: File): boolean;
   getSupportedFileTypesDescription(): string;
-  
+
   // 内容提取
   extractCharacters(content: string): Promise<Character[]>;
   extractSetting(content: string): Promise<any>;
   extractThemes(content: string): Promise<any>;
   extractPlotElements(content: string): Promise<any>;
   extractWritingStyle(content: string): Promise<any>;
-  
+
   // 种子生成
   generateStorySeeds(analysisResult: DocumentAnalysisResult): Promise<any[]>;
 }

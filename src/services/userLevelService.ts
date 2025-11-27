@@ -310,7 +310,7 @@ class UserLevelService {
         .from('users')
         .select('user_level')
         .eq('id', currentUserId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('获取用户等级失败:', error);
@@ -344,7 +344,7 @@ class UserLevelService {
       }
 
       const stats = { basic: 0, vip: 0, svip: 0, total: 0 };
-      
+
       if (data) {
         data.forEach(user => {
           stats.total++;
@@ -381,7 +381,7 @@ class UserLevelService {
 
       const permissions = await this.getUserLevelPermissions();
       const userPermission = permissions.find(p => p.level === userLevel);
-      
+
       return userPermission?.allowed_model_levels.includes(modelLevel) || false;
     } catch (error) {
       console.error('检查用户模型访问权限失败:', error);

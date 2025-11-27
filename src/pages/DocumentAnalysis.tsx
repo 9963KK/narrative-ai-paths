@@ -51,14 +51,14 @@ const DocumentAnalysis: React.FC = () => {
         setHasValidConfig(false);
       }
     };
-    
+
     loadUserConfig();
   }, []);
 
   // 处理文档分析完成
   const handleDocumentAnalysisComplete = (result: DocumentAnalysisResult) => {
     setDocumentAnalysisResult(result);
-    
+
     if (result.success && result.data) {
       setShowAnalysisResult(true);
     }
@@ -67,7 +67,7 @@ const DocumentAnalysis: React.FC = () => {
   // 基于文档分析创建故事
   const handleCreateFromAnalysis = async (selectedSeed?: any) => {
     if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
-    
+
     const hasApiKey = modelConfig.apiKey || hasValidConfig;
     if (!hasApiKey) {
       alert('请先配置AI模型');
@@ -76,7 +76,7 @@ const DocumentAnalysis: React.FC = () => {
 
     // 使用文档分析结果创建配置
     const analysisData = documentAnalysisResult.data;
-    
+
     // 从写作风格推断文体类型
     let inferredGenre = 'fantasy'; // 默认
     const genre = analysisData.writingStyle.genre.toLowerCase();
@@ -113,35 +113,35 @@ const DocumentAnalysis: React.FC = () => {
 
     // 使用选中的创意种子，或者默认使用第一个
     const seedToUse = selectedSeed || analysisData.suggestedStorySeeds[0];
-    const baseStoryIdea = seedToUse 
+    const baseStoryIdea = seedToUse
       ? `基于《${seedToUse.title}》的创意：${seedToUse.premise}`
       : '继承原作精神的全新故事';
 
     // 如果有选中的创意种子，优先使用其角色和背景
-    const charactersToUse = seedToUse?.characters 
+    const charactersToUse = seedToUse?.characters
       ? seedToUse.characters.map((charName: string, index: number) => {
-          // 尝试从分析的角色中找到匹配的角色，如果没有则创建新角色
-          const matchedChar = analysisData.characters.find(char => 
-            char.name && char.name.includes(charName) || charName.includes(char.name || '')
-          );
-          return {
-            name: charName,
-            role: index === 0 ? '主角' : '配角',
-            traits: matchedChar?.traits || '待定义的角色特征',
-            appearance: matchedChar?.appearance || '待描述',
-            backstory: matchedChar?.backstory || '待补充的背景故事'
-          };
-        })
+        // 尝试从分析的角色中找到匹配的角色，如果没有则创建新角色
+        const matchedChar = analysisData.characters.find(char =>
+          char.name && char.name.includes(charName) || charName.includes(char.name || '')
+        );
+        return {
+          name: charName,
+          role: index === 0 ? '主角' : '配角',
+          traits: matchedChar?.traits || '待定义的角色特征',
+          appearance: matchedChar?.appearance || '待描述',
+          backstory: matchedChar?.backstory || '待补充的背景故事'
+        };
+      })
       : analysisData.characters.slice(0, 6).map((char, index) => ({
-          name: char.name || `角色${index + 1}`,
-          role: char.role || '配角',
-          traits: char.traits || '待定义',
-          appearance: char.appearance || '',
-          backstory: char.backstory || ''
-        }));
+        name: char.name || `角色${index + 1}`,
+        role: char.role || '配角',
+        traits: char.traits || '待定义',
+        appearance: char.appearance || '',
+        backstory: char.backstory || ''
+      }));
 
     // 如果有选中的创意种子，优先使用其背景设定
-    const settingToUse = seedToUse?.setting 
+    const settingToUse = seedToUse?.setting
       ? `${seedToUse.setting}。${analysisData.setting.worldBackground}`
       : `${analysisData.setting.time}，${analysisData.setting.place}。${analysisData.setting.worldBackground}`;
 
@@ -182,7 +182,7 @@ const DocumentAnalysis: React.FC = () => {
       modelConfig: configToUse,
       isAdvanced: true
     }));
-    
+
     // 重定向到故事创作页面
     navigate('/app/creating');
   };
@@ -190,7 +190,7 @@ const DocumentAnalysis: React.FC = () => {
   // 导出分析结果
   const handleExportAnalysisResult = () => {
     if (!documentAnalysisResult?.success || !documentAnalysisResult.data) return;
-    
+
     const dataStr = JSON.stringify(documentAnalysisResult.data, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -206,11 +206,7 @@ const DocumentAnalysis: React.FC = () => {
     setDocumentAnalysisResult(updatedResult);
   };
 
-  // 基于分析结果进入专业模式
-  const handleGoToAdvanced = () => {
-    // 导航到专业模式页面，并传递分析结果
-    navigate('/app/advanced', { state: { documentAnalysis: documentAnalysisResult } });
-  };
+
 
   // 处理从记录管理器选择记录
   const handleSelectRecord = (record: DocumentRecord) => {
@@ -239,7 +235,6 @@ const DocumentAnalysis: React.FC = () => {
         onCreateStory={handleCreateFromAnalysis}
         onExportResult={handleExportAnalysisResult}
         onSaveChanges={handleAnalysisResultChange}
-        onGoToAdvanced={handleGoToAdvanced}
       />
     );
   }
@@ -247,7 +242,7 @@ const DocumentAnalysis: React.FC = () => {
   // 记录管理界面
   if (showRecordManager) {
     return (
-      <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+      <div className="min-h-screen font-serif text-[#2c241b] bg-[#fdfbf9] selection:bg-[#c5a059] selection:text-white">
         <div className="container mx-auto p-4 sm:p-8">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -255,26 +250,26 @@ const DocumentAnalysis: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => setShowRecordManager(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl px-4 py-2"
+                className="flex items-center gap-2 text-[#5d554a] hover:text-[#2c241b] bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md border border-[#e8e4d9] hover:border-[#c5a059] transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl px-4 py-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回分析
               </Button>
-              
+
               <div className="flex items-center gap-3 animate-in slide-in-from-top-4 fade-in-0 duration-600">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <Database className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-[#2c241b] rounded-xl flex items-center justify-center border border-[#c5a059]">
+                  <Database className="w-5 h-5 text-[#c5a059]" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-800">解析记录管理</h1>
-                  <p className="text-sm text-gray-600">查看和管理文档解析历史</p>
+                  <h1 className="text-lg font-bold text-[#2c241b]">解析记录管理</h1>
+                  <p className="text-sm text-[#8c7b6c]">查看和管理文档解析历史</p>
                 </div>
               </div>
-              
+
               <div className="w-[120px]"></div>
             </div>
-            
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden p-6 animate-in slide-in-from-bottom-4 fade-in-0 duration-700">
+
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-[0_8px_30px_rgba(197,160,89,0.1)] border border-[#f2f0ea] overflow-hidden p-6 animate-in slide-in-from-bottom-4 fade-in-0 duration-700">
               <DocumentRecordManager
                 onSelectRecord={handleSelectRecord}
                 onViewResult={handleViewRecordResult}
@@ -288,27 +283,27 @@ const DocumentAnalysis: React.FC = () => {
 
   // 主要的文档分析界面
   return (
-    <div className="min-h-screen bg-gray-50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/10 via-gray-50 to-gray-50">
+    <div className="min-h-screen font-serif text-[#2c241b] bg-[#fdfbf9] selection:bg-[#c5a059] selection:text-white">
       <div className="container mx-auto p-4 sm:p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-8 animate-in slide-in-from-top-4 fade-in-0 duration-500">
             {/* 返回主页按钮 */}
             <Button
               onClick={() => navigate('/app')}
               variant="outline"
-              className="px-6 py-3 bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl"
+              className="px-6 py-2 bg-[#fdfbf9] border border-[#e8e4d9] hover:border-[#c5a059] text-[#5d554a] hover:text-[#2c241b] font-medium shadow-sm hover:shadow-md transition-all duration-300 rounded-lg font-serif"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回主页
             </Button>
-            
+
             {/* 查询历史记录按钮 */}
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowRecordManager(true)}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 rounded-xl"
+              className="flex items-center gap-2 bg-white border border-[#e8e4d9] text-[#5d554a] hover:border-[#c5a059] hover:text-[#2c241b] hover:shadow-md transition-all duration-300 rounded-lg font-serif"
             >
               <Database className="h-4 w-4" />
               查询历史记录
@@ -316,7 +311,7 @@ const DocumentAnalysis: React.FC = () => {
           </div>
 
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden animate-in slide-in-from-bottom-4 fade-in-0 duration-700">
+          <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgba(197,160,89,0.1)] border border-[#f2f0ea] overflow-hidden animate-in slide-in-from-bottom-4 fade-in-0 duration-700 min-h-[500px] flex flex-col justify-center">
             <DocumentAnalyzer
               modelConfig={modelConfig}
               onAnalysisComplete={handleDocumentAnalysisComplete}

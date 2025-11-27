@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Upload, 
-  FileText, 
-  Users, 
-  MapPin, 
-  Target, 
-  Palette, 
-  Lightbulb, 
+import {
+  Upload,
+  FileText,
+  Users,
+  MapPin,
+  Target,
+  Palette,
+  Lightbulb,
   X,
   CheckCircle,
   AlertCircle,
@@ -26,16 +26,18 @@ import { DocumentAnalysisResult, SUPPORTED_FILE_TYPES } from '@/services/documen
 import { ModelConfig } from '@/components/model-config/constants';
 import { documentRecordManager, DocumentRecord } from '@/services/documentRecordManager';
 
+import { GoldenWaveAnimation } from './GoldenWaveAnimation';
+
 interface DocumentAnalyzerProps {
   modelConfig: ModelConfig;
   onAnalysisComplete?: (result: DocumentAnalysisResult) => void;
   onClose?: () => void;
 }
 
-const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({ 
-  modelConfig, 
-  onAnalysisComplete, 
-  onClose 
+const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
+  modelConfig,
+  onAnalysisComplete,
+  onClose
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
@@ -56,23 +58,23 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   const countWords = (text: string) => {
     // 移除多余的空白字符
     const cleanText = text.trim().replace(/\s+/g, ' ');
-    
+
     // 中文字符数（包括中文标点）
     const chineseChars = (cleanText.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g) || []).length;
-    
+
     // 英文单词数
     const englishWords = cleanText
       .replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g, ' ') // 移除中文字符
       .trim()
       .split(/\s+/)
       .filter(word => word.length > 0).length;
-    
+
     // 总字符数（不包括空格）
     const totalChars = cleanText.replace(/\s/g, '').length;
-    
+
     // 总词数（中文字符数 + 英文单词数）
     const totalWords = chineseChars + englishWords;
-    
+
     return {
       words: totalWords,
       chars: totalChars,
@@ -87,7 +89,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     const OPTIMAL_WORD_LIMIT = 5000;
     const WARNING_WORD_LIMIT = 10000;
     const MAX_WORD_LIMIT = 20000;
-    
+
     if (wordCount > MAX_WORD_LIMIT) {
       return { level: 'error', message: `文档过长 (${wordCount.toLocaleString()} 词)，建议控制在 ${MAX_WORD_LIMIT.toLocaleString()} 词以内以确保最佳分析效果` };
     } else if (wordCount > WARNING_WORD_LIMIT) {
@@ -105,7 +107,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
     setError(null);
     setIsFileTooBig(false);
-    
+
     // 验证文件类型
     if (!documentAnalyzer.isFileTypeSupported(file)) {
       setError(`不支持的文件格式。${documentAnalyzer.getSupportedFileTypesDescription()}`);
@@ -121,17 +123,17 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
     setSelectedFile(file);
     setAnalysisResult(null);
-    
-    
+
+
     // 读取文件内容并统计字数
     try {
       const content = await documentAnalyzer.readFile(file);
       setFileContent(content);
-      
+
       const stats = countWords(content);
       setWordCount(stats.words);
       setCharCount(stats.chars);
-      
+
       // 创建文档记录
       const thumbnailContent = content.substring(0, 100) + (content.length > 100 ? '...' : '');
       const record = documentRecordManager.addRecord({
@@ -143,9 +145,9 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         charCount: stats.chars,
         thumbnailContent
       });
-      
+
       setCurrentRecordId(record.id);
-      
+
       // 检查文件大小是否适合AI处理
       const sizeCheck = checkFileSizeForAI(stats.words, stats.chars);
       if (sizeCheck.level === 'error') {
@@ -160,13 +162,13 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         setIsFileTooBig(true);
         // 不设置error，只是警告
       }
-      
-      
+
+
     } catch (err) {
       console.error('📄 读取文件失败:', err);
       const errorMessage = '读取文件内容失败，请检查文件格式是否正确';
       setError(errorMessage);
-      
+
       // 如果有记录ID，更新记录状态
       if (currentRecordId) {
         documentRecordManager.updateRecord(currentRecordId, {
@@ -192,7 +194,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     });
 
     try {
-      
+
       // 模拟分析进度
       const progressInterval = setInterval(() => {
         setProgress(prev => {
@@ -205,24 +207,24 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       }, 500);
 
       const result = await documentAnalyzer.analyzeDocument(fileContent, selectedFile.name);
-      
+
       clearInterval(progressInterval);
       setProgress(100);
-      
+
       if (result.success) {
         setAnalysisResult(result);
-        
+
         // 更新记录状态为已分析
         documentRecordManager.updateRecord(currentRecordId, {
           status: 'analyzed',
           analysisResult: result
         });
-        
+
         onAnalysisComplete?.(result);
       } else {
         const errorMessage = result.error || '分析失败';
         setError(errorMessage);
-        
+
         // 更新记录状态为失败
         documentRecordManager.updateRecord(currentRecordId, {
           status: 'failed',
@@ -234,7 +236,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       const errorMessage = err instanceof Error ? err.message : '处理文件时发生错误';
       setError(errorMessage);
       console.error('📄 文件处理错误:', err);
-      
+
       // 更新记录状态为失败
       documentRecordManager.updateRecord(currentRecordId, {
         status: 'failed',
@@ -253,17 +255,13 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-      
+
       // 创建模拟的input change事件
-      const mockEvent = {
-        target: { files: [file] }
-      } as React.ChangeEvent<HTMLInputElement>;
-      
-      handleFileSelect(mockEvent);
+      handleFileSelect({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>);
     }
   }, [handleFileSelect]);
 
@@ -271,27 +269,27 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     if (!analysisResult?.data) return null;
 
     const { data } = analysisResult;
-    
+
     // 防御性检查，确保所有必需的数据结构存在
     const characters = data.characters || [];
-    const setting = data.setting || {};
-    const themes = data.themes || {};
-    const plotElements = data.plotElements || {};
-    const writingStyle = data.writingStyle || {};
+    const setting = data.setting || {} as any;
+    const themes = data.themes || {} as any;
+    const plotElements = data.plotElements || {} as any;
+    const writingStyle = data.writingStyle || {} as any;
     const suggestedStorySeeds = data.suggestedStorySeeds || [];
 
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
+          <h3 className="text-lg font-bold text-[#2c241b] flex items-center gap-2 font-serif">
+            <CheckCircle className="w-5 h-5 text-[#5d7a5d]" />
             分析结果
           </h3>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-                // 可以在这里实现导出功能
+              // 可以在这里实现导出功能
             }}
           >
             <Download className="w-4 h-4 mr-2" />
@@ -301,28 +299,28 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 人物分析 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-500" />
+          <Card className="bg-[#fdfbf9] border border-[#f2f0ea] shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#f2f0ea]">
+              <CardTitle className="text-sm flex items-center gap-2 font-serif text-[#2c241b]">
+                <Users className="w-4 h-4 text-[#c5a059]" />
                 人物角色 ({characters.length})
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               <ScrollArea className="h-32">
                 <div className="space-y-2">
                   {characters.map((char, index) => (
-                    <div key={index} className="p-2 border rounded-lg text-xs">
-                      <div className="font-semibold text-slate-800">{char?.name || '未知角色'}</div>
-                      <div className="text-slate-600 mb-1">{char?.role || '未明确'}</div>
-                      <div className="text-slate-500">{char?.traits || '待定义'}</div>
+                    <div key={index} className="p-2 border border-[#f2f0ea] rounded-lg text-xs bg-white">
+                      <div className="font-bold text-[#2c241b] font-serif">{char?.name || '未知角色'}</div>
+                      <div className="text-[#5d554a] mb-1 font-serif">{char?.role || '未明确'}</div>
+                      <div className="text-[#8c7b6c] font-serif">{char?.traits || '待定义'}</div>
                       {char?.appearance && (
-                        <div className="text-slate-400 mt-1">外貌：{char.appearance}</div>
+                        <div className="text-[#8c7b6c] mt-1 font-serif italic">外貌：{char.appearance}</div>
                       )}
                     </div>
                   ))}
                   {characters.length === 0 && (
-                    <div className="text-slate-400 text-xs">未识别到明确的角色信息</div>
+                    <div className="text-[#8c7b6c] text-xs font-serif italic">未识别到明确的角色信息</div>
                   )}
                 </div>
               </ScrollArea>
@@ -330,93 +328,93 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
           </Card>
 
           {/* 故事背景 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-green-500" />
+          <Card className="bg-[#fdfbf9] border border-[#f2f0ea] shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#f2f0ea]">
+              <CardTitle className="text-sm flex items-center gap-2 font-serif text-[#2c241b]">
+                <MapPin className="w-4 h-4 text-[#5d7a5d]" />
                 故事背景
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-xs">
+            <CardContent className="pt-3">
+              <div className="space-y-2 text-xs font-serif">
                 <div>
-                  <span className="font-semibold text-slate-700">时代：</span>
-                  <span className="text-slate-600">{setting.time || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">时代：</span>
+                  <span className="text-[#8c7b6c]">{setting.time || '未明确'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">地点：</span>
-                  <span className="text-slate-600">{setting.place || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">地点：</span>
+                  <span className="text-[#8c7b6c]">{setting.place || '未明确'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">世界观：</span>
-                  <span className="text-slate-600">{setting.worldBackground || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">世界观：</span>
+                  <span className="text-[#8c7b6c]">{setting.worldBackground || '未明确'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">氛围：</span>
-                  <span className="text-slate-600">{setting.atmosphere || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">氛围：</span>
+                  <span className="text-[#8c7b6c]">{setting.atmosphere || '未明确'}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* 主题元素 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="w-4 h-4 text-purple-500" />
+          <Card className="bg-[#fdfbf9] border border-[#f2f0ea] shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#f2f0ea]">
+              <CardTitle className="text-sm flex items-center gap-2 font-serif text-[#2c241b]">
+                <Target className="w-4 h-4 text-[#8a4b38]" />
                 主题与情节
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-xs">
-                                  <div>
-                  <div className="font-semibold text-slate-700 mb-1">主要主题：</div>
+            <CardContent className="pt-3">
+              <div className="space-y-3 text-xs font-serif">
+                <div>
+                  <div className="font-bold text-[#5d554a] mb-1">主要主题：</div>
                   <div className="flex flex-wrap gap-1">
                     {(themes.mainThemes || []).map((theme, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
+                      <Badge key={index} variant="secondary" className="text-xs bg-[#f2f0ea] text-[#5d554a] hover:bg-[#dcd8cc]">
                         {theme}
                       </Badge>
                     ))}
                     {(!themes.mainThemes || themes.mainThemes.length === 0) && (
-                      <span className="text-slate-400 text-xs">未识别到明确主题</span>
+                      <span className="text-[#8c7b6c] text-xs italic">未识别到明确主题</span>
                     )}
                   </div>
                   {themes.deeperMeaning && (
                     <div className="mt-2">
-                      <div className="font-semibold text-slate-700 mb-1">深层含义：</div>
-                      <div className="text-slate-600">{themes.deeperMeaning}</div>
+                      <div className="font-bold text-[#5d554a] mb-1">深层含义：</div>
+                      <div className="text-[#8c7b6c]">{themes.deeperMeaning}</div>
                     </div>
                   )}
                 </div>
                 <div>
-                  <div className="font-semibold text-slate-700 mb-1">主要冲突：</div>
-                  <div className="text-slate-600">{plotElements.mainConflict || '未明确'}</div>
+                  <div className="font-bold text-[#5d554a] mb-1">主要冲突：</div>
+                  <div className="text-[#8c7b6c]">{plotElements.mainConflict || '未明确'}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* 写作风格 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Palette className="w-4 h-4 text-orange-500" />
+          <Card className="bg-[#fdfbf9] border border-[#f2f0ea] shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#f2f0ea]">
+              <CardTitle className="text-sm flex items-center gap-2 font-serif text-[#2c241b]">
+                <Palette className="w-4 h-4 text-[#c5a059]" />
                 写作风格
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-xs">
+            <CardContent className="pt-3">
+              <div className="space-y-2 text-xs font-serif">
                 <div>
-                  <span className="font-semibold text-slate-700">文体：</span>
-                  <span className="text-slate-600">{writingStyle.genre || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">文体：</span>
+                  <span className="text-[#8c7b6c]">{writingStyle.genre || '未明确'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">语调：</span>
-                  <span className="text-slate-600">{writingStyle.tone || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">语调：</span>
+                  <span className="text-[#8c7b6c]">{writingStyle.tone || '未明确'}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">视角：</span>
-                  <span className="text-slate-600">{writingStyle.narrativePerspective || '未明确'}</span>
+                  <span className="font-bold text-[#5d554a]">视角：</span>
+                  <span className="text-[#8c7b6c]">{writingStyle.narrativePerspective || '未明确'}</span>
                 </div>
               </div>
             </CardContent>
@@ -425,32 +423,32 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
 
         {/* 故事创意种子 */}
         {suggestedStorySeeds.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-yellow-500" />
+          <Card className="bg-[#faf7f2] border border-[#e8e4d9] shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#e8e4d9]">
+              <CardTitle className="text-sm flex items-center gap-2 font-serif text-[#2c241b]">
+                <Lightbulb className="w-4 h-4 text-[#c5a059]" />
                 创意种子 ({suggestedStorySeeds.length})
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               <ScrollArea className="h-40">
                 <div className="space-y-3">
                   {suggestedStorySeeds.map((seed, index) => (
-                    <div key={index} className="p-3 border rounded-lg">
-                      <div className="font-semibold text-slate-800 text-sm mb-1">
+                    <div key={index} className="p-3 border border-[#e8e4d9] rounded-lg bg-white">
+                      <div className="font-bold text-[#2c241b] text-sm mb-1 font-serif">
                         {seed?.title || '未命名故事'}
                       </div>
-                      <div className="text-slate-600 text-xs mb-2">
+                      <div className="text-[#5d554a] text-xs mb-2 font-serif">
                         {seed?.premise || '暂无描述'}
                       </div>
                       <div className="flex flex-wrap gap-1 mb-2">
                         {(seed?.characters || []).map((char, charIndex) => (
-                          <Badge key={charIndex} variant="outline" className="text-xs">
+                          <Badge key={charIndex} variant="outline" className="text-xs border-[#c5a059] text-[#8c7b6c] font-serif">
                             {char}
                           </Badge>
                         ))}
                       </div>
-                      <div className="text-slate-500 text-xs">
+                      <div className="text-[#8c7b6c] text-xs font-serif italic">
                         背景：{seed?.setting || '未设定'}
                       </div>
                     </div>
@@ -470,12 +468,12 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       {!selectedFile && (
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-              <Upload className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-[#2c241b] rounded-xl flex items-center justify-center border-2 border-[#c5a059]">
+              <Upload className="w-6 h-6 text-[#c5a059]" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">文档基础创作</h2>
-              <p className="text-gray-600">AI智能分析与创作</p>
+              <h2 className="text-2xl font-bold text-[#2c241b] font-serif">文档基础创作</h2>
+              <p className="text-[#5d554a] font-serif italic">AI智能分析与创作</p>
             </div>
           </div>
         </div>
@@ -484,176 +482,208 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       {/* 文件上传区域 */}
       <div className="mb-8">
         <div
-          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-            selectedFile 
-              ? 'border-emerald-400 bg-emerald-50/50' 
-              : 'border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/20'
-          }`}
+          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 relative ${selectedFile
+            ? 'border-[#c5a059] bg-[#fffdf9]'
+            : 'border-[#c5a059]/30 hover:border-[#c5a059] hover:bg-[#c5a059]/5'
+            }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".txt,.md,.rtf,.doc,.docx,.pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            
-            {selectedFile ? (
-              <div className="space-y-6">
-                {/* 文件信息 - 更紧凑的设计 */}
-                <div className="bg-gray-50 rounded-xl p-6 border border-emerald-200">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800 text-lg">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-600">
-                        文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.rtf,.doc,.docx,.pdf"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {selectedFile ? (
+            <div className="space-y-6">
+              {/* 文件信息 - 更紧凑的设计 */}
+              <div className="bg-[#faf7f2] rounded-xl p-6 border border-[#e8e4d9]">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-[#2c241b] rounded-xl flex items-center justify-center flex-shrink-0 border border-[#c5a059]">
+                    <CheckCircle className="w-6 h-6 text-[#c5a059]" />
                   </div>
-                
-                  {/* 文档统计信息 */}
-                  {wordCount > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-700">分析预览</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center bg-white rounded-lg p-3">
-                          <div className="text-gray-600 text-xs mb-1">总字符数</div>
-                          <div className="text-xl font-bold text-emerald-600">{charCount.toLocaleString()}</div>
-                        </div>
-                        <div className="text-center bg-white rounded-lg p-3">
-                          <div className="text-gray-600 text-xs mb-1">总词数</div>
-                          <div className="text-xl font-bold text-emerald-600">{wordCount.toLocaleString()}</div>
-                        </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-bold text-[#2c241b] text-lg font-serif">{selectedFile.name}</p>
+                    <p className="text-sm text-[#5d554a] font-serif">
+                      文件大小：{(selectedFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+
+                {/* 文档统计信息 */}
+                {wordCount > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-bold text-[#5d554a] font-serif text-left">分析预览</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center bg-white rounded-lg p-3 border border-[#e8e4d9]">
+                        <div className="text-[#8c7b6c] text-xs mb-1 font-serif">总字符数</div>
+                        <div className="text-xl font-bold text-[#c5a059] font-serif">{charCount.toLocaleString()}</div>
                       </div>
-                    
-                      {/* AI处理建议 */}
-                      {(() => {
-                        const sizeCheck = checkFileSizeForAI(wordCount, charCount);
-                        if (sizeCheck.level === 'warning' || sizeCheck.level === 'error') {
-                          return (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                              <div className="flex items-start gap-2">
-                                <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <p className="font-medium text-yellow-800 text-sm">文档篇幅较长</p>
-                                  <p className="text-xs text-yellow-700 mt-1">{sizeCheck.message}</p>
-                                </div>
+                      <div className="text-center bg-white rounded-lg p-3 border border-[#e8e4d9]">
+                        <div className="text-[#8c7b6c] text-xs mb-1 font-serif">总词数</div>
+                        <div className="text-xl font-bold text-[#c5a059] font-serif">{wordCount.toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    {/* AI处理建议 */}
+                    {(() => {
+                      const sizeCheck = checkFileSizeForAI(wordCount, charCount);
+                      if (sizeCheck.level === 'warning' || sizeCheck.level === 'error') {
+                        return (
+                          <div className="bg-[#fffdf9] border border-[#c5a059]/50 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="w-4 h-4 text-[#c5a059] mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-bold text-[#2c241b] text-sm font-serif">文档篇幅较长</p>
+                                <p className="text-xs text-[#5d554a] mt-1 font-serif">{sizeCheck.message}</p>
                               </div>
                             </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  )}
-                </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-6">
-                <Upload className="w-16 h-16 text-gray-400 mx-auto" />
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    拖拽文件到此处
-                  </h3>
-                  <p className="text-gray-600 mb-1">或</p>
+            </div>
+          ) : (
+            <div className="py-4 flex flex-col items-center justify-center h-full">
+              {/* Header inside the card */}
+              <div className="text-center mb-4">
+                <div className="w-8 h-8 bg-[#2c241b] rounded-lg flex items-center justify-center mx-auto mb-2 shadow-lg border border-[#c5a059]">
+                  <Upload className="w-4 h-4 text-[#c5a059]" />
                 </div>
-                <Button 
-                  variant="default" 
-                  size="lg"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-3 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                <h2 className="text-xl font-bold text-[#2c241b] font-serif mb-0.5">文档基础创作</h2>
+                <p className="text-[#8c7b6c] font-serif italic text-sm">AI智能分析与创作</p>
+              </div>
+
+              {/* Upload Area */}
+              <div
+                className="w-full max-w-md mx-auto border-2 border-dashed border-[#e8e4d9] rounded-xl p-6 flex flex-col items-center justify-center transition-all duration-300 hover:border-[#c5a059]/50 hover:bg-[#faf7f2] cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="mb-3">
+                  <Upload className="w-8 h-8 text-[#c5a059]/40" />
+                </div>
+                <h3 className="text-base font-bold text-[#2c241b] mb-1.5 font-serif">
+                  拖拽文件到此处
+                </h3>
+                <p className="text-[#8c7b6c] mb-3 font-serif italic text-sm">或</p>
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="bg-[#2c241b] hover:bg-[#4a3e32] text-[#c5a059] border border-[#c5a059] px-6 py-1.5 text-sm font-bold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 font-serif rounded-md"
                 >
                   选择文件
                 </Button>
-                <div className="text-sm text-gray-500 space-y-1">
-                  <p>{documentAnalyzer.getSupportedFileTypesDescription()}</p>
-                  <p className="text-xs">(10MB以内)</p>
+
+                <div className="mt-4 text-center space-y-0.5">
+                  <p className="text-xs text-[#8c7b6c] font-serif">
+                    支持的文件类型: .txt, .md, .json, .rtf
+                  </p>
+                  <p className="text-[10px] text-[#8c7b6c]/70 font-serif">
+                    (10MB以内)
+                  </p>
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 按钮区域 - 只在有文件时显示 */}
+      {selectedFile && (
+        <div className="flex gap-4 justify-center mt-8">
+          <Button
+            variant="outline"
+            size="lg"
+            className="px-8 py-3 text-base font-bold border-[#c5a059] text-[#5d554a] hover:bg-[#c5a059]/10 shadow-md hover:shadow-lg transition-all duration-300 font-serif"
+            onClick={() => {
+              setSelectedFile(null);
+              setFileContent('');
+              setWordCount(0);
+              setCharCount(0);
+              setIsFileTooBig(false);
+              setAnalysisResult(null);
+              setError(null);
+              setCurrentRecordId(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }}
+          >
+            重新选择
+          </Button>
+          <Button
+            onClick={handleAnalyze}
+            disabled={uploading || analyzing || !fileContent || (isFileTooBig && wordCount > 20000)}
+            size="lg"
+            className="px-8 py-3 text-base font-bold bg-[#2c241b] hover:bg-[#4a3e32] text-[#c5a059] border border-[#c5a059] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-serif"
+          >
+            {(uploading || analyzing) ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                {uploading ? '读取中...' : '分析中...'}
+              </>
+            ) : (
+              <>
+                <Eye className="w-5 h-5 mr-2" />
+                开始分析
+              </>
             )}
+          </Button>
+        </div>
+      )}
+
+      {/* 进度条 */}
+      {(uploading || analyzing) && (
+        <div className="mt-8 bg-[#faf7f2]/90 backdrop-blur-sm rounded-xl border border-[#c5a059]/50 p-6 shadow-lg">
+          <div className="space-y-3">
+
+
+            <div className="flex flex-col items-center justify-center space-y-6 py-8">
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-bold text-[#2c241b] font-serif">
+                  {uploading ? '正在读取文件...' : '正在分析内容...'}
+                </h3>
+                <p className="text-[#8c7b6c] font-serif italic">
+                  AI正在织造您的专属故事
+                </p>
+              </div>
+
+              <div className="w-full h-32 relative overflow-hidden rounded-xl bg-[#faf7f2]/50">
+                <GoldenWaveAnimation />
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* 按钮区域 - 只在有文件时显示 */}
-        {selectedFile && (
-          <div className="flex gap-4 justify-center mt-8">
-            <Button
-              variant="outline"
-              size="lg"
-              className="px-8 py-3 text-base font-medium border-gray-300 text-gray-700 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300"
-              onClick={() => {
-                setSelectedFile(null);
-                setFileContent('');
-                setWordCount(0);
-                setCharCount(0);
-                setIsFileTooBig(false);
-                setAnalysisResult(null);
-                setError(null);
-                setCurrentRecordId(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-                }
-              }}
-            >
-              重新选择
-            </Button>
-            <Button 
-              onClick={handleAnalyze}
-              disabled={uploading || analyzing || !fileContent || (isFileTooBig && wordCount > 20000)}
-              size="lg"
-              className="px-8 py-3 text-base font-medium bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              {(uploading || analyzing) ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {uploading ? '读取中...' : '分析中...'}
-                </>
-              ) : (
-                <>
-                  <Eye className="w-5 h-5 mr-2" />
-                  开始分析
-                </>
-              )}
-            </Button>
+      {/* 错误信息 */}
+      {error && (
+        <div className="mt-8 bg-[#fffdf9] border border-[#8a4b38]/50 rounded-xl p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-[#8a4b38] flex-shrink-0" />
+            <p className="text-[#8a4b38] font-serif">{error}</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 进度条 */}
-        {(uploading || analyzing) && (
-          <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-6 shadow-lg">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 font-medium">
-                  {uploading ? '正在读取文件...' : '正在分析内容...'}
-                </span>
-                <span className="text-gray-500">{progress}%</span>
-              </div>
-              <Progress value={progress} className="w-full h-2" />
-            </div>
-          </div>
-        )}
-
-        {/* 错误信息 */}
-        {error && (
-          <div className="mt-8 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-4 shadow-lg">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* 分析结果 */}
-        {analysisResult && (
-          <div className="mt-8">
-            {renderAnalysisResult()}
-          </div>
-        )}
+      {/* 分析结果 */}
+      {analysisResult && (
+        <div className="mt-8">
+          {renderAnalysisResult()}
+        </div>
+      )}
 
     </div>
   );

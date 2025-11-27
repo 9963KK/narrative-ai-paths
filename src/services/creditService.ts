@@ -58,12 +58,12 @@ const TRANSACTIONS_STORAGE_KEY = 'narrative_ai_credit_transactions';
 const MODEL_RATES_STORAGE_KEY = 'narrative_ai_model_rates';
 
 // 检查是否为生产环境
-const isProduction = import.meta.env.PROD || 
-                    import.meta.env.MODE === 'production' || 
-                    (typeof window !== 'undefined' && 
-                     window.location.hostname !== 'localhost' && 
-                     window.location.hostname !== '127.0.0.1' &&
-                     !window.location.hostname.includes('dev'));
+const isProduction = import.meta.env.PROD ||
+  import.meta.env.MODE === 'production' ||
+  (typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.includes('dev'));
 
 export class CreditService {
   private supabaseConnected: boolean | null = null;
@@ -94,9 +94,9 @@ export class CreditService {
           .from('user_credits')
           .select('*')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        if (error) {
           throw error;
         }
 
@@ -424,7 +424,7 @@ export class CreditService {
     const localTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
     return localTransactions
       .filter((t: CreditTransaction) => t.user_id === userId)
-      .sort((a: CreditTransaction, b: CreditTransaction) => 
+      .sort((a: CreditTransaction, b: CreditTransaction) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
       .slice(0, limit);
@@ -443,9 +443,9 @@ export class CreditService {
           .eq('provider', provider)
           .eq('model', model)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
           throw error;
         }
 
@@ -474,7 +474,7 @@ export class CreditService {
 
     // 使用本地存储
     const localRates = JSON.parse(localStorage.getItem(MODEL_RATES_STORAGE_KEY) || '[]');
-    return localRates.find((rate: AIModelRate) => 
+    return localRates.find((rate: AIModelRate) =>
       rate.provider === provider && rate.model === model && rate.is_active
     ) || null;
   }
@@ -570,7 +570,7 @@ export class CreditService {
         const totalCreditsSpent = credits.reduce((sum, c) => sum + c.total_spent, 0);
         const totalTransactions = transactions.length;
         const totalCostUsd = transactions.reduce((sum, t) => sum + (t.actual_cost || 0), 0);
-        
+
         // 假设积分价值：1积分 = $0.01
         const creditValue = totalCreditsSpent * 0.01;
         const profitMargin = creditValue > 0 ? ((creditValue - totalCostUsd) / creditValue) * 100 : 0;
@@ -598,7 +598,7 @@ export class CreditService {
     const totalCreditsSpent = users.reduce((sum, c) => sum + c.total_spent, 0);
     const totalTransactions = localTransactions.length;
     const totalCostUsd = localTransactions.reduce((sum: number, t: CreditTransaction) => sum + (t.actual_cost || 0), 0);
-    
+
     const creditValue = totalCreditsSpent * 0.01;
     const profitMargin = creditValue > 0 ? ((creditValue - totalCostUsd) / creditValue) * 100 : 0;
 

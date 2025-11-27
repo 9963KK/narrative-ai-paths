@@ -32,82 +32,84 @@ const UserHeaderComponent: React.FC = () => {
   const getAvatarStyle = (level: UserLevel | null) => {
     switch (level) {
       case 'svip':
-        return 'bg-gradient-to-r from-purple-400 to-pink-400 text-white ring-2 ring-purple-200';
+        return 'bg-[#2c241b] text-[#c5a059] ring-2 ring-[#c5a059]';
       case 'vip':
-        return 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white ring-2 ring-blue-200';
+        return 'bg-[#c5a059] text-white ring-2 ring-[#f2f0ea]';
       case 'basic':
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-[#f2f0ea] text-[#5d554a]';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-[#f2f0ea] text-[#5d554a]';
     }
   };
 
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-white/90 via-indigo-50/80 to-purple-50/90 backdrop-blur-md shadow-lg border-b border-white/20">
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
+    <div className="flex items-center justify-between px-6 py-4 bg-[#fdfbf9] border-b border-[#f2f0ea]/50">
+      <div className="flex items-center gap-8">
+        {/* Logo Area */}
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/app')}>
+          <div className="w-10 h-10 bg-[#c5a059] rounded-xl flex items-center justify-center shadow-sm">
+            <img src="/pen-icon.svg" alt="Logo" className="w-6 h-6 text-white invert brightness-0" style={{ filter: 'brightness(0) invert(1)' }} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-bold text-[#2c241b] leading-none">织梦师</span>
+            <span className="text-[10px] tracking-[0.2em] text-[#8c7b6c] uppercase mt-1">Workstation</span>
+          </div>
         </div>
-        <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">织梦师</h1>
-        <UserLevelBadge level={userLevel} size="sm" />
+
+        {/* Navigation */}
+        <div className="hidden md:flex items-center gap-6 ml-8">
+          {/* Add navigation items here if needed */}
+        </div>
       </div>
-      
-      <div className="flex items-center space-x-4">
-        <CreditBadge variant="compact" showRefresh={false} />
-        
-        <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
-            <Avatar className="h-9 w-9 shadow-md">
-              <AvatarFallback className={getAvatarStyle(userLevel)}>
-                {getInitials(user.username)}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64" align="end" forceMount>
-          <div className="flex items-center justify-start gap-2 p-3">
-            <div className="flex flex-col space-y-1 leading-none">
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{user.username}</p>
-                {userLevel && (
-                  <UserLevelBadge level={userLevel} size="sm" />
-                )}
-              </div>
-              <p className="w-[200px] truncate text-sm text-muted-foreground">
-                {user.email}
-              </p>
+
+      <div className="flex items-center gap-6">
+
+
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            <div className="text-sm font-bold text-[#2c241b]">{user.username}</div>
+            <div className="text-xs text-[#8c7b6c]">
+              <UserLevelBadge level={userLevel} size="sm" />
             </div>
           </div>
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
-            <User className="mr-2 h-4 w-4" />
-            <span>个人资料</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>设置</span>
-          </DropdownMenuItem>
-          {isAdmin && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>
-                <Shield className="mr-2 h-4 w-4" />
-                <span>管理后台</span>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-transparent">
+                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                  <AvatarFallback className={getAvatarStyle(userLevel)}>
+                    {getInitials(user.username)}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                <span>个人资料</span>
               </DropdownMenuItem>
-            </>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>登出</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>设置</span>
+              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="cursor-pointer text-blue-600" onClick={handleAdminDashboard}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>管理后台</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>登出</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

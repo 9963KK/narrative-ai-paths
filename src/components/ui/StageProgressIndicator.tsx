@@ -48,7 +48,7 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
 }) => {
   // 根据进度计算当前阶段
   const currentStage = Math.min(Math.ceil((progress / 100) * totalStages), totalStages);
-  
+
   // 尺寸配置
   const sizeConfig = {
     sm: {
@@ -77,11 +77,11 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   const getDescriptionStyles = () => {
     switch (descriptionVariant) {
       case 'subtle':
-        return 'font-normal text-gray-600';
+        return 'font-normal text-[#8c7b6c] font-serif';
       case 'compact':
-        return 'font-normal text-gray-500 text-xs';
+        return 'font-normal text-[#8c7b6c] text-xs font-serif';
       default:
-        return 'font-medium text-blue-700';
+        return 'font-medium text-[#c5a059] font-serif';
     }
   };
 
@@ -107,24 +107,24 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   // 圆点样式
   const getDotClasses = (state: 'completed' | 'current' | 'pending') => {
     const baseClasses = `${config.dot} rounded-full transition-all duration-300 relative`;
-    
+
     switch (state) {
       case 'completed':
         return cn(
           baseClasses,
-          'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg',
+          'bg-[#5d7a5d] shadow-sm border border-[#4a634a]',
           'transform scale-100 opacity-100'
         );
       case 'current':
         return cn(
           baseClasses,
-          'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-xl',
+          'bg-[#c5a059] shadow-md border border-[#b08d4b]',
           'transform scale-110 opacity-100'
         );
       case 'pending':
         return cn(
           baseClasses,
-          'bg-gray-300 shadow-sm',
+          'bg-[#e8e4d9] shadow-sm border border-[#dcd8cc]',
           'transform scale-90 opacity-60'
         );
     }
@@ -133,14 +133,14 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
   // 连接线样式
   const getLineClasses = (fromState: 'completed' | 'current' | 'pending', toState: 'completed' | 'current' | 'pending') => {
     const baseClasses = `flex-1 ${config.line} rounded-full transition-all duration-300`;
-    
+
     if (fromState === 'completed' && (toState === 'completed' || toState === 'current')) {
-      return cn(baseClasses, 'bg-gradient-to-r from-emerald-500 to-teal-600');
+      return cn(baseClasses, 'bg-[#5d7a5d]');
     }
     if (fromState === 'current' && toState === 'pending') {
-      return cn(baseClasses, 'bg-gradient-to-r from-blue-500 to-gray-300');
+      return cn(baseClasses, 'bg-gradient-to-r from-[#c5a059] to-[#e8e4d9]');
     }
-    return cn(baseClasses, 'bg-gray-300');
+    return cn(baseClasses, 'bg-[#e8e4d9]');
   };
 
   return (
@@ -154,20 +154,20 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
             </span>
           )}
           {showPercentage && (
-            <span className={cn('text-slate-500', config.text)}>
+            <span className={cn('text-[#8c7b6c] font-serif', config.text)}>
               {Math.round(progress)}%
             </span>
           )}
         </div>
       )}
-      
+
       {/* 圆点进度指示器 */}
       <div className={cn('flex items-center', config.gap)}>
         {Array.from({ length: totalStages }, (_, index) => {
           const stageIndex = index + 1;
           const currentState = getDotState(stageIndex);
           const nextState = stageIndex < totalStages ? getDotState(stageIndex + 1) : 'pending';
-          
+
           return (
             <React.Fragment key={stageIndex}>
               {/* 圆点 */}
@@ -175,15 +175,15 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
                 <div className={getDotClasses(currentState)}>
                   {currentState === 'completed' && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg 
-                        className="w-2 h-2 text-white" 
-                        fill="currentColor" 
+                      <svg
+                        className="w-2 h-2 text-white"
+                        fill="currentColor"
                         viewBox="0 0 20 20"
                       >
-                        <path 
-                          fillRule="evenodd" 
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                          clipRule="evenodd" 
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
                         />
                       </svg>
                     </div>
@@ -194,19 +194,19 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
                     </div>
                   )}
                 </div>
-                
+
                 {/* 阶段编号提示 */}
                 {showStageNumbers && (
                   <div className={cn(
                     'absolute -bottom-5 left-1/2 transform -translate-x-1/2',
-                    'text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity',
+                    'text-xs text-[#8c7b6c] opacity-0 group-hover:opacity-100 transition-opacity font-serif',
                     size === 'sm' ? 'text-xs' : size === 'md' ? 'text-xs' : 'text-sm'
                   )}>
                     {stageIndex}
                   </div>
                 )}
               </div>
-              
+
               {/* 连接线 */}
               {stageIndex < totalStages && (
                 <div className={getLineClasses(currentState, nextState)} />
@@ -215,18 +215,18 @@ const StageProgressIndicator: React.FC<StageProgressIndicatorProps> = ({
           );
         })}
       </div>
-      
+
       {/* 阶段标签（可选） */}
       {size === 'lg' && (
         <div className="flex justify-between mt-2">
           {Array.from({ length: totalStages }, (_, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={cn(
-                'text-xs text-center',
-                getDotState(index + 1) === 'completed' ? 'text-emerald-600 font-medium' :
-                getDotState(index + 1) === 'current' ? 'text-blue-600 font-medium' :
-                'text-gray-400'
+                'text-xs text-center font-serif',
+                getDotState(index + 1) === 'completed' ? 'text-[#5d7a5d] font-medium' :
+                  getDotState(index + 1) === 'current' ? 'text-[#c5a059] font-medium' :
+                    'text-[#8c7b6c]'
               )}
             >
               阶段{index + 1}

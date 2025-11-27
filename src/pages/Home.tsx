@@ -1,439 +1,515 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AuthContext } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
-import { userLevelService, type UserLevel } from '@/services/userLevelService';
-import { 
-  BookOpen, 
-  Sparkles, 
-  Zap, 
-  PenTool,
-  ArrowRight,
-  Star,
-  Brain,
-  Layers,
-  FileText,
-  Share2,
-  CheckCircle,
-  Settings,
-  Target,
-  Cpu,
-  Users2,
-  Palette,
-  LogOut,
-  User
-} from 'lucide-react';
-import { AnimatedCard, AnimatedHeader, AnimatedGrid } from '@/components/AnimatedCard';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { BookOpen, Feather, Users, Sparkles, Scroll, ArrowRight, Star, Menu, X, Command, PenTool, Coffee, Map, ChevronDown, MousePointer2, Grid, Wand2, Maximize2 } from 'lucide-react';
 
-const Home: React.FC = () => {
-  const navigate = useNavigate();
-  const authContext = useContext(AuthContext);
-  const [userLevel, setUserLevel] = React.useState<UserLevel | null>(null);
+// 模拟的图片占位符
+const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2428&auto=format&fit=crop";
+const PAPER_TEXTURE_URL = "https://www.transparenttextures.com/patterns/cream-paper.png";
 
-  // 防御性检查：如果 AuthContext 未初始化，显示加载状态
-  if (!authContext) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">正在初始化系统...</p>
-        </div>
-      </div>
-    );
-  }
+// 插图占位符
+const FEATURE_IMG_1 = "https://images.unsplash.com/photo-1519791883288-dc8bd696e667?q=80&w=2340&auto=format&fit=crop";
+const FEATURE_IMG_2 = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2340&auto=format&fit=crop";
+const FEATURE_IMG_3 = "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=2532&auto=format&fit=crop";
 
-  const { user, logout } = authContext;
+// 定义风格配置
+const WRITING_STYLES = [
+    { text: "宏大的奇幻史诗", gradient: "from-[#c5a059] via-[#e6c200] to-[#c5a059]" },
+    { text: "硬核的赛博科幻", gradient: "from-[#0891b2] via-[#22d3ee] to-[#0891b2]" },
+    { text: "烧脑的悬疑推理", gradient: "from-[#7e22ce] via-[#a855f7] to-[#7e22ce]" },
+    { text: "治愈的田园牧歌", gradient: "from-[#059669] via-[#34d399] to-[#059669]" },
+    { text: "动人的浪漫言情", gradient: "from-[#be185d] via-[#f472b6] to-[#be185d]" },
+];
 
-  // 获取用户等级
-  React.useEffect(() => {
-    const fetchUserLevel = async () => {
-      if (user) {
-        try {
-          const level = await userLevelService.getUserLevel();
-          setUserLevel(level);
-        } catch (error) {
-          console.error('获取用户等级失败:', error);
-          setUserLevel(null);
+// 浮现动画组件
+const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsVisible(entry.isIntersecting);
+            },
+            {
+                threshold: 0.1,
+                rootMargin: "0px 0px -50px 0px"
+            }
+        );
+
+        if (ref.current) {
+            observer.observe(ref.current);
         }
-      } else {
-        setUserLevel(null);
-      }
-    };
 
-    fetchUserLevel();
-  }, [user]);
+        return () => {
+            if (ref.current) {
+                observer.unobserve(ref.current);
+            }
+        };
+    }, []);
 
-  // 快速开始 - 根据登录状态跳转
-  const handleQuickStart = () => {
-    if (user) {
-      navigate('/app');
-    } else {
-      navigate('/login');
-    }
-  };
-
-  // 处理登出
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  // 获取用户名首字母
-  const getInitials = (username: string) => {
-    return username.slice(0, 2).toUpperCase();
-  };
-
-  // 获取头像样式（根据等级）
-  const getAvatarStyle = (level: UserLevel | null) => {
-    switch (level) {
-      case 'svip':
-        return 'bg-gradient-to-r from-purple-400 to-pink-400 text-white ring-2 ring-purple-200';
-      case 'vip':
-        return 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white ring-2 ring-blue-200';
-      case 'basic':
-        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white';
-      default:
-        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white';
-    }
-  };
-
-  const features = [
-    {
-      icon: <Brain className="w-7 h-7 text-white" />,
-      title: "AI 智能创作",
-      description: "基于先进AI技术，帮助您生成引人入胜的故事内容和创意灵感。",
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-blue-500 to-cyan-500"
-    },
-    {
-      icon: <Layers className="w-7 h-7 text-white" />,
-      title: "故事路径设计",
-      description: "创建多分支叙事路径，让读者参与到故事的发展中来。",
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-purple-500 to-pink-500"
-    },
-    {
-      icon: <FileText className="w-7 h-7 text-white" />,
-      title: "内容管理",
-      description: "高效管理您的创作内容，支持多种格式和组织方式。",
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-gradient-to-br from-green-500 to-emerald-500"
-    },
-    {
-      icon: <Share2 className="w-7 h-7 text-white" />,
-      title: "协作平台",
-      description: "支持多用户协作，与团队成员共享创意和作品。",
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-gradient-to-br from-orange-500 to-red-500"
-    }
-  ];
-
-  const platformFeatures = [
-    {
-      icon: <Users2 className="w-6 h-6 text-blue-600" />,
-      title: "用户自主选择",
-      description: "每个故事节点都提供多个选择分支，您的决定决定故事走向，真正的互动式阅读体验。"
-    },
-    {
-      icon: <Target className="w-6 h-6 text-purple-600" />,
-      title: "故事结局定制化",
-      description: "根据您的选择路径和偏好，AI智能生成个性化结局，每次体验都独一无二。"
-    },
-    {
-      icon: <Cpu className="w-6 h-6 text-green-600" />,
-      title: "多模型适配",
-      description: "支持多种AI模型无缝切换，从轻量快速到深度创作，满足不同场景需求。"
-    },
-    {
-      icon: <Palette className="w-6 h-6 text-orange-600" />,
-      title: "风格自适应",
-      description: "AI学习您的阅读偏好，自动调整故事风格、语言特色和情节节奏。"
-    },
-    {
-      icon: <Settings className="w-6 h-6 text-indigo-600" />,
-      title: "深度定制化",
-      description: "从角色设定到世界观构建，支持全方位个性化定制，打造专属故事宇宙。"
-    },
-    {
-      icon: <CheckCircle className="w-6 h-6 text-emerald-600" />,
-      title: "智能续写辅助",
-      description: "AI实时分析故事脉络，提供续写建议和情节优化，让创作更加流畅自然。"
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 will-change-scroll">
-      {/* Header */}
-      <header className="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200/50 animate-in slide-in-from-top-4 fade-in-0 duration-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                织梦师
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                // 已登录状态 - 显示头像和等级
-                <div className="flex items-center space-x-3">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20 transition-all duration-200">
-                        <Avatar className="h-9 w-9 shadow-md">
-                          <AvatarFallback className={getAvatarStyle(userLevel)}>
-                            {getInitials(user.username)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Button>
-                    </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <div className="flex items-center justify-start gap-2 p-3">
-                      <div className="flex flex-col space-y-1 leading-none">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{user.username}</p>
-                          <UserLevelBadge level={userLevel} size="sm" />
-                        </div>
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/app')}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>进入应用</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>个人资料</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>登出</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                  </DropdownMenu>
-                  <UserLevelBadge level={userLevel} size="sm" />
-                </div>
-              ) : (
-                // 未登录状态 - 显示登录按钮
-                <>
-                  <Link to="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                      登录
-                    </Button>
-                  </Link>
-                  <Link to="/login">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                      开始创作
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
+    return (
+        <div
+            ref={ref}
+            className={`${className} transition-all duration-1000 ease-out transform ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-16"
+                }`}
+            style={{ transitionDelay: `${delay}ms` }}
+        >
+            {children}
         </div>
-      </header>
-
-
-      {/* Hero Section */}
-      <section className="relative py-20 lg:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedHeader className="text-center" usePageNavigation={false}>
-            <Badge className="mb-6 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border-0">
-              <Sparkles className="w-4 h-4 mr-2" />
-              AI 驱动的创作平台
-            </Badge>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
-              释放您的
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                创作潜能
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
-              通过AI智能辅助，打造引人入胜的交互式故事。无论您是作家、教育工作者还是内容创作者，都能在这里找到无限可能。
-            </p>
-          </AnimatedHeader>
-          <AnimatedCard index={1} className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user ? (
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/app')}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-              >
-                继续创作
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            ) : (
-              <Link to="/login">
-                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-                  立即开始创作
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            )}
-            <Button size="lg" variant="outline" className="w-full sm:w-auto border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-              <BookOpen className="mr-2 w-5 h-5" />
-              查看示例
-            </Button>
-          </AnimatedCard>
-        </div>
-
-        {/* 装饰性元素 - 优化性能 */}
-        <div className="absolute top-20 left-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mix-blend-multiply filter blur-lg opacity-15 will-change-transform"></div>
-        <div className="absolute bottom-20 right-4 w-72 h-72 bg-gradient-to-r from-pink-400 to-red-400 rounded-full mix-blend-multiply filter blur-lg opacity-15 will-change-transform"></div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedHeader className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              强大的功能特性
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              我们提供全方位的创作工具，帮助您轻松构建精彩的交互式故事体验
-            </p>
-          </AnimatedHeader>
-          
-          <AnimatedGrid className="grid md:grid-cols-2 lg:grid-cols-4 gap-8" startIndex={2}>
-            {features.map((feature, index) => (
-              <Card key={index} className="group bg-white/80 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 will-change-transform">
-                <CardHeader className="text-center pb-4">
-                  <div className={`inline-flex items-center justify-center w-20 h-20 ${feature.bgColor} rounded-3xl mx-auto mb-6 shadow-lg group-hover:shadow-xl transform group-hover:scale-105 transition-all duration-300 will-change-transform`}>
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-gray-600 leading-relaxed">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </AnimatedGrid>
-        </div>
-      </section>
-
-      {/* Platform Features Section */}
-      <section className="py-20 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedHeader className="text-center mb-16">
-            <Badge className="mb-6 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-0">
-              <Sparkles className="w-4 h-4 mr-2" />
-              平台核心优势
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              为什么选择织梦师？
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              我们专注于打造最智能、最个性化的AI故事创作平台，让每一个故事都成为独特的艺术品
-            </p>
-          </AnimatedHeader>
-
-          <AnimatedGrid className="grid md:grid-cols-2 lg:grid-cols-3 gap-8" startIndex={3}>
-            {platformFeatures.map((feature, index) => (
-              <div key={index} className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 h-full transform hover:scale-[1.02] hover:-translate-y-1">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mr-4 shadow-sm">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">{feature.title}</h3>
-                </div>
-                <p className="text-gray-600 leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </AnimatedGrid>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <AnimatedHeader>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              准备开始您的创作之旅了吗？
-            </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              加入我们的创作者社区，体验AI辅助创作的无限可能
-            </p>
-          </AnimatedHeader>
-          <AnimatedCard index={1} className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user ? (
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/app')}
-                className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-              >
-                进入创作工坊
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            ) : (
-              <>
-                <Link to="/login">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-                    立即注册
-                    <Star className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={handleQuickStart}
-                  className="w-full sm:w-auto border-white/80 text-white bg-white/10 hover:bg-white hover:text-blue-600 backdrop-blur-sm px-8 py-4 text-lg font-medium transition-all duration-300 hover:border-white shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1"
-                >
-                  立即登录
-                  <Zap className="ml-2 w-5 h-5" />
-                </Button>
-              </>
-            )}
-          </AnimatedCard>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedCard index={1} className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-white">织梦师</span>
-            </div>
-            <p className="text-gray-400 mb-4">
-              让AI成为您创作路上的最佳伙伴
-            </p>
-            <p className="text-sm text-gray-500">
-              © 2025 织梦师. 保留所有权利.
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              官方邮箱: ai_novel_official@ai-novel.top
-            </p>
-          </AnimatedCard>
-        </div>
-      </footer>
-    </div>
-  );
+    );
 };
 
-export default Home;
+// 打字机组件
+const TypewriterEffect = ({ styles }: { styles: typeof WRITING_STYLES }) => {
+    const [index, setIndex] = useState(0);
+    const [subIndex, setSubIndex] = useState(0);
+    const [reverse, setReverse] = useState(false);
+    const [blink, setBlink] = useState(true);
+
+    useEffect(() => {
+        const timeout2 = setTimeout(() => {
+            setBlink((prev) => !prev);
+        }, 500);
+        return () => clearTimeout(timeout2);
+    }, [blink]);
+
+    useEffect(() => {
+        if (subIndex === styles[index].text.length + 1 && !reverse) {
+            setTimeout(() => setReverse(true), 2000);
+            return;
+        }
+
+        if (subIndex === 0 && reverse) {
+            setReverse(false);
+            setIndex((prev) => (prev + 1) % styles.length);
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            setSubIndex((prev) => prev + (reverse ? -1 : 1));
+        }, reverse ? 50 : 100);
+
+        return () => clearTimeout(timeout);
+    }, [subIndex, index, reverse, styles]);
+
+    const currentStyle = styles[index];
+
+    return (
+        <span className="inline-flex items-center">
+            <span className={`bg-clip-text text-transparent bg-gradient-to-r ${currentStyle.gradient} drop-shadow-sm min-h-[1.2em] transition-all duration-500`}>
+                {currentStyle.text.substring(0, subIndex)}
+            </span>
+            <span className={`ml-1 w-1 h-[1em] bg-current ${currentStyle.gradient.split(' ')[1].replace('via-', 'text-')} ${blink ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}></span>
+        </span>
+    );
+};
+
+export default function Home() {
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
+    const { user } = useAuth();
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const handleStart = () => {
+        if (user) {
+            navigate('/app');
+        } else {
+            navigate('/login');
+        }
+    };
+
+    return (
+        <div className="font-serif text-[#2c241b] bg-[#1a120b] selection:bg-[#c5a059] selection:text-white relative">
+
+            {/* 右侧悬浮菜单 */}
+            <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4">
+                <div className="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/50 flex flex-col gap-4 items-center py-6 animate-fade-in-right">
+                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
+                        <Grid className="w-5 h-5" />
+                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">功能菜单</span>
+                    </button>
+                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
+                        <Wand2 className="w-5 h-5" />
+                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">AI 设置</span>
+                    </button>
+                    <div className="w-6 h-px bg-[#e8e4d9]"></div>
+                    <button className="p-2 rounded-full hover:bg-[#faf7f2] text-[#8c7b6c] hover:text-[#c5a059] transition-colors group relative">
+                        <Maximize2 className="w-5 h-5" />
+                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#2c241b] text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">全屏模式</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Navigation Bar */}
+            <nav
+                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isScrolled ? 'bg-[#faf7f2]/90 backdrop-blur-md py-3 shadow-sm border-b border-[#c5a059]/20' : 'bg-transparent py-6'
+                    }`}
+            >
+                <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
+                        <div className="relative w-10 h-10 flex items-center justify-center bg-[#c5a059] rounded-lg shadow-[0_0_15px_rgba(197,160,89,0.3)] transition-transform group-hover:scale-105">
+                            <Feather className="text-white w-6 h-6" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold tracking-wide text-[#2c241b] transition-colors">
+                                织梦师
+                            </span>
+                            <span className="text-xs uppercase tracking-[0.2em] text-[#8c7b6c]">
+                                AI-Novel
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-8">
+                        {['首页', '功能特性', '作品画廊', '关于我们'].map((item) => (
+                            <a
+                                key={item}
+                                href="#"
+                                className="text-sm font-medium tracking-wider text-[#5c4d3c] hover:text-[#c5a059] transition-colors"
+                            >
+                                {item}
+                            </a>
+                        ))}
+                        <button
+                            onClick={handleStart}
+                            className="px-6 py-2 bg-[#2c241b] hover:bg-[#c5a059] hover:text-white text-[#faf7f2] font-bold rounded-full transition-all shadow-md transform hover:-translate-y-0.5"
+                        >
+                            {user ? '进入工作台' : '开始创作'}
+                        </button>
+                    </div>
+
+                    <button
+                        className="md:hidden text-[#2c241b]"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        {mobileMenuOpen ? <X /> : <Menu />}
+                    </button>
+                </div>
+            </nav>
+
+            {/* Hero Section Background (Fixed) */}
+            <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+                <img src={HERO_IMAGE_URL} alt="Magical Library" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-[#faf7f2]/70 mix-blend-overlay" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#faf7f2] via-[#faf7f2]/80 to-[#faf7f2]/60" />
+            </div>
+
+            {/* Hero Content */}
+            <header className="relative w-full h-screen flex flex-col items-center justify-center z-10 pointer-events-none">
+                <div className="text-center max-w-5xl px-6 flex flex-col items-center pb-20 pointer-events-auto">
+
+                    {/* 删除了 Slogan 标签 */}
+
+                    <div className="relative mb-6 min-h-[160px] md:min-h-[200px] flex flex-col items-center justify-center">
+                        <h1 className="text-4xl md:text-7xl font-bold text-[#2c241b] leading-tight tracking-tight drop-shadow-sm">
+                            用多元的想法，<br />
+                            <span className="block mt-4 md:mt-2">
+                                编织你的
+                                <span className="ml-4 inline-block">
+                                    <TypewriterEffect styles={WRITING_STYLES} />
+                                </span>
+                            </span>
+                        </h1>
+                    </div>
+
+                    <p className="text-lg md:text-xl text-[#5c4d3c] mb-12 max-w-2xl mx-auto font-light leading-relaxed animate-fade-in-up delay-200">
+                        抛弃冰冷的指令，拥抱有温度的创作伙伴。从一个念头到宏大史诗，织梦师与你一同落笔，让想象力跃然纸上。
+                    </p>
+
+                    <div className="animate-fade-in-up delay-300">
+                        <button
+                            onClick={handleStart}
+                            className="px-10 py-4 bg-[#2c241b] hover:bg-[#c5a059] text-[#faf7f2] text-lg font-bold rounded-full transition-all shadow-[0_10px_30px_-10px_rgba(44,36,27,0.4)] hover:shadow-[0_20px_40px_-10px_rgba(197,160,89,0.5)] flex items-center justify-center gap-3 transform hover:-translate-y-1"
+                        >
+                            <Feather className="w-5 h-5" />
+                            开始织梦
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content - Moved Up to create seamless peek */}
+            <main className="relative z-20 -mt-[120px]">
+
+                {/* Card 1: 灵感共鸣 */}
+                <section className="sticky top-0 min-h-screen flex flex-col bg-transparent">
+
+                    {/* The Curved Cap */}
+                    <div className="w-full h-[120px] overflow-hidden relative z-10">
+                        <div className="absolute top-[20px] left-1/2 -translate-x-1/2 w-[150%] h-[400%] bg-[#faf7f2] rounded-t-[100%] shadow-[0_-10px_30px_rgba(0,0,0,0.08)] flex justify-center pt-8">
+                            <div className="flex flex-col items-center gap-2 animate-bounce-slow">
+                                <span className="text-xs font-serif tracking-[0.2em] text-[#8c7b6c] font-bold uppercase">Scroll to Explore</span>
+                                <ChevronDown className="w-5 h-5 text-[#c5a059]" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actual Content */}
+                    <div className="flex-1 bg-[#faf7f2] flex items-center pt-10 pb-20">
+                        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
+                            <div className="order-2 md:order-1 space-y-6">
+                                <FadeIn delay={100}>
+                                    {/* 恢复为原始的 PenTool 图标 */}
+                                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
+                                        <PenTool className="w-6 h-6 text-[#c5a059]" />
+                                    </div>
+                                </FadeIn>
+
+                                <FadeIn delay={200}>
+                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
+                                        灵感共鸣：<br />
+                                        <span className="text-[#8c7b6c] font-light">不仅仅是生成文字</span>
+                                    </h2>
+                                </FadeIn>
+
+                                <FadeIn delay={300}>
+                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
+                                        AI 能够理解你的情感脉络。当你卡文时，它不会冷冰冰地抛给你一堆辞藻，而是像一位老友，在篝火旁递给你那根最关键的金色丝线。
+                                    </p>
+                                </FadeIn>
+
+                                <FadeIn delay={400}>
+                                    <div className="pt-4">
+                                        <button className="text-[#c5a059] font-bold border-b border-[#c5a059] pb-1 hover:text-[#b08d45] transition-colors flex items-center gap-2">
+                                            体验协作模式 <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </FadeIn>
+                            </div>
+                            <div className="order-1 md:order-2 relative group">
+                                <FadeIn delay={200}>
+                                    <div className="relative rounded-2xl shadow-xl w-full overflow-hidden">
+                                        <div className="absolute inset-0 bg-[#c5a059] rounded-2xl rotate-3 opacity-20 group-hover:rotate-6 transition-transform duration-500 -z-10"></div>
+                                        <img src={FEATURE_IMG_1} alt="Inspiration" className="w-full h-auto object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
+                                    </div>
+                                </FadeIn>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Card 2 */}
+                <section className="sticky top-0 min-h-screen flex flex-col">
+                    {/* Card Top Curve */}
+                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 left-0 w-full h-full bg-white rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
+                    </div>
+
+                    <div className="flex-1 bg-white flex items-center relative pb-20 pt-10">
+                        <div className="absolute inset-0 opacity-30 pointer-events-none z-0 mix-blend-multiply" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
+
+                        <div className="relative z-10 max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
+                            <div className="relative group">
+                                <FadeIn delay={200}>
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-[#2c241b] rounded-2xl -rotate-2 opacity-10 group-hover:-rotate-4 transition-transform duration-500 -z-10"></div>
+                                        <img src={FEATURE_IMG_2} alt="World Building" className="relative rounded-2xl shadow-xl w-full h-auto object-cover sepia-[30%] group-hover:sepia-0 transition-all duration-500" />
+
+                                        <div className="absolute -right-4 top-10 bg-[#faf7f2] p-4 rounded-lg shadow-lg border border-[#e8e4d9] max-w-[200px] z-20 transform group-hover:translate-x-2 transition-transform">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Map className="w-4 h-4 text-[#c5a059]" />
+                                                <span className="text-xs font-bold text-[#2c241b]">自动生成地图</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-[#e8e4d9] rounded-full mb-1"></div>
+                                            <div className="h-1.5 w-2/3 bg-[#e8e4d9] rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </FadeIn>
+                            </div>
+
+                            <div className="space-y-6">
+                                <FadeIn delay={100}>
+                                    <div className="w-14 h-14 bg-[#faf7f2] rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
+                                        <Scroll className="w-6 h-6 text-[#c5a059]" />
+                                    </div>
+                                </FadeIn>
+
+                                <FadeIn delay={200}>
+                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
+                                        世界构建：<br />
+                                        <span className="text-[#8c7b6c] font-light">万物皆有设定</span>
+                                    </h2>
+                                </FadeIn>
+
+                                <FadeIn delay={300}>
+                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
+                                        从宏大的魔法大陆到微小的街道一角，只需简单的描述，织梦师就能为你编织出细节丰富的世界设定集。
+                                    </p>
+                                </FadeIn>
+
+                                <FadeIn delay={400}>
+                                    <ul className="space-y-3 pt-2">
+                                        {['自动补全地理环境', '生成势力关系图谱', '物品与魔法系统设计'].map(item => (
+                                            <li key={item} className="flex items-center gap-3 text-[#5c4d3c]">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059]"></div>
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </FadeIn>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Card 3 */}
+                <section className="sticky top-0 min-h-screen flex flex-col">
+                    {/* Card Top Curve */}
+                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 left-0 w-full h-full bg-[#faf7f2] rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
+                    </div>
+
+                    <div className="flex-1 bg-[#faf7f2] flex items-center pb-20 pt-10">
+                        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
+                            <div className="order-2 md:order-1 space-y-6">
+                                <FadeIn delay={100}>
+                                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
+                                        <Coffee className="w-6 h-6 text-[#c5a059]" />
+                                    </div>
+                                </FadeIn>
+
+                                <FadeIn delay={200}>
+                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
+                                        篝火社区：<br />
+                                        <span className="text-[#8c7b6c] font-light">温暖的创作者港湾</span>
+                                    </h2>
+                                </FadeIn>
+
+                                <FadeIn delay={300}>
+                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
+                                        写作是一场孤独的旅行，但在织梦师，你拥有同伴。与其他织梦者围坐在数字篝火旁，分享你的篇章。
+                                    </p>
+                                </FadeIn>
+
+                                <FadeIn delay={400}>
+                                    <div className="flex gap-4 pt-4">
+                                        <div className="flex -space-x-3">
+                                            {[1, 2, 3, 4].map(i => (
+                                                <div key={i} className="w-10 h-10 rounded-full border-2 border-[#faf7f2] bg-gray-300 overflow-hidden">
+                                                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
+                                                </div>
+                                            ))}
+                                            <div className="w-10 h-10 rounded-full border-2 border-[#faf7f2] bg-[#c5a059] text-white flex items-center justify-center text-xs font-bold">
+                                                +2k
+                                            </div>
+                                        </div>
+                                        <span className="flex items-center text-sm text-[#8c7b6c]">加入我们的 Discord</span>
+                                    </div>
+                                </FadeIn>
+                            </div>
+                            <div className="order-1 md:order-2 relative group">
+                                <FadeIn delay={200}>
+                                    <div className="relative rounded-2xl shadow-xl w-full overflow-hidden">
+                                        <div className="absolute inset-0 bg-[#c5a059] rounded-2xl rotate-3 opacity-20 group-hover:rotate-1 transition-transform duration-500 -z-10"></div>
+                                        <img src={FEATURE_IMG_3} alt="Community" className="relative w-full h-auto object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-500" />
+                                    </div>
+                                </FadeIn>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Card 4 */}
+                <section className="sticky top-0 min-h-screen flex flex-col">
+                    {/* Card Top Curve */}
+                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 left-0 w-full h-full bg-white rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
+                    </div>
+
+                    <div className="flex-1 bg-white flex items-center pb-20 pt-10">
+                        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center w-full px-6">
+                            <div className="relative order-1">
+                                <FadeIn delay={200}>
+                                    <div className="absolute -inset-2 bg-[#c5a059]/10 rounded-2xl blur-xl"></div>
+                                    <div className="relative bg-[#faf7f2] border border-[#e8e4d9] rounded-xl shadow-[0_20px_60px_-15px_rgba(197,160,89,0.15)] overflow-hidden p-6 min-h-[340px]">
+                                        <div className="flex gap-2 mb-6">
+                                            <div className="w-3 h-3 rounded-full bg-[#ff6b6b]"></div>
+                                            <div className="w-3 h-3 rounded-full bg-[#feca57]"></div>
+                                            <div className="w-3 h-3 rounded-full bg-[#1dd1a1]"></div>
+                                        </div>
+                                        <div className="font-mono text-sm space-y-5">
+                                            <p className="text-[#8c7b6c]">
+                                                &gt; 输入提示词：那是一间古老的魔法商店...
+                                            </p>
+                                            <p className="text-[#c5a059] font-medium animate-pulse">
+                                                [AI 正在编织...]
+                                            </p>
+                                            <p className="text-[#2c241b] leading-loose">
+                                                那是一间古老的魔法商店，空气中弥漫着干草药和旧羊皮纸的香味。架子上摆满了装着星光的瓶子，每一瓶都记录着一段被遗忘的记忆。角落里的老猫懒洋洋地睁开眼，那是纯金色的瞳孔，仿佛能看穿你的灵魂...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </FadeIn>
+                            </div>
+
+                            <div className="space-y-6 order-2">
+                                <FadeIn delay={100}>
+                                    <h2 className="text-4xl font-bold text-[#2c241b]">
+                                        让每一个字符<br />
+                                        <span className="text-[#c5a059]">都有它的温度</span>
+                                    </h2>
+                                </FadeIn>
+
+                                <FadeIn delay={200}>
+                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
+                                        传统的写作软件是冰冷的容器，而织梦师是一个有生命的助手。我们独特的 "Atmosphere Engine" (氛围引擎) 不仅关注情节的逻辑，更关注文字背后的情感色彩。
+                                    </p>
+                                </FadeIn>
+
+                                <FadeIn delay={300}>
+                                    <div className="pt-4">
+                                        <button className="text-[#c5a059] font-bold border-b-2 border-[#c5a059] pb-1 hover:text-[#b08d45] hover:border-[#b08d45] transition-colors">
+                                            了解更多技术细节
+                                        </button>
+                                    </div>
+                                </FadeIn>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            {/* Footer */}
+            <footer className="relative z-30 bg-[#2c241b] text-[#e8e4d9] py-12 border-t border-[#c5a059]/20">
+                <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8">
+                    <div className="col-span-1 md:col-span-2">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Feather className="text-[#c5a059] w-5 h-5" />
+                            <span className="text-xl font-bold text-[#faf7f2]">织梦师</span>
+                        </div>
+                        <p className="text-sm max-w-sm text-[#e8e4d9]/80">
+                            专为小说家、编剧和创意写作者打造的 AI 辅助工具。
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="text-[#faf7f2] font-bold mb-4">探索</h4>
+                        <ul className="space-y-2 text-sm text-[#e8e4d9]/80">
+                            <li><a href="#" className="hover:text-[#c5a059]">功能介绍</a></li>
+                            <li><a href="#" className="hover:text-[#c5a059]">价格方案</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-[#faf7f2] font-bold mb-4">联系</h4>
+                        <ul className="space-y-2 text-sm text-[#e8e4d9]/80">
+                            <li><a href="#" className="hover:text-[#c5a059]">Twitter / X</a></li>
+                            <li><a href="#" className="hover:text-[#c5a059]">Discord 社区</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-[#3d3226] text-xs text-center text-[#8c7b6c]">
+                    © 2024 AI-Novel 织梦师. All rights reserved. 用心编织。
+                </div>
+            </footer>
+        </div>
+    );
+}

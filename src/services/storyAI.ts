@@ -13,7 +13,7 @@ import {
   // 核心模块
   aiModelService,
   storyStateManager,
-  
+
   // 功能模块
   contentParser,
   conversationManager,
@@ -24,7 +24,7 @@ import {
   endingGenerator,
   characterDeveloper,
   documentAnalyzer,
-  
+
   // 类型定义
   StoryState,
   Character,
@@ -33,7 +33,7 @@ import {
   StoryGoal,
   ConversationHistory,
   SummaryData,
-  
+
   // 工具函数
   initializeModules
 } from './modules';
@@ -144,7 +144,7 @@ class StoryAI {
 
       // 使用 StoryInitializer 模块（配置由unifiedAIService自动处理）
       const response = await storyInitializer.generateInitialStory(config, isAdvanced);
-      
+
       if (response.success && response.content) {
         // 初始化故事状态
         const initialState: StoryState = {
@@ -165,10 +165,10 @@ class StoryAI {
 
         // 保存到状态管理器
         storyStateManager.setState(initialState);
-        
+
         // 清空对话历史，为新故事开始
         conversationManager.clearHistory();
-        
+
         return response;
       } else {
         throw new Error(response.error || '初始故事生成失败');
@@ -230,8 +230,8 @@ class StoryAI {
    * 生成下一章节
    */
   async generateNextChapter(
-    currentStory: string, 
-    selectedChoice: string, 
+    currentStory: string,
+    selectedChoice: string,
     previousChoices?: string[],
     storyState?: StoryState
   ): Promise<StoryGenerationResponse> {
@@ -239,7 +239,7 @@ class StoryAI {
 
       // 获取当前故事状态
       let currentState = storyStateManager.getState();
-      
+
       // 如果传入了 storyState 参数，优先使用它并同步到 storyStateManager
       if (storyState) {
         storyStateManager.setState(storyState);
@@ -248,7 +248,7 @@ class StoryAI {
       // 如果 storyStateManager 中没有状态，但传入了 currentStory 参数
       else if (!currentState && currentStory) {
         console.warn('⚠️ storyStateManager 中无状态，但有 currentStory 参数，这可能是状态同步问题');
-        
+
         // 创建临时状态用于生成下一章节
         const tempState: StoryState = {
           story_id: `temp_${Date.now()}`,
@@ -262,11 +262,11 @@ class StoryAI {
           is_completed: false,
           story_progress: 0
         };
-        
+
         currentState = tempState;
         storyStateManager.setState(tempState);
       }
-      
+
       if (!currentState) {
         console.error('❌ 未找到当前故事状态，且无法从参数重建状态');
         return {
@@ -284,7 +284,7 @@ class StoryAI {
 
       // 使用 ContentGenerator 模块生成下一章节
       const storyResponse = await contentGenerator.generateNextChapter(currentState, selectedChoice);
-      
+
       if (storyResponse && storyResponse.success && storyResponse.content) {
         // 更新故事状态
         const updates: Partial<StoryState> = {
@@ -304,17 +304,17 @@ class StoryAI {
         }
 
         storyStateManager.updateState(updates);
-        
+
         // 保存生成的内容到对话历史
         conversationManager.addToHistory('assistant', storyResponse.content.scene);
-        
+
         return storyResponse;
       } else {
         throw new Error('章节响应解析失败');
       }
     } catch (error) {
       console.error('❌ 下一章节生成失败:', error);
-      
+
       // 返回备用内容
       return this.generateFallbackNextChapter(selectedChoice);
     }
@@ -435,7 +435,7 @@ class StoryAI {
       return await choiceGenerator.generateChoices(currentState, scene);
     } catch (error) {
       console.error('❌ 选择项生成失败:', error);
-      
+
       // 返回默认选择项
       return contentParser.getDefaultChoices();
     }
@@ -448,10 +448,10 @@ class StoryAI {
     try {
 
       // 使用 EndingGenerator 模块生成结局
-      const ending = endingType 
+      const ending = endingType
         ? await endingGenerator.generateCustomEnding(storyState, endingType)
         : await endingGenerator.generateStoryEnding(storyState);
-      
+
       // 映射用户界面结局类型到系统内部类型
       const mapEndingType = (type: string): 'success' | 'failure' | 'neutral' | 'cliffhanger' => {
         switch (type) {
@@ -487,23 +487,23 @@ class StoryAI {
    */
   private async checkAndGenerateSummary(): Promise<void> {
     const history = conversationManager.getHistory();
-    
+
     if (summaryManager.shouldTriggerSummary(history.length)) {
-      
+
       try {
         const historyForSummary = conversationManager.getHistoryForSummary(
           summaryManager['lastSummaryIndex'] || 0
         );
-        
+
         const newSummary = await summaryManager.generateSummary(historyForSummary);
-        
+
         if (newSummary) {
           const currentSummary = conversationManager.getSummaryState().summary;
           const mergedSummary = summaryManager.mergeSummaries(currentSummary, newSummary);
-          
+
           conversationManager.setSummaryState(mergedSummary);
           summaryManager.updateSummaryIndex(history.length);
-          
+
         }
       } catch (error) {
         console.error('❌ 摘要生成失败:', error);
@@ -578,16 +578,15 @@ class StoryAI {
   /**
    * 设置对话历史（向后兼容方法）
    */
-  setConversationHistory(history: ConversationHistory[], summaryData?: SummaryData): void {
+  setConversationHistory(history: ConversationHistory[], summaryData?: SummaryData, summary?: string): void {
     conversationManager.clearHistory();
     history.forEach(msg => {
       conversationManager.addToHistory(msg.role, msg.content);
     });
-    
-    if (summaryData) {
-      conversationManager.setSummaryState(summaryData.toString(), summaryData);
+
+    if (summaryData || summary) {
+      conversationManager.setSummaryState(summary || '', summaryData);
     }
-    
   }
 
   /**
@@ -612,7 +611,7 @@ class StoryAI {
   shouldStoryEnd(): boolean {
     const state = storyStateManager.getState();
     if (!state) return false;
-    
+
     return endingGenerator.shouldStoryEnd(state);
   }
 
@@ -622,7 +621,7 @@ class StoryAI {
   getStoryCompletion(): number {
     const state = storyStateManager.getState();
     if (!state) return 0;
-    
+
     return endingGenerator.evaluateStoryCompletion(state);
   }
 

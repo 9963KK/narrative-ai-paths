@@ -10,11 +10,11 @@ interface UserLevelBadgeProps {
   className?: string;
 }
 
-export const UserLevelBadge: React.FC<UserLevelBadgeProps> = ({ 
-  level, 
-  size = 'md', 
+export const UserLevelBadge: React.FC<UserLevelBadgeProps> = ({
+  level,
+  size = 'md',
   showDescription = false,
-  className = '' 
+  className = ''
 }) => {
   if (!level) return null;
 
@@ -45,7 +45,7 @@ export const UserLevelBadge: React.FC<UserLevelBadgeProps> = ({
       case 'svip':
         return {
           badge: (
-            <Badge className={`bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 ${getSizeClasses()} ${className}`}>
+            <Badge className={`bg-[#2c241b] text-[#c5a059] border border-[#c5a059] hover:bg-[#3d3226] ${getSizeClasses()} ${className}`}>
               <Crown className={`${getIconSize()} mr-1`} />
               SVIP
             </Badge>
@@ -56,8 +56,8 @@ export const UserLevelBadge: React.FC<UserLevelBadgeProps> = ({
       case 'vip':
         return {
           badge: (
-            <Badge className={`bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 ${getSizeClasses()} ${className}`}>
-              <Star className={`${getIconSize()} mr-1`} />
+            <Badge className={`bg-[#c5a059] text-white border-0 hover:bg-[#d4af37] ${getSizeClasses()} ${className}`}>
+              <Star className={`${getIconSize()} mr-1 fill-current`} />
               VIP
             </Badge>
           ),
@@ -67,7 +67,7 @@ export const UserLevelBadge: React.FC<UserLevelBadgeProps> = ({
       case 'basic':
         return {
           badge: (
-            <Badge variant="outline" className={`border-gray-300 text-gray-600 ${getSizeClasses()} ${className}`}>
+            <Badge variant="outline" className={`bg-[#e8e4d9] border-[#d6d1c4] text-[#5d554a] hover:bg-[#d6d1c4] ${getSizeClasses()} ${className}`}>
               <User className={`${getIconSize()} mr-1`} />
               Basic
             </Badge>
