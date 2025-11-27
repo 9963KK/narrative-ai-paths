@@ -842,6 +842,9 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       setShowChoices(false);
       setChoices([]);
 
+      // 用于中断异步任务的标记
+      let isCancelled = false;
+
       // 检查是否需要生成选项
       const needsChoices = shouldShowChoices();
 
@@ -860,9 +863,40 @@ const StoryReader: React.FC<StoryReaderProps> = ({
       if (needsChoices) {
         if (savedChoices && savedChoices.length > 0) {
           devLog('发现存档选项，直接使用（首次读档）:', savedChoices);
-          // 立即设置存档选项
-          setPendingChoices(savedChoices);
-          setIsGeneratingChoices(false);
+
+          // 如果存档选项缺少图片，尝试重新生成图片后再展示
+          const needsImageRegeneration = savedChoices.some(choice => !choice.imageUrl);
+          if (needsImageRegeneration) {
+            devLog('存档选项缺少图片，开始重新生成图片...');
+            setIsGeneratingChoices(true);
+            setPendingChoices(null);
+
+            (async () => {
+              try {
+                const regeneratedChoices = await imageGenerationService.preGenerateImages(
+                  savedChoices,
+                  story.current_scene
+                );
+                if (!isCancelled) {
+                  setPendingChoices(regeneratedChoices);
+                }
+              } catch (error) {
+                console.error('❌ 存档选项图片重新生成失败:', error);
+                if (!isCancelled) {
+                  // 即使生成失败也要继续展示文本选项，避免阻塞
+                  setPendingChoices(savedChoices);
+                }
+              } finally {
+                if (!isCancelled) {
+                  setIsGeneratingChoices(false);
+                }
+              }
+            })();
+          } else {
+            // 存档选项已包含图片，直接展示
+            setPendingChoices(savedChoices);
+            setIsGeneratingChoices(false);
+          }
         } else {
           devLog('没有存档选项或非首次读档，重新生成选项...');
           // 清空状态并重新生成选项
@@ -893,7 +927,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({
         }
       }, 30); // 稍微加快打字速度
 
-      return () => clearInterval(interval);
+      return () => {
+        isCancelled = true;
+        clearInterval(interval);
+      };
     }
   }, [story.current_scene]);
 
