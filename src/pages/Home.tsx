@@ -192,7 +192,7 @@ export default function Home() {
 
                     <div className="relative mb-6 min-h-[160px] md:min-h-[200px] flex flex-col items-center justify-center">
                         <h1 className="text-4xl md:text-7xl font-bold text-[#2c241b] leading-tight tracking-tight drop-shadow-sm">
-                            用多元的想法，<br />
+                            用无限的灵感，<br />
                             <span className="block mt-4 md:mt-2">
                                 编织你的
                                 <span className="ml-4 inline-block">
@@ -317,19 +317,19 @@ export default function Home() {
                                 <FadeIn delay={200}>
                                     <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
                                         世界构建：<br />
-                                        <span className="text-[#8c7b6c] font-light">万物皆有设定</span>
+                                        <span className="text-[#8c7b6c] font-light">你的灵感就是设定</span>
                                     </h2>
                                 </FadeIn>
 
                                 <FadeIn delay={300}>
                                     <p className="text-lg text-[#5c4d3c] leading-relaxed">
-                                        从宏大的魔法大陆到微小的街道一角，只需简单的描述，织梦师就能为你编织出细节丰富的世界设定集。
+                                        你带着灵感而来，我们替你把零散的想法织成一个完整的世界。踏进去，就能在自己构建的场景里继续写下去。
                                     </p>
                                 </FadeIn>
 
                                 <FadeIn delay={400}>
                                     <ul className="space-y-3 pt-2">
-                                        {['自动补全地理环境', '生成势力关系图谱', '物品与魔法系统设计'].map(item => (
+                                        {['快速搭好世界骨架', '沉浸式场景陪你写作', '灵感驱动的故事脉络'].map(item => (
                                             <li key={item} className="flex items-center gap-3 text-[#5c4d3c]">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059]"></div>
                                                 {item}

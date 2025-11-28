@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { CreditBadge } from '@/components/ui/CreditBadge';
 import { UserLevelBadge } from '@/components/ui/UserLevelBadge';
 import { type UserLevel } from '@/services/userLevelService';
-import { LogOut, User, Settings, Shield } from 'lucide-react';
+import { LogOut, User, Settings, Shield, Feather } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const UserHeaderComponent: React.FC = () => {
@@ -49,7 +49,7 @@ const UserHeaderComponent: React.FC = () => {
         {/* Logo Area */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
           <div className="w-10 h-10 bg-[#c5a059] rounded-xl flex items-center justify-center shadow-sm">
-            <img src="/pen-icon.svg" alt="Logo" className="w-6 h-6 text-white invert brightness-0" style={{ filter: 'brightness(0) invert(1)' }} />
+            <Feather className="w-6 h-6 text-white" />
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-bold text-[#2c241b] leading-none">织梦师</span>
