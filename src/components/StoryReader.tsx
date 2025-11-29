@@ -1057,6 +1057,8 @@ const StoryReader: React.FC<StoryReaderProps> = ({
     setIsGeneratingChoices(false);
     setChoiceGenerationRetryCount(0); // 重置重试计数
     setLocalProcessingChoice(true); // 立即设置本地处理状态，阻止重新生成
+    // 清空父层存储的当前选项，避免旧选项被复用
+    onChoicesUpdate?.([]);
 
     stateLog('选择处理开始:', {
       choiceId,
