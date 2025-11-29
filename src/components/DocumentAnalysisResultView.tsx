@@ -59,7 +59,29 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
     );
   }
 
-  const data = isEditing ? editedData! : result.data;
+  const rawData = isEditing ? editedData! : result.data;
+
+  // 构造带默认值的安全数据，避免字段缺失导致渲染报错
+  const data = {
+    ...rawData,
+    characters: rawData?.characters || [],
+    themes: {
+      mainThemes: rawData?.themes?.mainThemes || [],
+      deeperMeaning: rawData?.themes?.deeperMeaning || ''
+    },
+    plotElements: {
+      mainConflict: rawData?.plotElements?.mainConflict || '',
+      keyEvents: rawData?.plotElements?.keyEvents || [],
+      plotDevices: rawData?.plotElements?.plotDevices || [],
+      narrativeTechniques: rawData?.plotElements?.narrativeTechniques || ''
+    },
+    writingStyle: {
+      tone: rawData?.writingStyle?.tone || '',
+      narrativePerspective: rawData?.writingStyle?.narrativePerspective || '',
+      genre: rawData?.writingStyle?.genre || ''
+    },
+    suggestedStorySeeds: rawData?.suggestedStorySeeds || []
+  };
 
   // 深拷贝数据以避免直接修改原始数据
   const initEditMode = () => {
@@ -856,7 +878,7 @@ const DocumentAnalysisResultView: React.FC<DocumentAnalysisResultViewProps> = ({
                             <div>
                               <h4 className="text-sm font-bold text-[#5d554a] mb-1 font-serif">主要角色</h4>
                               <div className="flex flex-wrap gap-2">
-                                {seed.characters.map((char, i) => (
+                                {(seed.characters || []).map((char, i) => (
                                   <Badge key={i} variant="secondary" className="bg-[#e8e4d9] text-[#5d554a] hover:bg-[#dcd8cc] font-serif">
                                     {char}
                                   </Badge>
