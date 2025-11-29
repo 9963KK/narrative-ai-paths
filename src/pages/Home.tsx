@@ -1,16 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, Feather, Users, Sparkles, Scroll, ArrowRight, Star, Menu, X, Command, PenTool, Coffee, Map, ChevronDown, MousePointer2 } from 'lucide-react';
+import { BookOpen, Feather, Sparkles, Scroll, ArrowRight, Menu, X } from 'lucide-react';
 
 // 模拟的图片占位符
 const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2428&auto=format&fit=crop";
-const PAPER_TEXTURE_URL = "https://www.transparenttextures.com/patterns/cream-paper.png";
-
-// 插图占位符
-const FEATURE_IMG_1 = "https://images.unsplash.com/photo-1519791883288-dc8bd696e667?q=80&w=2340&auto=format&fit=crop";
-const FEATURE_IMG_2 = "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2340&auto=format&fit=crop";
-const FEATURE_IMG_3 = "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=2532&auto=format&fit=crop";
 
 // 定义风格配置
 const WRITING_STYLES = [
@@ -127,6 +121,27 @@ export default function Home() {
         }
     };
 
+    const featureCards = [
+        {
+            icon: BookOpen,
+            title: '从灵感到完整故事',
+            desc: '一句话灵感，自动梳理世界观、主角与开篇。你可以马上进入章节创作或让 AI 续写。',
+            points: ['自动生成世界骨架与章节大纲', '可视化角色与场景标签', '一键改写或延展情节']
+        },
+        {
+            icon: Scroll,
+            title: '在设定下续写',
+            desc: '锁定设定、口吻与角色关系，在同一世界观下继续写作，不跳调、不跑题。',
+            points: ['保持语气与世界规则一致', '章节上下文自动衔接', '随时调整节奏与张力']
+        }
+    ];
+
+    const quickSteps = [
+        { title: '输入灵感或设定', detail: '一句话描述世界/人物/情绪' },
+        { title: '获得故事梗概与世界设定', detail: '自动梳理世界骨架、章节要点和可直接续写的示例段落' },
+        { title: '自由续写', detail: '锁定设定，和 AI 协作完成全文' }
+    ];
+
     return (
         <div className="font-serif text-[#2c241b] bg-[#1a120b] selection:bg-[#c5a059] selection:text-white relative">
 
@@ -191,19 +206,16 @@ export default function Home() {
                     {/* 删除了 Slogan 标签 */}
 
                     <div className="relative mb-6 min-h-[160px] md:min-h-[200px] flex flex-col items-center justify-center">
-                        <h1 className="text-4xl md:text-7xl font-bold text-[#2c241b] leading-tight tracking-tight drop-shadow-sm">
-                            用无限的灵感，<br />
-                            <span className="block mt-4 md:mt-2">
-                                编织你的
-                                <span className="ml-4 inline-block">
+                            <h1 className="text-4xl md:text-7xl font-bold text-[#2c241b] leading-tight tracking-tight drop-shadow-sm text-center">
+                                灵感到成稿的故事创作平台<br />
+                                <span className="block mt-4 md:mt-2">
                                     <TypewriterEffect styles={WRITING_STYLES} />
                                 </span>
-                            </span>
-                        </h1>
+                            </h1>
                     </div>
 
                     <p className="text-lg md:text-xl text-[#5c4d3c] mb-12 max-w-2xl mx-auto font-light leading-relaxed animate-fade-in-up delay-200">
-                        抛弃冰冷的指令，拥抱有温度的创作伙伴。从一个念头到宏大史诗，织梦师与你一同落笔，让想象力跃然纸上。
+                        专为小说家、编剧和创意写作者打造的 AI 辅助工具：一句话生成世界设定，在同一设定下稳定续写。
                     </p>
 
                     <div className="animate-fade-in-up delay-300">
@@ -218,246 +230,134 @@ export default function Home() {
                 </div>
             </header>
 
-            {/* Main Content - Moved Up to create seamless peek */}
-            <main className="relative z-20 -mt-[120px]">
-
-                {/* Card 1: 灵感共鸣 */}
-                <section className="sticky top-0 min-h-screen flex flex-col bg-transparent">
-
-                    {/* The Curved Cap */}
-                    <div className="w-full h-[120px] overflow-hidden relative z-10">
-                        <div className="absolute top-[20px] left-1/2 -translate-x-1/2 w-[150%] h-[400%] bg-[#faf7f2] rounded-t-[100%] shadow-[0_-10px_30px_rgba(0,0,0,0.08)] flex justify-center pt-8">
-                            <div className="flex flex-col items-center gap-2 animate-bounce-slow">
-                                <span className="text-xs font-serif tracking-[0.2em] text-[#8c7b6c] font-bold uppercase">Scroll to Explore</span>
-                                <ChevronDown className="w-5 h-5 text-[#c5a059]" />
+            {/* Main Content - Simplified for creators */}
+            <main className="relative z-20 bg-[#faf7f2] -mt-[120px]">
+                <section className="max-w-6xl mx-auto px-6 py-16 md:py-20 grid md:grid-cols-2 gap-10 items-center">
+                    <FadeIn delay={100}>
+                        <div className="space-y-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-[#e8e4d9] shadow-sm text-sm text-[#8c7b6c]">
+                                <Sparkles className="w-4 h-4 text-[#c5a059]" />
+                                专为小说创作爱好者设计
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold leading-tight text-[#2c241b]">
+                                灵感一句话，<br />故事与续写都能给到你
+                            </h2>
+                            <p className="text-lg text-[#5c4d3c] leading-relaxed">
+                                不需要复杂指令。你提供灵感或设定，织梦师帮你搭好世界，生成开篇，再在同一设定下稳定续写。
+                            </p>
+                            <div className="flex flex-wrap gap-3 text-sm text-[#5c4d3c]">
+                                <span className="px-3 py-1 bg-white/80 rounded-full border border-[#e8e4d9]">完整故事生成</span>
+                                <span className="px-3 py-1 bg-white/80 rounded-full border border-[#e8e4d9]">设定内续写</span>
+                                <span className="px-3 py-1 bg-white/80 rounded-full border border-[#e8e4d9]">情绪与口吻一致</span>
+                            </div>
+                            <div className="pt-4">
+                                <button
+                                    onClick={handleStart}
+                                    className="px-8 py-3 bg-[#2c241b] hover:bg-[#c5a059] text-[#faf7f2] font-bold rounded-full transition-all shadow-[0_10px_30px_-12px_rgba(44,36,27,0.5)] flex items-center gap-2"
+                                >
+                                    <ArrowRight className="w-4 h-4" />
+                                    立即体验
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    </FadeIn>
 
-                    {/* Actual Content */}
-                    <div className="flex-1 bg-[#faf7f2] flex items-center pt-10 pb-20">
-                        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
-                            <div className="order-2 md:order-1 space-y-6">
-                                <FadeIn delay={100}>
-                                    {/* 恢复为原始的 PenTool 图标 */}
-                                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
-                                        <PenTool className="w-6 h-6 text-[#c5a059]" />
-                                    </div>
-                                </FadeIn>
-
-                                <FadeIn delay={200}>
-                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
-                                        灵感共鸣：<br />
-                                        <span className="text-[#8c7b6c] font-light">不仅仅是生成文字</span>
-                                    </h2>
-                                </FadeIn>
-
-                                <FadeIn delay={300}>
-                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
-                                        AI 能够理解你的情感脉络。当你卡文时，它不会冷冰冰地抛给你一堆辞藻，而是像一位老友，在篝火旁递给你那根最关键的金色丝线。
-                                    </p>
-                                </FadeIn>
-
-                                <FadeIn delay={400}>
-                                    <div className="pt-4">
-                                        <button className="text-[#c5a059] font-bold border-b border-[#c5a059] pb-1 hover:text-[#b08d45] transition-colors flex items-center gap-2">
-                                            体验协作模式 <ArrowRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </FadeIn>
+                    <FadeIn delay={200} className="h-full">
+                        <div className="h-full bg-white/90 border border-[#e8e4d9] rounded-3xl shadow-[0_25px_70px_-30px_rgba(44,36,27,0.35)] p-6 md:p-8 flex flex-col justify-between">
+                            <div className="font-mono text-sm space-y-3 text-[#4a3b2d]">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="w-3 h-3 rounded-full bg-[#ff6b6b]"></span>
+                                    <span className="w-3 h-3 rounded-full bg-[#feca57]"></span>
+                                    <span className="w-3 h-3 rounded-full bg-[#1dd1a1]"></span>
+                                    <span className="text-[#8c7b6c] ml-2">故事草稿</span>
+                                </div>
+                                <p className="text-[#8c7b6c]">{'> 灵感：一座雨后的赛博港口...'}</p>
+                                <p className="text-[#c5a059] font-semibold">[AI 正在编织世界...]</p>
+                                <p>
+                                    港口的霓虹在雨幕里折射成万点碎光，沿岸的旧仓库被改造成秘密的机甲集市。主角林舟推开锈迹斑斑的门，
+                                    他要找的芯片，可能藏在这里的任何一台废旧战斗服里。
+                                </p>
                             </div>
-                            <div className="order-1 md:order-2 relative group">
-                                <FadeIn delay={200}>
-                                    <div className="relative rounded-2xl shadow-xl w-full overflow-hidden">
-                                        <div className="absolute inset-0 bg-[#c5a059] rounded-2xl rotate-3 opacity-20 group-hover:rotate-6 transition-transform duration-500 -z-10"></div>
-                                        <img src={FEATURE_IMG_1} alt="Inspiration" className="w-full h-auto object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500" />
-                                    </div>
-                                </FadeIn>
+                            <div className="mt-6 grid grid-cols-2 gap-3 text-xs text-[#5c4d3c]">
+                                <div className="p-3 rounded-xl border border-[#e8e4d9] bg-[#faf7f2]">
+                                    <div className="font-semibold text-[#2c241b]">世界设定</div>
+                                    <div className="mt-1">赛博港口 · 雨夜 · 黑市机甲</div>
+                                </div>
+                                <div className="p-3 rounded-xl border border-[#e8e4d9] bg-[#faf7f2]">
+                                    <div className="font-semibold text-[#2c241b]">续写方向</div>
+                                    <div className="mt-1">保持冷峻口吻 · 线索逐步揭晓</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </FadeIn>
                 </section>
 
-                {/* Card 2 */}
-                <section className="sticky top-0 min-h-screen flex flex-col">
-                    {/* Card Top Curve */}
-                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
-                        <div className="absolute top-0 left-0 w-full h-full bg-white rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
-                    </div>
-
-                    <div className="flex-1 bg-white flex items-center relative pb-20 pt-10">
-                        <div className="absolute inset-0 opacity-30 pointer-events-none z-0 mix-blend-multiply" style={{ backgroundImage: `url(${PAPER_TEXTURE_URL})` }}></div>
-
-                        <div className="relative z-10 max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
-                            <div className="relative group">
-                                <FadeIn delay={200}>
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-[#2c241b] rounded-2xl -rotate-2 opacity-10 group-hover:-rotate-4 transition-transform duration-500 -z-10"></div>
-                                        <img src={FEATURE_IMG_2} alt="World Building" className="relative rounded-2xl shadow-xl w-full h-auto object-cover sepia-[30%] group-hover:sepia-0 transition-all duration-500" />
-
-                                        <div className="absolute -right-4 top-10 bg-[#faf7f2] p-4 rounded-lg shadow-lg border border-[#e8e4d9] max-w-[200px] z-20 transform group-hover:translate-x-2 transition-transform">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Map className="w-4 h-4 text-[#c5a059]" />
-                                                <span className="text-xs font-bold text-[#2c241b]">自动生成地图</span>
+                <section className="max-w-6xl mx-auto px-6 pb-14 md:pb-16">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {featureCards.map((card, idx) => {
+                            const Icon = card.icon;
+                            return (
+                                <FadeIn key={card.title} delay={100 * (idx + 1)}>
+                                    <div className="h-full bg-white/90 border border-[#e8e4d9] rounded-2xl p-6 shadow-[0_18px_45px_-25px_rgba(44,36,27,0.35)] space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-[#f2f0ea] flex items-center justify-center text-[#c5a059]">
+                                                <Icon className="w-5 h-5" />
                                             </div>
-                                            <div className="h-1.5 w-full bg-[#e8e4d9] rounded-full mb-1"></div>
-                                            <div className="h-1.5 w-2/3 bg-[#e8e4d9] rounded-full"></div>
+                                            <h3 className="text-2xl font-bold text-[#2c241b]">{card.title}</h3>
                                         </div>
-                                    </div>
-                                </FadeIn>
-                            </div>
-
-                            <div className="space-y-6">
-                                <FadeIn delay={100}>
-                                    <div className="w-14 h-14 bg-[#faf7f2] rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
-                                        <Scroll className="w-6 h-6 text-[#c5a059]" />
-                                    </div>
-                                </FadeIn>
-
-                                <FadeIn delay={200}>
-                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
-                                        世界构建：<br />
-                                        <span className="text-[#8c7b6c] font-light">你的灵感就是设定</span>
-                                    </h2>
-                                </FadeIn>
-
-                                <FadeIn delay={300}>
-                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
-                                        你带着灵感而来，我们替你把零散的想法织成一个完整的世界。踏进去，就能在自己构建的场景里继续写下去。
-                                    </p>
-                                </FadeIn>
-
-                                <FadeIn delay={400}>
-                                    <ul className="space-y-3 pt-2">
-                                        {['快速搭好世界骨架', '沉浸式场景陪你写作', '灵感驱动的故事脉络'].map(item => (
-                                            <li key={item} className="flex items-center gap-3 text-[#5c4d3c]">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059]"></div>
-                                                {item}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </FadeIn>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Card 3 */}
-                <section className="sticky top-0 min-h-screen flex flex-col">
-                    {/* Card Top Curve */}
-                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
-                        <div className="absolute top-0 left-0 w-full h-full bg-[#faf7f2] rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
-                    </div>
-
-                    <div className="flex-1 bg-[#faf7f2] flex items-center pb-20 pt-10">
-                        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center w-full">
-                            <div className="order-2 md:order-1 space-y-6">
-                                <FadeIn delay={100}>
-                                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border border-[#e8e4d9] shadow-sm">
-                                        <Coffee className="w-6 h-6 text-[#c5a059]" />
-                                    </div>
-                                </FadeIn>
-
-                                <FadeIn delay={200}>
-                                    <h2 className="text-3xl md:text-4xl font-bold text-[#2c241b]">
-                                        篝火社区：<br />
-                                        <span className="text-[#8c7b6c] font-light">温暖的创作者港湾</span>
-                                    </h2>
-                                </FadeIn>
-
-                                <FadeIn delay={300}>
-                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
-                                        写作是一场孤独的旅行，但在织梦师，你拥有同伴。与其他织梦者围坐在数字篝火旁，分享你的篇章。
-                                    </p>
-                                </FadeIn>
-
-                                <FadeIn delay={400}>
-                                    <div className="flex gap-4 pt-4">
-                                        <div className="flex -space-x-3">
-                                            {[1, 2, 3, 4].map(i => (
-                                                <div key={i} className="w-10 h-10 rounded-full border-2 border-[#faf7f2] bg-gray-300 overflow-hidden">
-                                                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
-                                                </div>
+                                        <p className="text-[#5c4d3c] leading-relaxed">{card.desc}</p>
+                                        <ul className="space-y-2 text-[#5c4d3c]">
+                                            {card.points.map(point => (
+                                                <li key={point} className="flex items-start gap-2">
+                                                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#c5a059]"></span>
+                                                    <span>{point}</span>
+                                                </li>
                                             ))}
-                                            <div className="w-10 h-10 rounded-full border-2 border-[#faf7f2] bg-[#c5a059] text-white flex items-center justify-center text-xs font-bold">
-                                                +2k
-                                            </div>
-                                        </div>
-                                        <span className="flex items-center text-sm text-[#8c7b6c]">加入我们的 Discord</span>
+                                        </ul>
                                     </div>
                                 </FadeIn>
-                            </div>
-                            <div className="order-1 md:order-2 relative group">
-                                <FadeIn delay={200}>
-                                    <div className="relative rounded-2xl shadow-xl w-full overflow-hidden">
-                                        <div className="absolute inset-0 bg-[#c5a059] rounded-2xl rotate-3 opacity-20 group-hover:rotate-1 transition-transform duration-500 -z-10"></div>
-                                        <img src={FEATURE_IMG_3} alt="Community" className="relative w-full h-auto object-cover grayscale-[10%] group-hover:grayscale-0 transition-all duration-500" />
-                                    </div>
-                                </FadeIn>
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
                 </section>
 
-                {/* Card 4 */}
-                <section className="sticky top-0 min-h-screen flex flex-col">
-                    {/* Card Top Curve */}
-                    <div className="h-12 bg-transparent relative overflow-hidden pointer-events-none">
-                        <div className="absolute top-0 left-0 w-full h-full bg-white rounded-t-[3rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"></div>
-                    </div>
-
-                    <div className="flex-1 bg-white flex items-center pb-20 pt-10">
-                        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center w-full px-6">
-                            <div className="relative order-1">
-                                <FadeIn delay={200}>
-                                    <div className="absolute -inset-2 bg-[#c5a059]/10 rounded-2xl blur-xl"></div>
-                                    <div className="relative bg-[#faf7f2] border border-[#e8e4d9] rounded-xl shadow-[0_20px_60px_-15px_rgba(197,160,89,0.15)] overflow-hidden p-6 min-h-[340px]">
-                                        <div className="flex gap-2 mb-6">
-                                            <div className="w-3 h-3 rounded-full bg-[#ff6b6b]"></div>
-                                            <div className="w-3 h-3 rounded-full bg-[#feca57]"></div>
-                                            <div className="w-3 h-3 rounded-full bg-[#1dd1a1]"></div>
-                                        </div>
-                                        <div className="font-mono text-sm space-y-5">
-                                            <p className="text-[#8c7b6c]">
-                                                &gt; 输入提示词：那是一间古老的魔法商店...
-                                            </p>
-                                            <p className="text-[#c5a059] font-medium animate-pulse">
-                                                [AI 正在编织...]
-                                            </p>
-                                            <p className="text-[#2c241b] leading-loose">
-                                                那是一间古老的魔法商店，空气中弥漫着干草药和旧羊皮纸的香味。架子上摆满了装着星光的瓶子，每一瓶都记录着一段被遗忘的记忆。角落里的老猫懒洋洋地睁开眼，那是纯金色的瞳孔，仿佛能看穿你的灵魂...
-                                            </p>
-                                        </div>
-                                    </div>
-                                </FadeIn>
+                <section className="max-w-6xl mx-auto px-6 pb-16 md:pb-20">
+                    <FadeIn delay={100}>
+                        <div className="bg-white/90 border border-[#e8e4d9] rounded-3xl p-6 md:p-8 shadow-[0_18px_45px_-25px_rgba(44,36,27,0.35)]">
+                            <div className="flex items-center gap-2 mb-6">
+                                <Sparkles className="w-5 h-5 text-[#c5a059]" />
+                                <h3 className="text-2xl font-bold text-[#2c241b]">三步上手</h3>
                             </div>
-
-                            <div className="space-y-6 order-2">
-                                <FadeIn delay={100}>
-                                    <h2 className="text-4xl font-bold text-[#2c241b]">
-                                        让每一个字符<br />
-                                        <span className="text-[#c5a059]">都有它的温度</span>
-                                    </h2>
-                                </FadeIn>
-
-                                <FadeIn delay={200}>
-                                    <p className="text-lg text-[#5c4d3c] leading-relaxed">
-                                        传统的写作软件是冰冷的容器，而织梦师是一个有生命的助手。我们独特的 "Atmosphere Engine" (氛围引擎) 不仅关注情节的逻辑，更关注文字背后的情感色彩。
-                                    </p>
-                                </FadeIn>
-
-                                <FadeIn delay={300}>
-                                    <div className="pt-4">
-                                        <button className="text-[#c5a059] font-bold border-b-2 border-[#c5a059] pb-1 hover:text-[#b08d45] hover:border-[#b08d45] transition-colors">
-                                            了解更多技术细节
-                                        </button>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                {quickSteps.map((step, idx) => (
+                                    <div key={step.title} className="p-4 rounded-2xl border border-[#e8e4d9] bg-[#faf7f2]">
+                                        <div className="text-sm text-[#8c7b6c] mb-2">0{idx + 1}</div>
+                                        <div className="text-lg font-semibold text-[#2c241b]">{step.title}</div>
+                                        <p className="text-sm text-[#5c4d3c] mt-2 leading-relaxed">{step.detail}</p>
                                     </div>
-                                </FadeIn>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    </FadeIn>
                 </section>
 
+                <section className="max-w-6xl mx-auto px-6 pb-20">
+                    <FadeIn delay={100}>
+                        <div className="bg-[#2c241b] text-[#faf7f2] rounded-3xl p-8 md:p-10 shadow-[0_25px_70px_-30px_rgba(44,36,27,0.5)] flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <div className="text-sm uppercase tracking-[0.3em] text-[#c5a059] mb-2">Start Writing</div>
+                                <h3 className="text-3xl font-bold mb-3">用一段灵感，测试你的故事世界</h3>
+                                <p className="text-[#f2e7d8]">不必准备长提示。写一句，你的世界和续写能力立即生成。</p>
+                            </div>
+                            <button
+                                onClick={handleStart}
+                                className="px-6 py-3 bg-[#c5a059] text-[#2c241b] font-bold rounded-full hover:bg-[#e0b868] transition-colors shadow-[0_10px_30px_-12px_rgba(197,160,89,0.6)]"
+                            >
+                                立即创作
+                            </button>
+                        </div>
+                    </FadeIn>
+                </section>
             </main>
 
             {/* Footer */}
