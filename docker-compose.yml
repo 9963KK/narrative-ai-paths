@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    env_file: .env.production
+    ports:
+      - "80:80"
+    restart: unless-stopped
