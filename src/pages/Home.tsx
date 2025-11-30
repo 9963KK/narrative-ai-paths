@@ -215,7 +215,7 @@ export default function Home() {
                     </div>
 
                     <p className="text-lg md:text-xl text-[#5c4d3c] mb-12 max-w-2xl mx-auto font-light leading-relaxed animate-fade-in-up delay-200">
-                        专为小说家、编剧和创意写作者打造的 AI 辅助工具：一句话生成世界设定，在同一设定下稳定续写。
+                        为每一个小说创作者提供的AI小说创作平台：一句话生成世界设定，在同一设定下稳定续写。
                     </p>
 
                     <div className="animate-fade-in-up delay-300">
